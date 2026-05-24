@@ -2,9 +2,6 @@ name: API CI
 
 on:
   push:
-    branches:
-      - main
-      - deploy
     paths:
       - ".github/workflows/api-ci.yml"
       - "apps/api/**"
