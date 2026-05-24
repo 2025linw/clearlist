@@ -19,6 +19,20 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -34,6 +48,15 @@ jobs:
 
       - name: Cargo clippy
         run: cargo clippy -p clearlist-api -- -D warnings
+
+      - name: Bootstrap database
+        env:
+          PGHOST: localhost
+          PGDATABASE: testdb
+          PGUSER: test
+          PGPASSWORD: test
+        run: |
+          psql -v ON_ERROR_STOP=1 -f setup_dev.sql
 
       - name: Cargo test
         run: cargo test -p clearlist-api
