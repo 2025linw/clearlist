@@ -56,7 +56,7 @@ jobs:
           PGUSER: test
           PGPASSWORD: test
         run: |
-          psql -v ON_ERROR_STOP=1 -f setup_dev.sql
+          psql -v ON_ERROR_STOP=1 -f apps/api/setup_dev.sql
 
       - name: Cargo test
         run: cargo test -p clearlist-api
