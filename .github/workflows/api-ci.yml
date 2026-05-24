@@ -1,0 +1,39 @@
+name: API CI
+
+on:
+  push:
+    branches:
+      - main
+      - deploy
+    paths:
+      - ".github/workflows/api-ci.yml"
+      - "apps/api/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  pull_request:
+    paths:
+      - "apps/api/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Cargo check
+        run: cargo check -p clearlist-api
+
+      - name: Cargo clippy
+        run: cargo clippy -p clearlist-api -- -D warnings
+
+      - name: Cargo test
+        run: cargo test -p clearlist-api

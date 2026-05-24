@@ -1,0 +1,47 @@
+//! Task Model
+//!
+//! This module contains the task model
+
+use chrono::Utc;
+use sqlx::FromRow;
+
+use crate::models::tag::Tag;
+
+/// Task Model Type
+///
+/// This is the ground truth model for tasks; it exactly matches database schema
+#[allow(dead_code)]
+#[derive(Debug, FromRow)]
+#[cfg_attr(test, derive(Clone, PartialEq))]
+pub struct Task {
+    pub id: uuid::Uuid,
+
+    pub title: String,
+    pub notes: Option<String>,
+    pub start_dt: Option<chrono::DateTime<Utc>>,
+    pub has_time: bool,
+    pub deadline: Option<chrono::NaiveDate>,
+    #[sqlx(skip)]
+    pub tags: Vec<Tag>,
+
+    pub completed_at: Option<chrono::DateTime<Utc>>,
+    pub deleted_at: Option<chrono::DateTime<Utc>>,
+
+    pub created_at: chrono::DateTime<Utc>,
+    pub updated_at: chrono::DateTime<Utc>,
+
+    pub created_by: uuid::Uuid,
+}
+
+/// Task Tag Type
+///
+/// This is an intermediate model for task tags returned by the database
+///
+/// This is currently only used in querying tasks
+#[derive(Debug, FromRow)]
+pub struct TaskTag {
+    pub task_id: uuid::Uuid,
+
+    #[sqlx(flatten)]
+    pub tag: Tag,
+}
