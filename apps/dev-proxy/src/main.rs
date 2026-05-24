@@ -8,7 +8,7 @@ use axum_server::tls_rustls::RustlsConfig;
 async fn main() {
     dotenvy::dotenv().ok();
 
-    let mut native = false;
+    let mut web = false;
 
     let args: Vec<String> = env::args().collect();
     if args.len() > 1 {
@@ -19,10 +19,8 @@ async fn main() {
         }
 
         match args[1].as_ref() {
-            "native" => {
-                native = true;
-            }
-            "web" => (),
+            "native" => (),
+            "web" => web = true,
             _ => (),
         }
     }
@@ -50,29 +48,41 @@ async fn main() {
         .await
         .expect("certs should exist and be loaded");
 
-    let app = if native {
-        Router::new()
-            .route_service("/api/{*path}", api_proxy)
-            .route_service("/api/auth/{*path}", auth_proxy)
-    } else {
+    let app = if web {
         Router::new()
             .route_service("/api/{*path}", api_proxy)
             .route_service("/api/auth/{*path}", auth_proxy)
             .fallback_service(app_proxy)
+    } else {
+        Router::new()
+            .route_service("/api/{*path}", api_proxy)
+            .route_service("/api/auth/{*path}", auth_proxy)
     };
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], srv_port));
-    if native {
-        println!("Starting proxy server for native app development on port {srv_port}");
-    } else {
-        println!("Starting proxy server for web development on port {srv_port}");
-    }
-    axum_server::bind_rustls(addr, config)
-        .serve(app.into_make_service())
-        .await
-        .unwrap_or_else(|err| {
-            eprintln!("unable to start proxy server: {err}");
+    if web {
+        let addr: SocketAddr = format!("0.0.0.0:{srv_port}").parse().unwrap();
 
-            std::process::exit(1);
-        });
+        println!("Starting proxy server for web development on port {srv_port}");
+        axum_server::bind_rustls(addr, config)
+            .serve(app.into_make_service())
+            .await
+            .unwrap_or_else(|err| {
+                eprintln!("unable to start proxy server: {err}");
+
+                std::process::exit(1);
+            });
+    } else {
+        let listener = tokio::net::TcpListener::bind(&format!("0.0.0.0:{srv_port}"))
+            .await
+            .unwrap();
+
+        println!("Starting proxy server for native app development on port {srv_port}");
+        axum::serve(listener, app.into_make_service())
+            .await
+            .unwrap_or_else(|err| {
+                eprintln!("unable to start proxy server: {err}");
+
+                std::process::exit(1);
+            });
+    }
 }
