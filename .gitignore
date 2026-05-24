@@ -1,0 +1,11 @@
+# macOS Finder config files
+**/.DS_Store
+# VSCode config files
+**/.vscode
+
+# Environment Files
+*.env*
+!*.env*.template
+
+# Build files
+target
