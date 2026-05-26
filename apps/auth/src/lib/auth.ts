@@ -1,0 +1,35 @@
+import { betterAuth } from 'better-auth';
+import { expo } from '@better-auth/expo';
+import { Pool } from 'pg';
+
+import * as config from '../config.ts';
+
+export const auth = betterAuth({
+  trustedOrigins: config.trustedOrigins,
+
+  database: new Pool({ max: 10 }),
+
+  emailAndPassword: {
+    enabled: true,
+  },
+
+  plugins: [expo()],
+
+  advanced: {
+    useSecureCookies: true,
+
+    defaultCookieAttributes: {
+      sameSite: 'lax',
+      secure: true,
+      httpOnly: true,
+    },
+
+    database: {
+      generateId: 'uuid',
+    },
+  },
+
+  experimental: {
+    joins: true,
+  },
+});

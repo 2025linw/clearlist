@@ -1,7 +1,7 @@
 # macOS Finder config files
-**/.DS_Store
+.DS_Store
 # VSCode config files
-**/.vscode
+.vscode
 
 # Environment Files
 *.env*
@@ -9,3 +9,4 @@
 
 # Build files
 target
+node_modules

@@ -1,0 +1,8 @@
+{
+  "name": "clearlist",
+  "private": true,
+  "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "auth:dev": "pnpm --filter clearlist-auth dev"
+  }
+}
