@@ -41,7 +41,7 @@ jobs:
           toolchain: stable
 
       - name: Cargo check
-        run: cargo check -p clearlist-api
+        run: cargo check --locked -p clearlist-api
 
       - name: Cargo clippy
         run: cargo clippy -p clearlist-api -- -D warnings
@@ -59,4 +59,4 @@ jobs:
         env:
           MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
           DATABASE_URL: postgresql://cl_api:cl_api@localhost/testdb
-        run: cargo test -p clearlist-api
+        run: cargo test --locked -p clearlist-api
