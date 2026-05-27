@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "auth:dev": "pnpm --filter clearlist-auth dev"
+    "auth:dev": "pnpm --filter clearlist-auth dev",
+    "app:web": "pnpm --filter clearlist-app web",
+    "app:app": "pnpm --filter clearlist-app native"
   }
 }
