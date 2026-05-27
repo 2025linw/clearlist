@@ -7,11 +7,14 @@ on:
       - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "!apps/api/**/*.md"
   pull_request:
     paths:
+      - ".github/workflows/api-ci.yml"
       - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "!apps/api/**/*.md"
 
 jobs:
   ci:
