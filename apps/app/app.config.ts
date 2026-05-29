@@ -2,7 +2,7 @@ import { ExpoConfig } from 'expo/config';
 
 export default (): ExpoConfig => ({
   name: 'Clear List',
-  slug: 'clearlist-app',
+  slug: 'clearlist',
   scheme: 'clearlist',
   version: '0.0.1',
   owner: '2025linw',
@@ -105,7 +105,7 @@ export default (): ExpoConfig => ({
   extra: {
     router: {},
     eas: {
-      projectId: '06a24e08-53fe-4606-af15-b25c353ad340',
+      projectId: '591f5217-4558-47a7-8507-3dceadd18a02',
     },
   },
 });

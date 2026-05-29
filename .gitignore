@@ -7,8 +7,8 @@
 *.env*
 !*.env*.template
 
-# Build files
+# Cargo build files
 target
 
-# Dependencies
+# Node (pnpm) dependencies
 node_modules

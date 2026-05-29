@@ -2,4 +2,8 @@ packages:
   - 'apps/auth'
   - 'apps/app'
 allowBuilds:
+  msgpackr-extract: true
   unrs-resolver: true
+minimumReleaseAgeExclude:
+  - expo-modules-autolinking@56.0.14
+  - expo@56.0.6
