@@ -95,6 +95,7 @@ export default (): ExpoConfig => ({
         },
       },
     ],
+    '@react-native-vector-icons/ionicons',
     'expo-image',
     'expo-web-browser',
   ],

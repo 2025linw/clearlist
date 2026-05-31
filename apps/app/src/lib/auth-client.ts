@@ -14,13 +14,4 @@ export const authClient = createAuthClient({
       storage: SecureStore,
     }),
   ],
-  emailAndPassword: {
-    enabled: true,
-  },
-  // advanced: {
-  //   defaultCookieAttributes: {
-  //     sameSite: 'none',
-  //     secure: true,
-  //   },
-  // },
 });

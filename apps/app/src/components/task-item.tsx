@@ -1,4 +1,4 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
+import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Task } from '@/types/resource';

@@ -4,6 +4,7 @@
   "packageManager": "pnpm@11.3.0",
   "scripts": {
     "auth:dev": "pnpm --filter clearlist-auth dev",
+    "auth:deploy": "pnpm --filter clearlist-auth run build && pnpm --filter clearlist-auth deploy deploy/auth --prod",
     "app:web": "pnpm --filter clearlist-app web",
     "app:app": "pnpm --filter clearlist-app native"
   }

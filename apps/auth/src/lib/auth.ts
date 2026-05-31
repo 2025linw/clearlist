@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
-import { expo } from '@better-auth/expo';
 import { Pool } from 'pg';
+
+import { expo } from '@better-auth/expo';
 
 import * as config from '../config.ts';
 
@@ -9,11 +10,10 @@ export const auth = betterAuth({
 
   database: new Pool({ max: 10 }),
 
+  plugins: [expo()],
   emailAndPassword: {
     enabled: true,
   },
-
-  plugins: [expo()],
 
   advanced: {
     useSecureCookies: true,
@@ -27,9 +27,5 @@ export const auth = betterAuth({
     database: {
       generateId: 'uuid',
     },
-  },
-
-  experimental: {
-    joins: true,
   },
 });

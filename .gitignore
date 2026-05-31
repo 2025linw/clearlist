@@ -10,5 +10,8 @@
 # Cargo build files
 target
 
+# pnpm deploy files
+deploy
+
 # Node (pnpm) dependencies
 node_modules
