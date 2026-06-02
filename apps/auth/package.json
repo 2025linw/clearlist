@@ -4,9 +4,6 @@
   "type": "module",
   "private": true,
   "main": "dist/app.js",
-  "engines": {
-    "node": "24.16.0"
-  },
   "files": [
     "dist"
   ],

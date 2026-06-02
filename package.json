@@ -1,6 +1,9 @@
 {
   "name": "clearlist",
   "private": true,
+  "engines": {
+    "node": "24.16.x"
+  },
   "packageManager": "pnpm@11.3.0",
   "scripts": {
     "auth:dev": "pnpm --filter clearlist-auth dev",
