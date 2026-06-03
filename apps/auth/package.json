@@ -1,17 +1,18 @@
 {
-  "name": "clearlist-auth",
+  "name": "@clearlist/auth",
+  "private": true,
   "version": "0.0.1",
   "type": "module",
-  "private": true,
   "main": "dist/app.js",
   "files": [
-    "dist"
+    "dist",
+    "package.json"
   ],
   "scripts": {
     "dev": "NODE_ENV=development ts-node src/app.ts",
     "build": "tsc",
-    "prestart": "npm run build",
-    "start": "NODE_ENV=production node dist/app.js"
+    "start": "NODE_ENV=production node dist/app.js",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.11",
@@ -22,13 +23,11 @@
     "pg": "^8.21.0"
   },
   "devDependencies": {
+    "@clearlist/eslint-config": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.9.1",
     "@types/pg": "^8.20.0",
-    "eslint": "^10.4.1",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.6",
     "prettier": "^3.8.3",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"

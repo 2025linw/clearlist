@@ -1,6 +1,7 @@
 packages:
   - 'apps/auth'
   - 'apps/app'
+  - 'packages/*'
 injectWorkspacePackages: true
 allowBuilds:
   msgpackr-extract: true

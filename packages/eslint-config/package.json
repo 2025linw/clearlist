@@ -1,0 +1,31 @@
+{
+  "name": "@clearlist/eslint-config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": {
+      "types": "./types.d.ts",
+      "default": "./base.js"
+    },
+    "./node": {
+      "types": "./types.d.ts",
+      "default": "./node.js"
+    },
+    "./expo": {
+      "types": "./types.d.ts",
+      "default": "./expo.js"
+    }
+  },
+  "dependencies": {
+    "eslint-config-expo": "~56.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0",
+    "typescript-eslint": "^8.60.1"
+  },
+  "peerDependencies": {
+    "eslint": "^9.25.0",
+    "prettier": "^3.8.3"
+  }
+}
