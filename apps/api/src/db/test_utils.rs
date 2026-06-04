@@ -32,14 +32,13 @@ pub async fn db_init() -> (
 
             // add dummy user
             sqlx::query(
-                "INSERT INTO auth.user (\"id\", \"name\", \"email\", \"emailVerified\")
-                VALUES ($1, $2, $3, $4)
+                "INSERT INTO app.users (id, auth_user_id, display_name)
+                VALUES ($1, $2, $3)
                 ON CONFLICT (\"id\") DO NOTHING;",
             )
             .bind(Uuid::nil())
+            .bind(Uuid::nil())
             .bind("testuser")
-            .bind("testuser@email.com")
-            .bind(false)
             .execute(&mut conn)
             .await
             .unwrap();
@@ -67,9 +66,10 @@ pub async fn create_test_task(
 ) -> Task {
     // Add task
     let task_id = sqlx::query_scalar(
-        "INSERT INTO app.tasks (title, notes, start_dt, has_time, deadline, created_by)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
+        "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
     )
+    .bind(Uuid::new_v4())
     .bind(task.title.clone())
     .bind(task.notes.clone())
     .bind(task.start.as_ref().and_then(|s| match s.as_at() {
@@ -206,9 +206,10 @@ pub async fn create_test_tag(
     updated_at: DateTime<Utc>,
 ) -> Tag {
     let tag_id = sqlx::query_scalar(
-        "INSERT INTO app.tags (label, category, created_by, created_at, updated_at)
-            VALUES ($1, $2, $3, $4, $5) RETURNING id",
+        "INSERT INTO app.tags (id, label, category, created_by, created_at, updated_at)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
     )
+    .bind(Uuid::new_v4())
     .bind(tag.label.clone())
     .bind(tag.category.clone())
     .bind(Uuid::nil())

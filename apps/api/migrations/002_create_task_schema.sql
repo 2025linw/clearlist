@@ -1,5 +1,6 @@
+-- Task Schema
 CREATE TABLE app.tasks (
-    id uuid PRIMARY KEY DEFAULT app.gen_random_uuid(),
+    id uuid PRIMARY KEY,
 
     title varchar(255) NOT NULL,
     notes text,
@@ -15,7 +16,7 @@ CREATE TABLE app.tasks (
 
     created_by uuid NOT NULL,
 
-    FOREIGN KEY (created_by) REFERENCES auth.user (id)
+    FOREIGN KEY (created_by) REFERENCES app.users (id)
 );
 
 -- Create index for Task owner ids
@@ -25,3 +26,12 @@ WHERE deleted_at IS NULL;
 
 -- Create indexes for deleted Tasks
 CREATE INDEX ON app.tasks (id) WHERE deleted_at IS NOT NULL;
+
+-- Permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+app.tasks
+TO cl_rw;
+
+GRANT SELECT ON
+app.tasks
+TO cl_ro;

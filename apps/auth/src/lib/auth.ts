@@ -8,7 +8,10 @@ import * as config from '../config.ts';
 export const auth = betterAuth({
   trustedOrigins: config.trustedOrigins,
 
-  database: new Pool({ max: 10 }),
+  database: new Pool({
+    connectionString: process.env.DATABASE_URL,
+    max: 10,
+  }),
 
   plugins: [expo()],
   emailAndPassword: {

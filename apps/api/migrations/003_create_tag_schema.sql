@@ -1,5 +1,6 @@
+-- Tag Schema
 CREATE TABLE app.tags (
-    id uuid PRIMARY KEY DEFAULT app.gen_random_uuid(),
+    id uuid PRIMARY KEY,
 
     label varchar(255) NOT NULL,
     category varchar(255),
@@ -9,7 +10,7 @@ CREATE TABLE app.tags (
 
     created_by uuid NOT NULL,
 
-    FOREIGN KEY (created_by) REFERENCES auth.user (id)
+    FOREIGN KEY (created_by) REFERENCES app.users (id)
 );
 
 -- Task-Tag Table
@@ -43,3 +44,14 @@ CREATE TRIGGER trig_check_task_not_deleted
 BEFORE INSERT ON app.task_tags
 FOR EACH ROW
 EXECUTE FUNCTION app.check_task_not_deleted();
+
+-- Permissions
+GRANT SELECT, INSERT, UPDATE, DELETE ON
+app.tags,
+app.task_tags
+TO cl_rw;
+
+GRANT SELECT ON
+app.tags,
+app.task_tags
+TO cl_ro;

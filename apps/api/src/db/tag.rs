@@ -161,10 +161,11 @@ async fn insert_tag_inner(
     insert_tag: TagCreate,
 ) -> Result<Tag> {
     let res = query_as_wrapper::<Tag>(
-        "INSERT INTO app.tags (label, category, created_by)
-        VALUES ($1, NULLIF(trim($2), ''), $3)
+        "INSERT INTO app.tags (id, label, category, created_by)
+        VALUES ($1, $2, NULLIF(trim($3), ''), $4)
         RETURNING *",
     )
+    .bind(Uuid::new_v4())
     .bind(insert_tag.label)
     .bind(insert_tag.category)
     .bind(user_id)

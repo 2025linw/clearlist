@@ -12,6 +12,7 @@
     "dev": "NODE_ENV=development ts-node src/app.ts",
     "build": "tsc",
     "start": "NODE_ENV=production node dist/app.js",
+    "migrate": "ts-node src/scripts/migrate.ts",
     "lint": "eslint ."
   },
   "dependencies": {
