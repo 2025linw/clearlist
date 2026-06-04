@@ -3,14 +3,14 @@ name: API CI
 on:
   push:
     paths:
-      - ".github/workflows/api-ci.yml"
+      - ".github/workflows/api-*.yml"
       - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "!apps/api/**/*.md"
   pull_request:
     paths:
-      - ".github/workflows/api-ci.yml"
+      - ".github/workflows/api-*.yml"
       - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
