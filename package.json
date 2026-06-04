@@ -12,9 +12,9 @@
     "prettier": "^3.8.3"
   },
   "scripts": {
-    "auth:dev": "pnpm --filter clearlist-auth dev",
-    "auth:deploy": "pnpm --filter clearlist-auth run build && pnpm --filter clearlist-auth --prod deploy ./deploy/auth",
-    "app:web": "pnpm --filter clearlist-app web",
-    "app:app": "pnpm --filter clearlist-app native"
+    "auth:dev": "pnpm --filter @clearlist/auth dev",
+    "auth:deploy": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth --prod deploy ./deploy/auth",
+    "app:web": "pnpm --filter @clearlist/app web",
+    "app:app": "pnpm --filter @clearlist/app native"
   }
 }
