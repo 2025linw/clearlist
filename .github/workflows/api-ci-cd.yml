@@ -173,6 +173,7 @@ jobs:
 
             cd ${{ secrets.API_DEPLOY_PATH }}
             mv /tmp/clearlist-api/clearlist-api .
+            chmod +x clearlist-api
 
             ./clearlist-api migrate
 
