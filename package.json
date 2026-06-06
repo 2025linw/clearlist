@@ -7,7 +7,7 @@
   "packageManager": "pnpm@11.3.0",
   "scripts": {
     "auth:dev": "pnpm --filter @clearlist/auth run dev",
-    "auth:build": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth --prod deploy build/auth",
+    "auth:build": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth deploy --prod build/auth",
     "auth:lint": "pnpm --filter @clearlist/auth run lint",
     "auth:test": "pnpm --filter @clearlist/auth run test",
 
