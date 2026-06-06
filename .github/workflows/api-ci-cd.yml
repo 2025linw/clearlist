@@ -185,6 +185,4 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            set -euo pipefail
-
-            sudo -n ${{ secrets.API_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.sha }}
+            sudo -n ${{ secrets.API_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.timestamp }} ${{ needs.build.outputs.sha }}
