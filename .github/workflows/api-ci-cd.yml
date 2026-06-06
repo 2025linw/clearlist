@@ -1,0 +1,195 @@
+name: API CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/api-ci-cd.yml"
+      - "apps/api/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "!apps/api/**/*.md"
+  pull_request:
+    paths:
+      - ".github/workflows/api-ci-cd.yml"
+      - "apps/api/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "!apps/api/**/*.md"
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: api-${{ github.event.pull_request.head.ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-pr:
+    runs-on: ubuntu-latest
+
+    outputs:
+      should_run: ${{ steps.check.outputs.should_run }}
+
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+
+            exit 0
+          fi
+
+          prs=$(gh api \
+            repos/${{ github.repository }}/commits/${{ github.sha }}/pulls \
+            -H "Accept: application/vnd.github+json" \
+            --jq '[.[] | select(.state == "open")] | length')
+
+          if [ "$prs" -gt 0 ]; then
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  ci:
+    name: CI
+
+    needs: check-pr
+    if: needs.check-pr.outputs.should_run == 'true'
+
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: clippy
+
+      - name: Run check
+        run: cargo check --locked -p clearlist-api
+
+      - name: Run clippy
+        run: cargo clippy -p clearlist-api -- -D warnings
+
+      - name: Bootstrap database
+        env:
+          PGHOST: localhost
+          PGDATABASE: testdb
+          PGUSER: test
+          PGPASSWORD: test
+        run: |
+          psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
+
+      - name: Run test
+        env:
+          MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
+          DATABASE_URL: postgresql://cl_api:cl_api@localhost/testdb
+        run: cargo test --locked -p clearlist-api
+
+  build:
+    name: Build
+
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Build release
+        run: cargo build --release --locked -p clearlist-api
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: clearlist-api
+          path: target/release/clearlist-api
+          retention-days: 7
+
+  deploy:
+    name: CD
+
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: clearlist-api
+
+      - name: Connect to tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci-cd
+
+      - name: Upload binary
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: ./target/release/clearlist-api
+          strip_components: 3
+          target: /tmp/clearlist-api/
+
+      - name: Deploy server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            set -euo pipefail
+
+            cd ${{ secrets.DEPLOY_PATH }}
+            mv /tmp/clearlist-api/clearlist-api .
+
+            ./clearlist-api migrate
+
+            sudo -n systemctl restart clearlist-api.service
+
+            MAX_WAIT=10
+            INTERVAL=2
+
+            # Retry until active or timeout
+            ELAPSED=0
+            while ! systemctl is-active --quiet clearlist-api.service; do
+                sleep $INTERVAL
+                ELAPSED=$((ELAPSED + INTERVAL))
+                if [ $ELAPSED -ge $MAX_WAIT ]; then
+                    echo "Service failed to start after $MAX_WAIT seconds"
+                    sudo journalctl -u clearlist-api.service -n 50 --no-pager
+                    exit 1
+                fi
+            done
