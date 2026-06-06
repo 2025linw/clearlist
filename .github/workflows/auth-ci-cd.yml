@@ -137,7 +137,7 @@ jobs:
       - name: Build deployment
         run: pnpm auth:build
 
-      - name: Pack deployment
+      - name: Archive deployment
         run: tar -czf clearlist-auth.tar.gz -C build/auth .
 
       - name: Upload artifact
@@ -176,7 +176,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           source: clearlist-auth.tar.gz
-          target: /tmp/
+          target: /tmp/clearlist-auth/
 
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.0
@@ -187,11 +187,11 @@ jobs:
           script: |
             set -euo pipefail
 
-            tar -xzf /tmp/clearlist-auth.tar.gz -C /tmp/clearlist-auth
+            tar -xzf /tmp/clearlist-auth/clearlist-auth.tar.gz -C /tmp/clearlist-auth/clearlist-auth
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
             rm -rf ./*
-            cp -a /tmp/clearlist-auth/. .
+            cp -a /tmp/clearlist-auth/clearlist-auth/. .
 
             node dist/scripts/migrate.js
 
@@ -211,3 +211,5 @@ jobs:
                     exit 1
                 fi
             done
+
+            rm -rf /tmp/clearlist-auth
