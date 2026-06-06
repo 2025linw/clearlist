@@ -160,9 +160,6 @@ jobs:
           name: clearlist-auth
           path: clearlist-auth
 
-      - name: list files
-        run: ls -R
-
       - name: Connect to tailscale
         uses: tailscale/github-action@v4
         with:
@@ -189,6 +186,7 @@ jobs:
             set -euo pipefail
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
+            rm -rf ./*
             mv /tmp/clearlist-auth/* .
 
             node scripts/migrate.js
