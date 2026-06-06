@@ -176,7 +176,7 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           source: clearlist-auth.tar.gz
-          target: /tmp/clearlist-auth/
+          target: /tmp/
 
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.0
@@ -187,11 +187,11 @@ jobs:
           script: |
             set -euo pipefail
 
-            tar -xzf /tmp/clearlist-auth/clearlist-auth.tar.gz -C /tmp/clearlist-auth/clearlist-auth
+            tar -xzf /tmp/clearlist-auth.tar.gz -C /tmp/clearlist-auth
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
             rm -rf ./*
-            cp -a /tmp/clearlist-auth/clearlist-auth/. .
+            mv /tmp/clearlist-auth/. .
 
             node dist/scripts/migrate.js
 
@@ -212,4 +212,4 @@ jobs:
                 fi
             done
 
-            rm -rf /tmp/clearlist-auth
+            rm -rf /tmp/clearlist-auth.tar.gz /tmp/clearlist-auth/*
