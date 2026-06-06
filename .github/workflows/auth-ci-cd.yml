@@ -191,7 +191,7 @@ jobs:
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
             rm -rf ./*
-            mv /tmp/clearlist-auth/. .
+            cp -a /tmp/clearlist-auth/. .
 
             node dist/scripts/migrate.js
 
