@@ -1,0 +1,25 @@
+{
+  "name": "@clearlist/prettier-config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./base": {
+      "types": "./types.d.ts",
+      "default": "./base.js"
+    },
+    "./node": {
+      "types": "./types.d.ts",
+      "default": "./node.js"
+    },
+    "./expo": {
+      "types": "./types.d.ts",
+      "default": "./expo.js"
+    }
+  },
+  "dependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2"
+  },
+  "peerDependencies": {
+    "prettier": "^3.8.3"
+  }
+}

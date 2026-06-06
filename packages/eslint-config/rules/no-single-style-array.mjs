@@ -1,5 +1,3 @@
-// eslint-rules/no-single-style-array.js
-
 export default {
   meta: {
     type: 'suggestion',

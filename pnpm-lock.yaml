@@ -112,15 +112,12 @@ importers:
       '@clearlist/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      '@trivago/prettier-plugin-sort-imports':
-        specifier: ^6.0.2
-        version: 6.0.2(prettier@3.8.3)
+      '@clearlist/prettier-config':
+        specifier: workspace:*
+        version: link:../../packages/prettier-config
       '@types/react':
         specifier: ~19.2.15
         version: 19.2.16
-      prettier:
-        specifier: ^3.8.3
-        version: 3.8.3
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -149,6 +146,9 @@ importers:
       '@clearlist/eslint-config':
         specifier: workspace:*
         version: link:../../packages/eslint-config
+      '@clearlist/prettier-config':
+        specifier: workspace:*
+        version: link:../../packages/prettier-config
       '@types/cors':
         specifier: ^2.8.19
         version: 2.8.19
@@ -161,9 +161,6 @@ importers:
       '@types/pg':
         specifier: ^8.20.0
         version: 8.20.0
-      prettier:
-        specifier: ^3.8.3
-        version: 3.8.3
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@25.9.1)(typescript@6.0.3)
@@ -198,7 +195,14 @@ importers:
         specifier: ^8.60.1
         version: 8.60.1(eslint@9.39.4)(typescript@6.0.3)
 
-  packages/prettier-config: {}
+  packages/prettier-config:
+    dependencies:
+      '@trivago/prettier-plugin-sort-imports':
+        specifier: ^6.0.2
+        version: 6.0.2(prettier@3.8.3)
+      prettier:
+        specifier: ^3.8.3
+        version: 3.8.3
 
 packages:
 
