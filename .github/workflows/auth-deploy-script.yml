@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/auth-deploy-script.yml"
+      - "scripts/deploy-auth.sh"
   workflow_dispatch:
 
 jobs:
