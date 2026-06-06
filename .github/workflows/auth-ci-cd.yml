@@ -90,14 +90,13 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: 'package.json'
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Run install
         run: pnpm install --frozen-lockfile
 
       - name: Run lint
         run: pnpm auth:lint
-
 
       - name: Bootstrap database
         env:
@@ -130,7 +129,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version-file: 'package.json'
-          cache: "pnpm"
+          cache: 'pnpm'
 
       - name: Run install
         run: pnpm install --frozen-lockfile
@@ -144,6 +143,7 @@ jobs:
           name: clearlist-auth
           path: build/auth/
           retention-days: 7
+          include-hidden-files: true
 
   deploy:
     name: CD
@@ -187,7 +187,7 @@ jobs:
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
             rm -rf ./*
-            mv /tmp/clearlist-auth/* .
+            cp -a /tmp/clearlist-auth/. .
 
             node dist/scripts/migrate.js
 
