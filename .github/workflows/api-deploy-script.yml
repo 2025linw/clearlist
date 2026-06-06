@@ -1,4 +1,4 @@
-name: Deploy API Server Deploy Script
+name: Deploy API server deploy script
 
 on:
   pull_request:
