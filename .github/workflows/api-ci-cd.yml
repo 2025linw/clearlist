@@ -194,4 +194,4 @@ jobs:
                 fi
             done
 
-            rm -rf /tmp/clearlist-api
+            rm -rf /tmp/clearlist-api/*
