@@ -5,8 +5,9 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
-    "native": "expo start --dev-client",
+    "app": "expo start --dev-client",
     "web": "expo start --port 5002",
+    "web:build": "expo export --platform web",
     "lint": "expo lint"
   },
   "dependencies": {

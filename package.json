@@ -5,16 +5,22 @@
     "node": "^24.16.0"
   },
   "packageManager": "pnpm@11.3.0",
+  "scripts": {
+    "auth:dev": "pnpm --filter @clearlist/auth run dev",
+    "auth:build": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth --prod deploy build/auth",
+
+    "app:app": "pnpm --filter @clearlist/app run app",
+    "app:web": "pnpm --filter @clearlist/app run web",
+    "app:web:build": "pnpm --filter @clearlist/app run web:build",
+
+    "clean": "pnpm run clean:artifacts",
+    "clean:artifacts": "rm -rf build deploy apps/auth/dist apps/app/dist .expo",
+    "clean:all": "pnpm pm clean && pnpm run clean:artifacts"
+  },
   "devDependencies": {
     "@clearlist/eslint-config": "workspace:*",
     "@clearlist/prettier-config": "workspace:*",
     "eslint": "^9.25.0",
     "prettier": "^3.8.3"
-  },
-  "scripts": {
-    "auth:dev": "pnpm --filter @clearlist/auth dev",
-    "auth:deploy": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth --prod deploy ./deploy/auth",
-    "app:web": "pnpm --filter @clearlist/app web",
-    "app:app": "pnpm --filter @clearlist/app native"
   }
 }
