@@ -1,0 +1,26 @@
+# Expo
+.expo/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+
+# typescript
+*.tsbuildinfo
+
+# Generated native folders
+ios/
+android/

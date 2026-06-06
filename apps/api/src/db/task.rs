@@ -290,10 +290,11 @@ async fn insert_task_inner(
     insert_task: TaskCreate,
 ) -> Result<Task> {
     let res = query_as_wrapper::<Task>(
-        "INSERT INTO app.tasks (title, notes, start_dt, has_time, deadline, created_by)
-        VALUES ($1, $2, $3, $4, $5, $6)
+        "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *",
     )
+    .bind(Uuid::new_v4())
     .bind(insert_task.title)
     .bind(insert_task.notes)
     .bind(insert_task.start.as_ref().and_then(|s| match s.as_at() {

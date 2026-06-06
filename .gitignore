@@ -7,6 +7,10 @@
 *.env*
 !*.env*.template
 
-# Build files
-target
-node_modules
+# Dependency artifacts
+node_modules/
+
+# Build artifacts
+target/
+dist/
+build/

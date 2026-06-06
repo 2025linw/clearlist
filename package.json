@@ -1,8 +1,30 @@
 {
   "name": "clearlist",
   "private": true,
+  "engines": {
+    "node": "^24.16.0"
+  },
   "packageManager": "pnpm@11.3.0",
   "scripts": {
-    "auth:dev": "pnpm --filter clearlist-auth dev"
+    "auth:dev": "pnpm --filter @clearlist/auth run dev",
+    "auth:build": "pnpm --filter @clearlist/auth run build && pnpm --filter @clearlist/auth --prod deploy build/auth",
+    "auth:lint": "pnpm --filter @clearlist/auth run lint",
+    "auth:test": "pnpm --filter @clearlist/auth run test",
+
+    "app:start": "pnpm --filter @clearlist/app run start",
+    "app:app": "pnpm --filter @clearlist/app run app",
+    "app:web": "pnpm --filter @clearlist/app run web",
+    "app:web:build": "pnpm --filter @clearlist/app run web:build",
+    "app:lint": "pnpm --filter @clearlist/app run lint",
+    "app:test": "pnpm --filter @clearlist/app run test",
+
+    "clean": "rm -rf build apps/auth/dist apps/app/dist apps/app/.expo",
+    "clean:all": "pnpm pm clean && pnpm run clean"
+  },
+  "devDependencies": {
+    "@clearlist/eslint-config": "workspace:*",
+    "@clearlist/prettier-config": "workspace:*",
+    "eslint": "^9.25.0",
+    "prettier": "^3.8.3"
   }
 }

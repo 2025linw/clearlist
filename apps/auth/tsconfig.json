@@ -1,19 +1,17 @@
 {
   "compilerOptions": {
-    "moduleResolution": "nodenext",
     "module": "nodenext",
-    "target": "esnext",
-    "jsx": "react-jsx",
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
+    "moduleResolution": "nodenext",
+    "target": "ESNext",
     "strict": true,
-    "sourceMap": true,
+    "sourceMap": false,
     "erasableSyntaxOnly": true,
     "rewriteRelativeImportExtensions": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "outDir": "./dist"
+    "rootDir": "src",
+    "outDir": "dist"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "**/node_modules/*"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

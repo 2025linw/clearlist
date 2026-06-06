@@ -1,5 +1,2 @@
-# Build files
-dist
-
 # generated migrations scripts
-better-auth_migrations
+better-auth_migrations/
