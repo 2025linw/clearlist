@@ -159,8 +159,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: ./target/release/clearlist-api
-          strip_components: 3
+          source: clearlist-api
           target: /tmp/clearlist-api/
 
       - name: Deploy server
@@ -172,7 +171,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd ${{ secrets.API_DEPLOY_PATH }}
             mv /tmp/clearlist-api/clearlist-api .
 
             ./clearlist-api migrate
