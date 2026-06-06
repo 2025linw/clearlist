@@ -1,8 +1,20 @@
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { useState } from 'react';
-import { Keyboard, Modal, Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import {
+  Keyboard,
+  Modal,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
 
 import { useTheme } from '@/context/theme';

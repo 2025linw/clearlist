@@ -1,14 +1,17 @@
 import { Platform } from 'react-native';
 
+import { Tag, Task, TaskDTO } from '@clearlist/types';
+
 import { API_URL } from '@/constants';
-import { Tag, Task } from '@/types';
-import { TaskCreate } from '@/types/resource';
 
 import { authClient } from '@/lib/auth-client';
 
 import { BaseResponse, TagResponse, TaskResponse } from './types';
 
-function apiFetch(input: string, { headers, ...init }: RequestInit = {}): Promise<Response> {
+function apiFetch(
+  input: string,
+  { headers, ...init }: RequestInit = {},
+): Promise<Response> {
   if (Platform.OS === 'web') {
     return fetch(input, {
       ...init,
@@ -75,7 +78,7 @@ export async function getTasks(category?: Category): Promise<Task[]> {
   return body.data.tasks;
 }
 
-export async function addTasks(task: TaskCreate): Promise<void> {
+export async function addTasks(task: TaskDTO): Promise<void> {
   let url = API_URL + '/api/tasks';
 
   const res = await apiFetch(url, {

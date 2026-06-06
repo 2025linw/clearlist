@@ -5,7 +5,9 @@ import usePersisted from '@/hooks/use-persisted';
 
 import { ColorTheme, ThemeContextType, ThemeMode, buildTheme } from './types';
 
-const ThemeContext = createContext<ThemeContextType>({} as unknown as ThemeContextType); // TODO: fix this jank?
+const ThemeContext = createContext<ThemeContextType>(
+  {} as unknown as ThemeContextType,
+); // TODO: fix this jank?
 
 type Props = {
   children: ReactNode;
@@ -13,12 +15,25 @@ type Props = {
 };
 
 export function Provider({ children, ...props }: Props) {
-  const { value: themeMode, setValue: _setThemeMode, loaded: themeLoaded } = usePersisted('systemTheme');
-  const { value: colorTheme, setValue: _setColorTheme, loaded: colorLoaded } = usePersisted('colorTheme');
+  const {
+    value: themeMode,
+    setValue: _setThemeMode,
+    loaded: themeLoaded,
+  } = usePersisted('systemTheme');
+  const {
+    value: colorTheme,
+    setValue: _setColorTheme,
+    loaded: colorLoaded,
+  } = usePersisted('colorTheme');
 
   const systemTheme = useColorScheme();
 
-  const darkMode = themeMode === 'system' ? (systemTheme === 'dark' ? 'dark' : 'light') : themeMode;
+  const darkMode =
+    themeMode === 'system'
+      ? systemTheme === 'dark'
+        ? 'dark'
+        : 'light'
+      : themeMode;
 
   const theme = buildTheme(colorTheme, darkMode);
 

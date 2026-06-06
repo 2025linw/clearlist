@@ -235,5 +235,9 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
 
 export type Theme = ReturnType<typeof buildTheme>;
 
-export type ButtonSchemes = keyof Omit<Theme['components']['Button'], 'disabled'>;
-export type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
+export type ButtonSchemes = keyof Omit<
+  Theme['components']['Button'],
+  'disabled'
+>;
+export type TypographyPalettes =
+  keyof Theme['components']['Typography']['palette'];

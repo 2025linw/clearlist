@@ -1,4 +1,12 @@
-import { PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  PropsWithChildren,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 
 import { authClient } from '@/lib/auth-client';
 
@@ -53,24 +61,27 @@ export function Provider({ children }: PropsWithChildren) {
     getSession();
   }, []);
 
-  const createAccount = useCallback<ApiContextType['createAccount']>(async (params) => {
-    const { data, error } = await authClient.signUp.email({
-      email: params.email,
-      password: params.password,
-      name: params.email.split('@')[0],
-    });
+  const createAccount = useCallback<ApiContextType['createAccount']>(
+    async (params) => {
+      const { data, error } = await authClient.signUp.email({
+        email: params.email,
+        password: params.password,
+        name: params.email.split('@')[0],
+      });
 
-    if (error) {
-      console.error(error);
+      if (error) {
+        console.error(error);
 
-      throw error;
-    }
+        throw error;
+      }
 
-    setUser({
-      currentSession: data.token!,
-      hasSession: true,
-    });
-  }, []);
+      setUser({
+        currentSession: data.token!,
+        hasSession: true,
+      });
+    },
+    [],
+  );
 
   const login = useCallback<ApiContextType['login']>(async (params) => {
     const { data, error } = await authClient.signIn.email({

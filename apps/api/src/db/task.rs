@@ -18,8 +18,9 @@ use super::{
 use crate::{
     com::constants::{DEFAULT_LIMIT, MAX_LIMIT},
     db::utils::order_task_tag,
-    models::{Tag, Task, TaskTag},
-    routes::models::{SortOrder, task::Model as TaskCreate},
+    models::tag::Model as TagModel,
+    models::task::{DtoModel as TaskCreate, Model, TaskTag},
+    routes::models::SortOrder,
 };
 use tag::{
     insert_task_tags_inner_unchecked, query_task_tags_inner_unchecked,
@@ -79,7 +80,7 @@ pub async fn query_tasks(
     pool: PgPool,
     user_id: Uuid,
     opts: Option<TaskQueryOptions>,
-) -> Result<Vec<Task>> {
+) -> Result<Vec<Model>> {
     let mut conn = pool.acquire().await?;
     let tasks = query_tasks_inner(&mut conn, user_id, opts.unwrap_or_default()).await?;
     conn.close().await?;
@@ -94,7 +95,7 @@ async fn query_tasks_inner(
     conn: &mut PgConnection,
     user_id: Uuid,
     opts: TaskQueryOptions,
-) -> Result<Vec<Task>> {
+) -> Result<Vec<Model>> {
     let mut builder = QueryBuilder::new("SELECT * FROM app.tasks WHERE created_by = ");
     builder.push_bind(user_id);
     if opts.completed {
@@ -179,7 +180,7 @@ async fn query_tasks_inner(
     builder.push(" OFFSET ");
     builder.push_bind(opts.offset.max(0));
 
-    let query = builder.build_query_as::<Task>();
+    let query = builder.build_query_as::<Model>();
 
     let mut tasks = query.fetch_all(conn.as_mut()).await?;
 
@@ -195,7 +196,7 @@ async fn query_tasks_inner(
     .fetch_all(conn.as_mut())
     .await?;
 
-    let mut task_tag_map: HashMap<Uuid, Vec<Tag>> = HashMap::new();
+    let mut task_tag_map: HashMap<Uuid, Vec<TagModel>> = HashMap::new();
     for TaskTag { task_id, tag } in tags {
         if let Entry::Vacant(e) = task_tag_map.entry(task_id) {
             e.insert(vec![tag]);
@@ -226,7 +227,7 @@ async fn query_tasks_inner(
 /// Task wrapped in `Some`, if exists
 ///
 /// `None`, if it does not exist
-pub async fn select_task(pool: PgPool, task_id: Uuid, user_id: Uuid) -> Result<Option<Task>> {
+pub async fn select_task(pool: PgPool, task_id: Uuid, user_id: Uuid) -> Result<Option<Model>> {
     let mut conn = pool.acquire().await?;
     let task_opt = select_task_inner(&mut conn, task_id, user_id).await?;
     conn.close().await?;
@@ -241,8 +242,8 @@ async fn select_task_inner(
     conn: &mut PgConnection,
     task_id: Uuid,
     user_id: Uuid,
-) -> Result<Option<Task>> {
-    let task_row_opt = query_as_wrapper::<Task>(
+) -> Result<Option<Model>> {
+    let task_row_opt = query_as_wrapper::<Model>(
         "SELECT *
         FROM app.tasks
         WHERE id = $1 AND created_by = $2 AND deleted_at IS NULL",
@@ -273,7 +274,7 @@ async fn select_task_inner(
 /// # Returns
 ///
 /// Created task
-pub async fn insert_task(pool: PgPool, user_id: Uuid, insert_task: TaskCreate) -> Result<Task> {
+pub async fn insert_task(pool: PgPool, user_id: Uuid, insert_task: TaskCreate) -> Result<Model> {
     let mut tx = pool.begin().await?;
     let task = insert_task_inner(&mut tx, user_id, insert_task).await?;
     tx.commit().await?;
@@ -288,8 +289,8 @@ async fn insert_task_inner(
     conn: &mut PgConnection,
     user_id: Uuid,
     insert_task: TaskCreate,
-) -> Result<Task> {
-    let res = query_as_wrapper::<Task>(
+) -> Result<Model> {
+    let res = query_as_wrapper::<Model>(
         "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *",
@@ -356,7 +357,7 @@ pub async fn update_task(
     task_id: Uuid,
     user_id: Uuid,
     update_task: TaskCreate,
-) -> Result<Task> {
+) -> Result<Model> {
     let mut tx = pool.begin().await?;
     let task = update_task_inner(&mut tx, task_id, user_id, update_task).await?;
     tx.commit().await?;
@@ -372,8 +373,8 @@ async fn update_task_inner(
     task_id: Uuid,
     user_id: Uuid,
     update_task: TaskCreate,
-) -> Result<Task> {
-    let task_opt = query_as_wrapper::<Task>(
+) -> Result<Model> {
+    let task_opt = query_as_wrapper::<Model>(
         "UPDATE app.tasks
         SET (title, notes, start_dt, has_time, deadline)
         = ($3, $4, $5, $6, $7)
@@ -605,7 +606,8 @@ mod query {
             filters::{DateBound, DateFilter, TaskSort},
             test_utils::{create_test_tag, create_test_task, db_init},
         },
-        routes::models::{SortOrder, Start, tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{helper::Start, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
+        routes::models::SortOrder,
     };
 
     #[test]
@@ -4479,7 +4481,7 @@ mod select {
     use super::select_task_inner;
     use crate::{
         db::test_utils::{create_test_tag, create_test_task, db_init},
-        routes::models::{tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
     };
 
     #[test]
@@ -4739,7 +4741,7 @@ mod insert {
             ApplicationError, Error,
             test_utils::{create_test_tag, db_init},
         },
-        routes::models::{Start, tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{helper::Start, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
     };
 
     #[test]
@@ -5190,12 +5192,15 @@ mod update {
             ApplicationError, Error,
             test_utils::{create_test_tag, create_test_task, db_init, get_task},
         },
-        models::Task,
-        routes::models::{Start, tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{
+            helper::Start,
+            tag::DtoModel as TagCreate,
+            task::{DtoModel as TaskCreate, Model},
+        },
     };
 
     /// This ensures that update_task_inner will only modify user-specifiable fields
-    fn verify_scope(after_task: Task, before_task: Task) {
+    fn verify_scope(after_task: Model, before_task: Model) {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.completed_at, before_task.completed_at);
         assert_eq!(after_task.deleted_at, before_task.deleted_at);
@@ -6033,12 +6038,11 @@ mod delete {
     use super::delete_task_inner;
     use crate::{
         db::test_utils::{create_test_task, db_init, get_task},
-        models::Task,
-        routes::models::task::Model as TaskCreate,
+        models::task::{DtoModel as TaskCreate, Model},
     };
 
     /// This ensures that delete_task_inner will only modify updated_at and deleted_at
-    fn verify_scope(after_task: Task, before_task: Task) {
+    fn verify_scope(after_task: Model, before_task: Model) {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
@@ -6192,12 +6196,11 @@ mod restore {
             ApplicationError, Error,
             test_utils::{create_test_task, db_init, get_task},
         },
-        models::Task,
-        routes::models::task::Model as TaskCreate,
+        models::task::{DtoModel as TaskCreate, Model},
     };
 
     /// This ensures that restore_task_inner will only modify updated_at and deleted_at
-    fn verify_scope(after_task: Task, before_task: Task) {
+    fn verify_scope(after_task: Model, before_task: Model) {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
@@ -6352,12 +6355,11 @@ mod complete {
             ApplicationError, Error,
             test_utils::{create_test_task, db_init, get_task},
         },
-        models::Task,
-        routes::models::task::Model as TaskCreate,
+        models::task::{DtoModel as TaskCreate, Model},
     };
 
     /// This ensures that [un]complete_task_inner will only modify updated_at and completed_at
-    fn verify_scope(after_task: Task, before_task: Task) {
+    fn verify_scope(after_task: Model, before_task: Model) {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);

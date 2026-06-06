@@ -34,7 +34,9 @@ export default function LoginScreen(props: Props) {
   return (
     <Layout headerText={props.type === 'login' ? 'Login' : 'Register'}>
       <View style={styles.backdrop}>
-        <View style={[styles.container, { backgroundColor: theme.palette.subtle }]}>
+        <View
+          style={[styles.container, { backgroundColor: theme.palette.subtle }]}
+        >
           <View style={styles.inputContainer}>
             <FormField
               label={'Email'}
@@ -96,8 +98,14 @@ export default function LoginScreen(props: Props) {
             />
 
             <Button
-              text={props.type === 'login' ? "Don't have an account? Register" : 'Have an account? Login'}
-              onPress={() => router.replace(props.type === 'login' ? '/register' : '/login')}
+              text={
+                props.type === 'login'
+                  ? "Don't have an account? Register"
+                  : 'Have an account? Login'
+              }
+              onPress={() =>
+                router.replace(props.type === 'login' ? '/register' : '/login')
+              }
             />
           </View>
 

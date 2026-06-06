@@ -1,7 +1,7 @@
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { Task } from '@/types/resource';
+import { Task } from '@clearlist/types';
 
 // import { useTheme } from '@/context/theme';
 

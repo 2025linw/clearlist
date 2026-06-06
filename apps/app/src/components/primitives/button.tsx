@@ -1,5 +1,12 @@
 import { ReactNode } from 'react';
-import { Pressable, PressableProps, StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
+import {
+  Pressable,
+  PressableProps,
+  StyleSheet,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import { useTheme } from '@/context/theme';
 import { ButtonSchemes, Theme } from '@/context/theme/types';
@@ -12,10 +19,18 @@ export type ButtonProps = PressableProps & {
   leftIcon?: ReactNode;
 };
 
-export default function Button({ text, scheme = 'default', leftIcon, ...pressableProps }: ButtonProps) {
+export default function Button({
+  text,
+  scheme = 'default',
+  leftIcon,
+  ...pressableProps
+}: ButtonProps) {
   const theme = useTheme();
 
-  const styles = buildStyle(theme, pressableProps.disabled ? 'disabled' : scheme);
+  const styles = buildStyle(
+    theme,
+    pressableProps.disabled ? 'disabled' : scheme,
+  );
 
   return (
     <Pressable
@@ -41,7 +56,10 @@ type ButtonStyle = {
   typography: TextStyle;
   leftIcon: ViewStyle;
 };
-function buildStyle(theme: Theme, scheme: ButtonSchemes | 'disabled'): ButtonStyle {
+function buildStyle(
+  theme: Theme,
+  scheme: ButtonSchemes | 'disabled',
+): ButtonStyle {
   return StyleSheet.create({
     container: {
       flexDirection: 'row',

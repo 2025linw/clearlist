@@ -8,13 +8,14 @@
 //! * from model-level Task to user request Task
 //! * From model-level Tag to user request Tag
 
-use crate::{
-    models::{Tag, Task},
-    routes::models::{Start, tag::Model as TagCreate, task::Model as TaskCreate},
+use crate::models::{
+    helper::Start,
+    tag::{DtoModel as TagCreate, Model as TagModel},
+    task::{DtoModel as TaskCreate, Model as TaskModel},
 };
 
-impl From<Task> for TaskCreate {
-    fn from(value: Task) -> Self {
+impl From<TaskModel> for TaskCreate {
+    fn from(value: TaskModel) -> Self {
         let start = if let Some(dt) = value.start_dt {
             if value.has_time {
                 Some(Start::At(dt))
@@ -35,8 +36,8 @@ impl From<Task> for TaskCreate {
     }
 }
 
-impl From<Tag> for TagCreate {
-    fn from(value: Tag) -> Self {
+impl From<TagModel> for TagCreate {
+    fn from(value: TagModel) -> Self {
         Self {
             label: value.label,
             category: value.category,

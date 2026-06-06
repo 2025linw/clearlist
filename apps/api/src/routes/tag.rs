@@ -8,16 +8,14 @@ use uuid::Uuid;
 
 use super::{
     Error,
-    models::{
-        Pagination,
-        tag::{Filter, Model},
-    },
+    models::{Pagination, tag::Filter},
     util::{Json, Path, Query, Session},
 };
 use crate::{
     AppState,
     com::constants::{DEFAULT_LIMIT, TAG_NOT_FOUND},
     db::tag::{TagQueryOptions, delete_tag, insert_tag, query_tags, select_tag, update_tag},
+    models::tag::DtoModel,
     response::{Response, TagResponse},
 };
 
@@ -55,7 +53,7 @@ pub async fn query_handler(
 pub async fn create_handler(
     session: Session,
     State(data): State<AppState>,
-    Json(body): Json<Model>,
+    Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
     let tag = insert_tag(data.db.pool(), session.user_id(), body)
         .await
@@ -85,7 +83,7 @@ pub async fn update_handler(
     session: Session,
     State(data): State<AppState>,
     Path(tag_id): Path<Uuid>,
-    Json(body): Json<Model>,
+    Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
     let tag = update_tag(data.db.pool(), tag_id, session.user_id(), body)
         .await

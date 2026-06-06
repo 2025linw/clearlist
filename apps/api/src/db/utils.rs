@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
 
-use crate::models::Tag;
+use crate::models::tag::Model;
 
 /// Sorting function for a list of tags associated with a task
 ///
@@ -9,7 +9,7 @@ use crate::models::Tag;
 /// * label ascending
 /// * updated_at descending (if label is equal)
 /// * id ascending (if label and updated_at are equal)
-pub fn order_task_tag(a: &Tag, b: &Tag) -> Ordering {
+pub fn order_task_tag(a: &Model, b: &Model) -> Ordering {
     a.category
         .cmp(&b.category) // order ascending (None before Some)
         .then_with(|| a.label.cmp(&b.label)) // label ascending
@@ -31,8 +31,8 @@ mod order_task_tag {
         label: &str,
         category: Option<&str>,
         updated_at: chrono::DateTime<Utc>,
-    ) -> Tag {
-        Tag {
+    ) -> Model {
+        Model {
             id: Uuid::from_u128(id),
             label: label.to_string(),
             category: category.map(str::to_string),

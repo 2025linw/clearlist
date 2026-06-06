@@ -1,6 +1,6 @@
 import { FlatList, StyleSheet, View } from 'react-native';
 
-import { Task } from '@/types';
+import { Task } from '@clearlist/types';
 
 import AddTaskModal from '@/components/add-task-modal';
 import Layout from '@/components/layout';
@@ -29,7 +29,11 @@ export default function ListScreen(props: Props) {
           contentContainerStyle={styles.listContainer}
           ListEmptyComponent={
             <View style={styles.emptyComponent}>
-              <Typography>{props.tasks === null ? 'Loading tasks...' : props.emptyText || 'No tasks'}</Typography>
+              <Typography>
+                {props.tasks === null
+                  ? 'Loading tasks...'
+                  : props.emptyText || 'No tasks'}
+              </Typography>
             </View>
           }
         />

@@ -8,8 +8,8 @@ use uuid::Uuid;
 use super::{ApplicationError, Error, Result, filters::TagSort, query_as_wrapper};
 use crate::{
     com::constants::{DEFAULT_LIMIT, MAX_LIMIT},
-    models::Tag,
-    routes::models::{SortOrder, tag::Model as TagCreate},
+    models::tag::{DtoModel as TagCreate, Model},
+    routes::models::SortOrder,
 };
 
 /// Options for query tags in database
@@ -47,7 +47,7 @@ impl Default for TagQueryOptions {
 /// # Returns
 ///
 /// List of tags
-pub async fn query_tags(pool: PgPool, user_id: Uuid, opts: TagQueryOptions) -> Result<Vec<Tag>> {
+pub async fn query_tags(pool: PgPool, user_id: Uuid, opts: TagQueryOptions) -> Result<Vec<Model>> {
     let mut conn = pool.acquire().await?;
     let tags = query_tags_inner(&mut conn, user_id, opts).await?;
     conn.close().await?;
@@ -62,7 +62,7 @@ async fn query_tags_inner(
     conn: &mut PgConnection,
     user_id: Uuid,
     opts: TagQueryOptions,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<Model>> {
     let mut builder = QueryBuilder::new("SELECT * FROM app.tags WHERE created_by = ");
     builder.push_bind(user_id);
     match opts.sort_order {
@@ -86,7 +86,7 @@ async fn query_tags_inner(
     builder.push(" OFFSET ");
     builder.push_bind(opts.offset.max(0));
 
-    let query = builder.build_query_as::<Tag>();
+    let query = builder.build_query_as::<Model>();
 
     Ok(query.fetch_all(conn.as_mut()).await?)
 }
@@ -104,7 +104,7 @@ async fn query_tags_inner(
 /// Tag wrapped in `Some`, if tag exists
 ///
 /// `None`, if it does not exist
-pub async fn select_tag(pool: PgPool, tag_id: Uuid, user_id: Uuid) -> Result<Option<Tag>> {
+pub async fn select_tag(pool: PgPool, tag_id: Uuid, user_id: Uuid) -> Result<Option<Model>> {
     let mut conn = pool.acquire().await?;
     let tag_opt = select_tag_inner(&mut conn, tag_id, user_id).await?;
     conn.close().await?;
@@ -119,8 +119,8 @@ async fn select_tag_inner(
     conn: &mut PgConnection,
     tag_id: Uuid,
     user_id: Uuid,
-) -> Result<Option<Tag>> {
-    let tag_opt = query_as_wrapper::<Tag>(
+) -> Result<Option<Model>> {
+    let tag_opt = query_as_wrapper::<Model>(
         "SELECT *
         FROM app.tags
         WHERE id = $1 AND created_by = $2",
@@ -144,7 +144,7 @@ async fn select_tag_inner(
 /// # Returns
 ///
 /// Created tag
-pub async fn insert_tag(pool: PgPool, user_id: Uuid, insert_tag: TagCreate) -> Result<Tag> {
+pub async fn insert_tag(pool: PgPool, user_id: Uuid, insert_tag: TagCreate) -> Result<Model> {
     let mut tx = pool.begin().await?;
     let tag = insert_tag_inner(&mut tx, user_id, insert_tag).await?;
     tx.commit().await?;
@@ -159,8 +159,8 @@ async fn insert_tag_inner(
     conn: &mut PgConnection,
     user_id: Uuid,
     insert_tag: TagCreate,
-) -> Result<Tag> {
-    let res = query_as_wrapper::<Tag>(
+) -> Result<Model> {
+    let res = query_as_wrapper::<Model>(
         "INSERT INTO app.tags (id, label, category, created_by)
         VALUES ($1, $2, NULLIF(trim($3), ''), $4)
         RETURNING *",
@@ -205,7 +205,7 @@ pub async fn update_tag(
     tag_id: Uuid,
     user_id: Uuid,
     update_tag: TagCreate,
-) -> Result<Tag> {
+) -> Result<Model> {
     let mut tx = pool.begin().await?;
     let tag = update_tag_inner(&mut tx, tag_id, user_id, update_tag).await?;
     tx.commit().await?;
@@ -221,8 +221,8 @@ async fn update_tag_inner(
     tag_id: Uuid,
     user_id: Uuid,
     update_tag: TagCreate,
-) -> Result<Tag> {
-    let tag_opt = query_as_wrapper::<Tag>(
+) -> Result<Model> {
+    let tag_opt = query_as_wrapper::<Model>(
         "UPDATE app.tags
         SET (label, category)
         = ($3, NULLIF(trim($4), ''))
@@ -292,7 +292,8 @@ mod query {
             filters::TagSort,
             test_utils::{create_test_tag, db_init},
         },
-        routes::models::{SortOrder, tag::Model as TagCreate},
+        models::tag::DtoModel as TagCreate,
+        routes::models::SortOrder,
     };
 
     #[test]
@@ -1173,7 +1174,7 @@ mod select {
     use super::select_tag_inner;
     use crate::{
         db::test_utils::{create_test_tag, db_init},
-        routes::models::tag::Model as TagCreate,
+        models::tag::DtoModel as TagCreate,
     };
 
     #[test]
@@ -1271,7 +1272,7 @@ mod insert {
     use super::insert_tag_inner;
     use crate::{
         db::{ApplicationError, Error, test_utils::db_init},
-        routes::models::tag::Model as TagCreate,
+        models::tag::DtoModel as TagCreate,
     };
 
     #[test]
@@ -1392,11 +1393,10 @@ mod update {
             ApplicationError, Error,
             test_utils::{create_test_tag, db_init},
         },
-        models::Tag,
-        routes::models::tag::Model as TagCreate,
+        models::tag::{DtoModel as TagCreate, Model},
     };
 
-    fn verify_scope(after_tag: Tag, before_tag: Tag) {
+    fn verify_scope(after_tag: Model, before_tag: Model) {
         assert_eq!(after_tag.id, before_tag.id);
         assert_eq!(after_tag.created_at, before_tag.created_at);
         assert_eq!(after_tag.created_by, before_tag.created_by);
@@ -1517,7 +1517,7 @@ mod delete {
     use super::{delete_tag_inner, select_tag_inner};
     use crate::{
         db::test_utils::{create_test_tag, db_init},
-        routes::models::tag::Model as TagCreate,
+        models::tag::DtoModel as TagCreate,
     };
 
     #[test]

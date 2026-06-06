@@ -10,7 +10,7 @@ use uuid::Uuid;
 use super::select_task_inner;
 use crate::{
     db::{Error, Result, error::ApplicationError, query_as_wrapper},
-    models::Tag,
+    models::tag::Model as TagModel,
 };
 
 /// Query database for all tags associated with a task
@@ -24,7 +24,7 @@ use crate::{
 /// # Returns
 ///
 /// List of tags associated with task `task_id`
-pub async fn query_task_tags(pool: PgPool, task_id: Uuid, user_id: Uuid) -> Result<Vec<Tag>> {
+pub async fn query_task_tags(pool: PgPool, task_id: Uuid, user_id: Uuid) -> Result<Vec<TagModel>> {
     let mut conn = pool.acquire().await?;
     let tags = query_task_tags_inner(&mut conn, task_id, user_id).await?;
     conn.close().await?;
@@ -39,7 +39,7 @@ async fn query_task_tags_inner(
     conn: &mut PgConnection,
     task_id: Uuid,
     user_id: Uuid,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<TagModel>> {
     if select_task_inner(conn, task_id, user_id).await?.is_none() {
         return Err(Error::Application(ApplicationError::TaskNotFound));
     }
@@ -54,8 +54,8 @@ pub(super) async fn query_task_tags_inner_unchecked(
     conn: &mut PgConnection,
     task_id: Uuid,
     user_id: Uuid,
-) -> Result<Vec<Tag>> {
-    Ok(query_as_wrapper::<Tag>(
+) -> Result<Vec<TagModel>> {
+    Ok(query_as_wrapper::<TagModel>(
         "SELECT tg.*
         FROM app.tags tg
         JOIN app.task_tags tt ON tg.id = tt.tag_id
@@ -104,7 +104,7 @@ async fn insert_task_tags_inner(
     task_id: Uuid,
     user_id: Uuid,
     tag_ids: Vec<Uuid>,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<TagModel>> {
     if select_task_inner(conn, task_id, user_id).await?.is_none() {
         return Err(Error::Application(ApplicationError::TaskNotFound));
     }
@@ -120,7 +120,7 @@ pub(super) async fn insert_task_tags_inner_unchecked(
     task_id: Uuid,
     user_id: Uuid,
     tag_ids: Vec<Uuid>,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<TagModel>> {
     let res = sqlx::query(
         "INSERT INTO app.task_tags (task_id, tag_id)
         SELECT $1, unnest_tag
@@ -195,7 +195,7 @@ async fn update_task_tags_inner(
     task_id: Uuid,
     user_id: Uuid,
     tag_ids: Vec<Uuid>,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<TagModel>> {
     if select_task_inner(conn, task_id, user_id).await?.is_none() {
         return Err(Error::Application(ApplicationError::TaskNotFound));
     }
@@ -211,7 +211,7 @@ pub(super) async fn update_task_tags_inner_unchecked(
     task_id: Uuid,
     user_id: Uuid,
     tag_ids: Vec<Uuid>,
-) -> Result<Vec<Tag>> {
+) -> Result<Vec<TagModel>> {
     // check if new set is the same; if it is, stop here
     let current_tag_ids: Vec<Uuid> =
         sqlx::query_scalar("SELECT tag_id FROM app.task_tags WHERE task_id = $1")
@@ -359,7 +359,7 @@ mod query {
             test_utils::{check_sort_task_tag, create_test_tag, create_test_task, db_init},
             utils::order_task_tag,
         },
-        routes::models::{tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
     };
 
     #[test]
@@ -795,8 +795,10 @@ mod insert {
             ApplicationError, Error,
             test_utils::{create_test_tag, create_test_task, db_init, get_task},
         },
-        models::Tag,
-        routes::models::{tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{
+            tag::{DtoModel as TagCreate, Model as TagModel},
+            task::DtoModel as TaskCreate,
+        },
     };
 
     #[test]
@@ -816,7 +818,7 @@ mod insert {
         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
         assert!(res.is_ok());
         if let Ok(tags) = res {
-            assert!(tags.iter().all(|tag| matches!(tag, Tag { .. })));
+            assert!(tags.iter().all(|tag| matches!(tag, TagModel { .. })));
         }
     }
 
@@ -1322,8 +1324,10 @@ mod update {
             },
             utils::order_task_tag,
         },
-        models::Tag,
-        routes::models::{tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{
+            tag::{DtoModel as TagCreate, Model as TagModel},
+            task::DtoModel as TaskCreate,
+        },
     };
 
     #[test]
@@ -1357,7 +1361,7 @@ mod update {
 
         let tags = res.unwrap();
         for tag in tags {
-            assert!(matches!(tag, Tag { .. }))
+            assert!(matches!(tag, TagModel { .. }))
         }
     }
 
@@ -1802,7 +1806,7 @@ mod delete {
             ApplicationError, Error,
             test_utils::{create_test_tag, create_test_task, db_init, get_task},
         },
-        routes::models::{tag::Model as TagCreate, task::Model as TaskCreate},
+        models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
     };
 
     #[test]
