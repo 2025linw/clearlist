@@ -1,6 +1,8 @@
 name: Deploy API Server Script
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
