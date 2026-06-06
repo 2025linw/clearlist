@@ -13,9 +13,8 @@
     "app:web": "pnpm --filter @clearlist/app run web",
     "app:web:build": "pnpm --filter @clearlist/app run web:build",
 
-    "clean": "pnpm run clean:artifacts",
-    "clean:artifacts": "rm -rf build deploy apps/auth/dist apps/app/dist .expo",
-    "clean:all": "pnpm pm clean && pnpm run clean:artifacts"
+    "clean": "rm -rf build apps/auth/dist apps/app/dist apps/app/.expo",
+    "clean:all": "pnpm pm clean && pnpm run clean"
   },
   "devDependencies": {
     "@clearlist/eslint-config": "workspace:*",
