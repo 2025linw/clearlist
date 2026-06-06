@@ -7,8 +7,11 @@ use uuid::Uuid;
 
 use crate::{
     db::{query_as_wrapper, utils::order_task_tag},
-    models::{Tag, Task},
-    routes::models::{Start, tag::Model as TagCreate, task::Model as TaskCreate},
+    models::{
+        helper::Start,
+        tag::{DtoModel as TagCreate, Model as TagModel},
+        task::{DtoModel as TaskCreate, Model as TaskModel},
+    },
     run_migration,
 };
 
@@ -63,7 +66,7 @@ pub async fn create_test_task(
     deleted_at: Option<DateTime<Utc>>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
-) -> Task {
+) -> TaskModel {
     // Add task
     let task_id = sqlx::query_scalar(
         "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
@@ -172,8 +175,8 @@ pub async fn create_test_task(
     ret_task
 }
 
-pub async fn get_task(conn: &mut PgConnection, task_id: Uuid) -> Task {
-    let mut task = query_as_wrapper::<Task>(
+pub async fn get_task(conn: &mut PgConnection, task_id: Uuid) -> TaskModel {
+    let mut task = query_as_wrapper::<TaskModel>(
         "SELECT *
                 FROM app.tasks
                 WHERE id = $1 AND created_by = $2",
@@ -184,7 +187,7 @@ pub async fn get_task(conn: &mut PgConnection, task_id: Uuid) -> Task {
     .await
     .unwrap();
 
-    task.tags = query_as_wrapper::<Tag>(
+    task.tags = query_as_wrapper::<TagModel>(
         "SELECT tg.*
                 FROM app.task_tags tt
                 JOIN app.tags tg ON tt.tag_id = tg.id
@@ -204,7 +207,7 @@ pub async fn create_test_tag(
     tag: TagCreate,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
-) -> Tag {
+) -> TagModel {
     let tag_id = sqlx::query_scalar(
         "INSERT INTO app.tags (id, label, category, created_by, created_at, updated_at)
             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id",
@@ -246,8 +249,8 @@ pub async fn create_test_tag(
     ret_tag
 }
 
-pub async fn get_tag(conn: &mut PgConnection, tag_id: Uuid) -> Tag {
-    query_as_wrapper::<Tag>(
+pub async fn get_tag(conn: &mut PgConnection, tag_id: Uuid) -> TagModel {
+    query_as_wrapper::<TagModel>(
         "SELECT *
         FROM app.tags
         WHERE id = $1 AND created_by = $2",
@@ -265,6 +268,6 @@ pub async fn get_tag(conn: &mut PgConnection, tag_id: Uuid) -> Tag {
 /// * label ascending
 /// * updated_at descending (if label is equal)
 /// * id ascending (if label and updated_at are equal)
-pub fn check_sort_task_tag(a: &Tag, b: &Tag) -> bool {
+pub fn check_sort_task_tag(a: &TagModel, b: &TagModel) -> bool {
     matches!(order_task_tag(a, b), Ordering::Less)
 }

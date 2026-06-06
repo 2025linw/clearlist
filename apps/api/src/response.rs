@@ -7,10 +7,7 @@ use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use crate::{
-    models::{Tag, Task},
-    routes::models::Start,
-};
+use crate::models::{helper::Start, tag::Model as TagModel, task::Model as TaskModel};
 
 /// Response type representing a JSON response
 ///
@@ -103,8 +100,8 @@ pub struct TaskResponse {
     pub updated_at: chrono::DateTime<Utc>,
 }
 
-impl From<Task> for TaskResponse {
-    fn from(value: Task) -> Self {
+impl From<TaskModel> for TaskResponse {
+    fn from(value: TaskModel) -> Self {
         let start = if let Some(dt) = value.start_dt {
             if value.has_time {
                 Some(Start::At(dt))
@@ -147,8 +144,8 @@ pub struct TagResponse {
     pub updated_at: chrono::DateTime<Utc>,
 }
 
-impl From<Tag> for TagResponse {
-    fn from(value: Tag) -> Self {
+impl From<TagModel> for TagResponse {
+    fn from(value: TagModel) -> Self {
         Self {
             id: value.id,
             label: value.label,

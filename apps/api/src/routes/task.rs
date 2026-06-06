@@ -10,10 +10,7 @@ use uuid::Uuid;
 
 use super::{
     Error,
-    models::{
-        Completed, Pagination,
-        task::{Filter, Model},
-    },
+    models::{Completed, Pagination, task::Filter},
     util::{Json, Path, Query, Session},
 };
 use crate::{
@@ -26,6 +23,7 @@ use crate::{
             select_task, update_task,
         },
     },
+    models::task::DtoModel,
     response::{Response, TaskResponse},
 };
 
@@ -82,7 +80,7 @@ pub async fn query_handler(
 pub async fn create_handler(
     session: Session,
     State(data): State<AppState>,
-    Json(body): Json<Model>,
+    Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
     let task = insert_task(data.db.pool(), session.user_id(), body)
         .await
@@ -112,7 +110,7 @@ pub async fn update_handler(
     session: Session,
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
-    Json(body): Json<Model>,
+    Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
     let task = update_task(data.db.pool(), task_id, session.user_id(), body)
         .await

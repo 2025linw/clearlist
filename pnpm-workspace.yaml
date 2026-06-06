@@ -2,7 +2,6 @@ packages:
   - 'apps/auth'
   - 'apps/app'
   - 'packages/*'
-  - 'infra/*'
 engineStrict: true
 injectWorkspacePackages: true
 allowBuilds:

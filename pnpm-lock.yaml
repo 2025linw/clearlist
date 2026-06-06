@@ -15,6 +15,9 @@ importers:
       '@clearlist/prettier-config':
         specifier: workspace:*
         version: link:packages/prettier-config
+      '@clearlist/types':
+        specifier: workspace:*
+        version: link:packages/types
       eslint:
         specifier: ^9.25.0
         version: 9.39.4
@@ -115,6 +118,9 @@ importers:
       '@clearlist/prettier-config':
         specifier: workspace:*
         version: link:../../packages/prettier-config
+      '@clearlist/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@types/react':
         specifier: ~19.2.15
         version: 19.2.16
@@ -203,6 +209,8 @@ importers:
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
+
+  packages/types: {}
 
 packages:
 

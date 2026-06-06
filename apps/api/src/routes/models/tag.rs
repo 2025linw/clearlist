@@ -6,19 +6,6 @@ use serde::Deserialize;
 
 use super::{Pagination, SortOrder};
 
-/// Tag Request Model
-///
-/// This represents the fields a client is able to create/modify for a Tag
-#[derive(Debug, Deserialize)]
-#[cfg_attr(test, derive(Default, Clone))]
-#[serde(deny_unknown_fields)]
-#[serde(rename_all = "camelCase")]
-pub struct Model {
-    #[serde(default)]
-    pub label: String,
-    pub category: Option<String>,
-}
-
 /// Tag Filter Model
 ///
 /// This represents the url parameter fields for filtering Tags queried
@@ -28,11 +15,9 @@ pub struct Filter {
     #[serde(flatten)]
     pub pagination: Pagination,
 
-    #[serde(default)]
-    #[serde(rename = "sort")]
+    #[serde(default, rename = "sort")]
     pub sort_by: SortBy,
-    #[serde(default)]
-    #[serde(rename = "order")]
+    #[serde(default, rename = "order")]
     pub sort_order: SortOrder,
 }
 
