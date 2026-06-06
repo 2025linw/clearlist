@@ -8,7 +8,8 @@
     "app": "expo start --dev-client",
     "web": "expo start --port 5002",
     "web:build": "expo export --platform web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test": "echo 'No tests created'"
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.11",

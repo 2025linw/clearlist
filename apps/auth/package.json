@@ -13,7 +13,8 @@
     "build": "tsc",
     "start": "NODE_ENV=production node dist/app.js",
     "migrate": "ts-node src/scripts/migrate.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "echo 'No tests created'"
   },
   "dependencies": {
     "@better-auth/expo": "^1.6.11",
