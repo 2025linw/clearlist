@@ -137,11 +137,14 @@ jobs:
       - name: Build deployment
         run: pnpm auth:build
 
+      - name: Pack deployment
+        run: tar -czf clearlist-auth.tar.gz -C build/auth .
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: clearlist-auth
-          path: build/auth/
+          path: clearlist-auth.tar.gz
           retention-days: 7
           include-hidden-files: true
 
@@ -158,7 +161,6 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: clearlist-auth
-          path: clearlist-auth
 
       - name: Connect to tailscale
         uses: tailscale/github-action@v4
@@ -173,7 +175,7 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: clearlist-auth/
+          source: clearlist-auth.tar.gz
           target: /tmp/
 
       - name: Deploy server
@@ -184,6 +186,8 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
             set -euo pipefail
+
+            tar -xzf /tmp/clearlist-auth.tar.gz -C /tmp/clearlist-auth
 
             cd ${{ secrets.AUTH_DEPLOY_PATH }}
             rm -rf ./*
