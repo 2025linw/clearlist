@@ -1,4 +1,4 @@
-name: Deploy Auth Server Deploy Script
+name: Deploy auth server deploy script
 
 on:
   pull_request:
