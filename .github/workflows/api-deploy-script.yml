@@ -4,7 +4,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  required:
+    name: CI
+
+    if: github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo 'Yay'
+
   deploy-script:
+    if: github.event_name == 'workflow_dispatch'
+
     runs-on: ubuntu-latest
 
     steps:
@@ -37,13 +49,3 @@ jobs:
           script: |
             sudo mkdir -p /opt/clearlist-api/scripts
             sudo install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy-api.sh
-
-  passed_checks:
-    name: CI
-
-    needs: deploy-script
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - run: echo 'Passed deployment'
