@@ -1,6 +1,8 @@
 name: Deploy API Server Script
 
 on:
+  push:
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -47,5 +49,5 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            sudo mkdir -p /opt/clearlist-api/scripts
-            sudo install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy-api.sh
+            sudo -n mkdir -p /opt/clearlist-api/scripts
+            sudo -n install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy-api.sh
