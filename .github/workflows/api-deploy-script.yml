@@ -1,15 +1,12 @@
 name: Deploy API Server Script
 
 on:
-  push:
   pull_request:
   workflow_dispatch:
 
 jobs:
   required:
     name: CI
-
-    if: github.event_name == 'push'
 
     runs-on: ubuntu-latest
 
