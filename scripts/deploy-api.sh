@@ -35,13 +35,13 @@ fi
 
 old_release=""
 if [ -L "$CURRENT_LINK" ]; then
-	old_release="$(readlink -f $CURRENT_LINK)"
+	old_release="$(readlink -f "$CURRENT_LINK")"
 fi
 
 
 # Function
 rollback() {
-	if [ -n "$old_release" ]; then
+	if [ -e "$old_release" ]; then
 		systemctl stop "$SERVICE_NAME"
 		ln -sfn "$old_release" "$CURRENT_LINK"
 		systemctl start "$SERVICE_NAME"
