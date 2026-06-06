@@ -17,6 +17,8 @@ jobs:
       - run: echo 'Yay'
 
   deploy-script:
+    name: Deploy script
+    
     if: github.event_name == 'workflow_dispatch'
 
     runs-on: ubuntu-latest
