@@ -50,4 +50,4 @@ jobs:
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
             sudo -n mkdir -p /opt/clearlist-api/scripts
-            sudo -n install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy-api.sh
+            sudo -n install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy.sh
