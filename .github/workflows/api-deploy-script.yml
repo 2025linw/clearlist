@@ -1,7 +1,9 @@
-name: Deploy API Server Script
+name: Deploy API Server Deploy Script
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/api-deploy-script.yml"
   workflow_dispatch:
 
 jobs:
