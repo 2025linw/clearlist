@@ -1,4 +1,4 @@
-import { Tag, Task } from '@/types';
+import { Tag, Task } from '@clearlist/types';
 
 export type BaseResponse = {
   message?: string;

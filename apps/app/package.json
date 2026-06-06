@@ -44,6 +44,7 @@
   "devDependencies": {
     "@clearlist/eslint-config": "workspace:*",
     "@clearlist/prettier-config": "workspace:*",
+    "@clearlist/types": "workspace:*",
     "@types/react": "~19.2.15",
     "typescript": "^6.0.3"
   }

@@ -10,13 +10,20 @@ type TypographyProps = {
   style?: StyleProp<TextStyle>;
 };
 
-export default function Typography({ children, palette = 'text', variant = 'text', ...props }: TypographyProps) {
+export default function Typography({
+  children,
+  palette = 'text',
+  variant = 'text',
+  ...props
+}: TypographyProps) {
   const { components } = useTheme();
 
   const paletteStyle = components.Typography.palette[palette];
   const variantStyle = components.Typography.variants[variant];
 
-  return <Text style={[paletteStyle, variantStyle, props.style]}>{children}</Text>;
+  return (
+    <Text style={[paletteStyle, variantStyle, props.style]}>{children}</Text>
+  );
 }
 
 export function Demo() {

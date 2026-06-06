@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { Task } from '@/types';
+import { Task } from '@clearlist/types';
 
 import { Category, getTasks } from '@/services/api';
 

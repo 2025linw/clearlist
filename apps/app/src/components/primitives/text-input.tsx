@@ -1,4 +1,9 @@
-import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp, TextStyle } from 'react-native';
+import {
+  TextInput as RNTextInput,
+  TextInputProps as RNTextInputProps,
+  StyleProp,
+  TextStyle,
+} from 'react-native';
 
 import { useTheme } from '@/context/theme';
 

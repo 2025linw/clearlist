@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 
-import { Tag } from '@/types';
+import { Tag } from '@clearlist/types';
 
 import { useTheme } from '@/context/theme';
 import { getTags } from '@/services/api';
@@ -119,7 +119,9 @@ export default function Index() {
           keyExtractor={(tag) => tag.id}
           renderItem={({ item }) => (
             <View>
-              <Typography style={{ color: theme.palette.text }}>{item.label}</Typography>
+              <Typography style={{ color: theme.palette.text }}>
+                {item.label}
+              </Typography>
             </View>
           )}
         />

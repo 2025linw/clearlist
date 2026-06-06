@@ -15,7 +15,12 @@ type LayoutProps = PropsWithChildren & {
   headerIcon?: ReactNode; // TODO: create Icon node
 };
 
-export default function Layout({ children, showBackButton = false, hasOptions = false, ...props }: LayoutProps) {
+export default function Layout({
+  children,
+  showBackButton = false,
+  hasOptions = false,
+  ...props
+}: LayoutProps) {
   const router = useRouter();
 
   const theme = useTheme();
@@ -41,7 +46,9 @@ export default function Layout({ children, showBackButton = false, hasOptions = 
             )}
           </View>
 
-          {props.headerText && <Typography variant="h1">{props.headerText}</Typography>}
+          {props.headerText && (
+            <Typography variant="h1">{props.headerText}</Typography>
+          )}
 
           <View style={styles.headerEle}>
             {hasOptions && (

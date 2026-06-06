@@ -1,5 +1,11 @@
 import { ReactNode } from 'react';
-import { StyleProp, StyleSheet, TextStyle, View, ViewStyle } from 'react-native';
+import {
+  StyleProp,
+  StyleSheet,
+  TextStyle,
+  View,
+  ViewStyle,
+} from 'react-native';
 
 import Typography from '@/components/primitives/typography';
 

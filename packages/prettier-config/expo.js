@@ -16,6 +16,7 @@ export default {
     '<BUILTIN_MODULES>',
     '<THIRD_PARTY_MODULES>',
     '^(react(.*)|@react|expo|@expo)',
+    '^@clearlist/(.*)',
     '^@/(types|constants)',
     '^@/(services|context|hooks)',
     '^@/(components|screens)',
