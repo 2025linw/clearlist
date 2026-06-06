@@ -68,7 +68,7 @@ ln -sfn "$new_release" "$CURRENT_LINK"
 
 cd "$DEPLOY_PATH"
 
-if ! node "$CURRENT_LINK/dist/app.js" migrate; then
+if ! node "$CURRENT_LINK/dist/migrate.js"; then
   echo "Migration failed" >&2
   rollback
 fi
