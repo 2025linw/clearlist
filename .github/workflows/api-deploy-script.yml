@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - ".github/workflows/api-deploy-script.yml"
+      - "scripts/deploy-api.sh"
   workflow_dispatch:
 
 jobs:
