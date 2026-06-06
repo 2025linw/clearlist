@@ -8,10 +8,10 @@ CREATE SCHEMA IF NOT EXISTS auth;
 
 -- Migration user
 CREATE ROLE cl_migrate WITH LOGIN PASSWORD 'cl_migrate' NOSUPERUSER NOCREATEDB NOCREATEROLE;
-ALTER ROLE cl_migrate SET search_path TO auth, app, public;
+ALTER ROLE cl_migrate SET search_path TO public;
 
 GRANT CONNECT ON DATABASE testdb TO cl_migrate;
-GRANT USAGE ON SCHEMA public TO cl_migrate;
+GRANT USAGE, CREATE ON SCHEMA public TO cl_migrate;
 
 GRANT USAGE, CREATE ON SCHEMA app TO cl_migrate;
 GRANT USAGE, CREATE ON SCHEMA auth TO cl_migrate;
@@ -28,7 +28,7 @@ GRANT USAGE ON SCHEMA app TO cl_ro;
 -- Create users
 CREATE ROLE cl_api WITH LOGIN PASSWORD 'cl_api';
 GRANT cl_rw TO cl_api;
-ALTER ROLE cl_api SET search_path TO app, public;
+ALTER ROLE cl_api SET search_path TO app;
 
 CREATE ROLE cl_auth WITH LOGIN PASSWORD 'cl_auth';
-ALTER ROLE cl_auth SET search_path TO auth, public;
+ALTER ROLE cl_auth SET search_path TO auth;
