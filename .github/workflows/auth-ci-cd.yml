@@ -189,7 +189,7 @@ jobs:
             rm -rf ./*
             mv /tmp/clearlist-auth/* .
 
-            node scripts/migrate.js
+            node dist/scripts/migrate.js
 
             sudo -n systemctl restart clearlist-auth.service
 
@@ -203,7 +203,7 @@ jobs:
                 ELAPSED=$((ELAPSED + INTERVAL))
                 if [ $ELAPSED -ge $MAX_WAIT ]; then
                     echo "Service failed to start after $MAX_WAIT seconds"
-                    sudo journalctl -u clearlist-auth.service -n 50 --no-pager
+                    sudo -n journalctl -u clearlist-auth.service -n 50 --no-pager
                     exit 1
                 fi
             done
