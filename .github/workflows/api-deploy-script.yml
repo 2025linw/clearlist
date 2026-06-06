@@ -1,0 +1,51 @@
+name: Deploy API Server Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  required:
+    name: CI
+
+    if: github.event_name == 'push'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo 'Yay'
+
+  deploy-script:
+    if: github.event_name == 'workflow_dispatch'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Connect to tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci-cd
+
+      - name: Upload binary
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          source: scripts/deploy-api.sh
+          strip_components: 1
+          target: /tmp/clearlist-api/
+
+      - name: Install deploy script
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          script: |
+            sudo mkdir -p /opt/clearlist-api/scripts
+            sudo install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy-api.sh
