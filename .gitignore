@@ -7,11 +7,10 @@
 *.env*
 !*.env*.template
 
-# Cargo build files
-target
+# Dependency artifacts
+node_modules/
 
-# pnpm deploy files
-deploy
-
-# Node (pnpm) dependencies
-node_modules
+# Build artifacts
+target/
+dist/
+build/

@@ -1,9 +1,5 @@
-# Dependencies
-node_modules/
-
 # Expo
 .expo/
-dist/
 web-build/
 expo-env.d.ts
 
@@ -21,12 +17,10 @@ expo-env.d.ts
 
 # Debug
 npm-debug.*
-yarn-debug.*
-yarn-error.*
 
 # typescript
 *.tsbuildinfo
 
 # Generated native folders
-/ios
-/android
+ios/
+android/
