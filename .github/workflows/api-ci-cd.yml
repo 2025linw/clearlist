@@ -109,6 +109,10 @@ jobs:
 
   build:
     name: Build
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      timestamp: ${{ steps.meta.outputs.timestamp }}
+      sha: ${{ steps.meta.outputs.sha }}
 
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -124,6 +128,16 @@ jobs:
 
       - name: Build release
         run: cargo build --release --locked -p clearlist-api
+
+      - name: Generate metadata
+        id: meta
+        run: |
+          version=$(cargo metadata --no-deps --format-version 1 \
+            | jq -r '.packages[] | select(.name == "clearlist-api") | .version')
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -145,6 +159,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: clearlist-api
+          path: artifact/
 
       - name: Connect to tailscale
         uses: tailscale/github-action@v4
@@ -159,7 +174,8 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: clearlist-api
+          source: artifact/clearlist-api
+          strip_components: 1
           target: /tmp/clearlist-api/
 
       - name: Deploy server
@@ -171,27 +187,4 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd ${{ secrets.API_DEPLOY_PATH }}
-            cp /tmp/clearlist-api/clearlist-api .
-            chmod +x clearlist-api
-
-            ./clearlist-api migrate
-
-            sudo -n systemctl restart clearlist-api.service
-
-            MAX_WAIT=10
-            INTERVAL=2
-
-            # Retry until active or timeout
-            ELAPSED=0
-            while ! systemctl is-active --quiet clearlist-api.service; do
-                sleep $INTERVAL
-                ELAPSED=$((ELAPSED + INTERVAL))
-                if [ $ELAPSED -ge $MAX_WAIT ]; then
-                    echo "Service failed to start after $MAX_WAIT seconds"
-                    sudo journalctl -u clearlist-api.service -n 50 --no-pager
-                    exit 1
-                fi
-            done
-
-            rm -rf /tmp/clearlist-api/*
+            sudo -n ${{ secrets.API_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.sha }}
