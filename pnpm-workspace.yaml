@@ -2,6 +2,7 @@ packages:
   - 'apps/auth'
   - 'apps/app'
   - 'packages/*'
+engineStrict: true
 injectWorkspacePackages: true
 allowBuilds:
   msgpackr-extract: true
