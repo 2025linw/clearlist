@@ -2,6 +2,8 @@ name: Deploy Auth Server Deploy Script
 
 on:
   pull_request:
+    paths:
+      - ".github/workflows/auth-deploy-script.yml"
   workflow_dispatch:
 
 jobs:
