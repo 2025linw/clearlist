@@ -112,6 +112,10 @@ jobs:
 
   build:
     name: Build
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      timestamp: ${{ steps.meta.outputs.timestamp }}
+      sha: ${{ steps.meta.outputs.sha }}
 
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -137,6 +141,15 @@ jobs:
       - name: Build deployment
         run: pnpm auth:build
 
+      - name: Generate metadata
+        id: meta
+        run: |
+          version=$(pnpm --filter @clearlist/auth exec node -p "require('./package.json').version")
+
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
       - name: Archive deployment
         run: tar -czf clearlist-auth.tar.gz -C build/auth .
 
@@ -161,6 +174,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: clearlist-auth
+          path: artifact/
 
       - name: Connect to tailscale
         uses: tailscale/github-action@v4
@@ -175,8 +189,9 @@ jobs:
           host: ${{ secrets.DEPLOY_HOST }}
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
-          source: clearlist-auth.tar.gz
-          target: /tmp/
+          source: artifact/clearlist-auth.tar.gz
+          strip_components: 1
+          target: /tmp/clearlist-auth/
 
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.0
@@ -185,31 +200,4 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           script: |
-            set -euo pipefail
-
-            tar -xzf /tmp/clearlist-auth.tar.gz -C /tmp/clearlist-auth
-
-            cd ${{ secrets.AUTH_DEPLOY_PATH }}
-            rm -rf ./*
-            cp -a /tmp/clearlist-auth/. .
-
-            node dist/scripts/migrate.js
-
-            sudo -n systemctl restart clearlist-auth.service
-
-            MAX_WAIT=10
-            INTERVAL=2
-
-            # Retry until active or timeout
-            ELAPSED=0
-            while ! systemctl is-active --quiet clearlist-auth.service; do
-                sleep $INTERVAL
-                ELAPSED=$((ELAPSED + INTERVAL))
-                if [ $ELAPSED -ge $MAX_WAIT ]; then
-                    echo "Service failed to start after $MAX_WAIT seconds"
-                    sudo -n journalctl -u clearlist-auth.service -n 50 --no-pager
-                    exit 1
-                fi
-            done
-
-            rm -rf /tmp/clearlist-auth.tar.gz /tmp/clearlist-auth/*
+            sudo -n ${{ secrets.AUTH_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.timestamp }} ${{ needs.build.outputs.sha }}
