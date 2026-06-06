@@ -348,7 +348,7 @@ dependencies = [
 
 [[package]]
 name = "clearlist-dev-proxy"
-version = "0.0.1"
+version = "0.0.0"
 dependencies = [
  "axum",
  "axum-reverse-proxy",
