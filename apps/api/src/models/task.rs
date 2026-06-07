@@ -14,8 +14,8 @@ use super::{helper::Start, tag::Model as TagModel};
 /// This is the ground truth model for tasks; it exactly matches database schema
 #[allow(dead_code)]
 #[derive(Debug, FromRow, TS)]
-#[ts(export, rename = "Task")]
 #[cfg_attr(test, derive(Clone, PartialEq))]
+#[ts(export, rename = "Task")]
 pub struct Model {
     pub id: uuid::Uuid,
 
