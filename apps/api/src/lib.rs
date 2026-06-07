@@ -8,6 +8,7 @@ mod response;
 
 mod db;
 mod routes;
+mod service;
 
 use std::env;
 
@@ -16,7 +17,7 @@ pub use db::{DatabaseConn, run_migration};
 use axum::Router;
 use reqwest::Url;
 
-use crate::routes::missing_404_handler;
+use crate::{db::user::PgUserRepository, routes::missing_404_handler, service::user::UserService};
 
 #[derive(Clone)]
 pub struct Config {
@@ -46,12 +47,15 @@ impl Config {
 pub struct AppState {
     config: Config,
     db: DatabaseConn,
+    user_service: UserService<PgUserRepository>,
 }
 
 impl AppState {
     /// Initialize an AppState with a database connection given by DatabaseConn
     pub fn init(conn: DatabaseConn, config: Config) -> Self {
-        Self { config, db: conn }
+        let user_service = UserService::new(PgUserRepository::new(conn.pool().clone()));
+
+        Self { config, db: conn, user_service }
     }
 }
 

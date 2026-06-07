@@ -8,7 +8,7 @@ use ts_rs::TS;
 ///
 /// This will serialize and deserialize to and from a 'YYYY-MM-DD` date string or ISO8601 datetime string
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize, TS)]
-#[serde(untagged)]
+#[serde(tag = "type", content = "value")]
 #[ts(export)]
 pub enum Start {
     On(chrono::NaiveDate),

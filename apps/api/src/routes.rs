@@ -15,15 +15,12 @@ pub use error::Error;
 use std::sync::Arc;
 
 use axum::{
-    Router,
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{get, patch},
+    Router, extract::State, http::StatusCode, response::IntoResponse, routing::{get, patch}
 };
 use serde_json::json;
 use tower_governor::GovernorLayer;
 
-use crate::{AppState, response::Response};
+use crate::{AppState, models::user::Model as UserModel, response::{Response, UserResponse}, routes::util::UserSession, service::user::UserServiceTrait};
 
 /// Create API router for all resources
 ///
@@ -64,6 +61,7 @@ pub fn create_api_router() -> Router<AppState> {
 
     Router::new()
         .route("/health", get(health_check_handler))
+        .route("/me", get(me))
         .nest("/tasks", task_routes)
         .nest("/tags", tag_routes)
         .layer(GovernorLayer {
@@ -87,4 +85,27 @@ pub async fn health_check_handler() -> impl IntoResponse {
 /// Responds with Not Found (404)
 pub async fn missing_404_handler() -> impl IntoResponse {
     Response::new(StatusCode::NOT_FOUND).message("Endpoint not found")
+}
+
+pub async fn me(
+    user_session: UserSession,
+    State(data): State<AppState>,
+) -> Result<Response, Error>  {
+    let auth_user = user_session.user;
+
+    let user = data.user_service.clone().get(auth_user.id).await?;
+
+    let user = if let Some(user) = user { // existing user without app.users row
+        user
+    } else { // new user
+        let user = UserModel {
+            id: auth_user.id,
+            display_name: auth_user.name,
+            created_at: auth_user.created_at,
+        };
+
+        data.user_service.create(user).await?
+    };
+
+    Ok(Response::new(StatusCode::OK).data(json!(UserResponse::from(user))))
 }

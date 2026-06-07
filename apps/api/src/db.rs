@@ -5,6 +5,7 @@
 pub mod filters;
 pub mod tag;
 pub mod task;
+pub mod user;
 
 mod error;
 mod utils;

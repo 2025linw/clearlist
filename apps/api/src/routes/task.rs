@@ -66,7 +66,7 @@ pub async fn query_handler(
         deadline_filter,
     };
 
-    let tasks = query_tasks(data.db.pool(), session.user_id(), Some(opts))
+    let tasks = query_tasks(data.db.pool(), session.user_id, Some(opts))
         .await
         .map_err(Error::from)?;
 
@@ -82,7 +82,7 @@ pub async fn create_handler(
     State(data): State<AppState>,
     Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
-    let task = insert_task(data.db.pool(), session.user_id(), body)
+    let task = insert_task(data.db.pool(), session.user_id, body)
         .await
         .map_err(Error::from)?;
 
@@ -95,7 +95,7 @@ pub async fn retrieve_handler(
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    if let Some(task) = select_task(data.db.pool(), task_id, session.user_id())
+    if let Some(task) = select_task(data.db.pool(), task_id, session.user_id)
         .await
         .map_err(Error::from)?
     {
@@ -112,7 +112,7 @@ pub async fn update_handler(
     Path(task_id): Path<Uuid>,
     Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
-    let task = update_task(data.db.pool(), task_id, session.user_id(), body)
+    let task = update_task(data.db.pool(), task_id, session.user_id, body)
         .await
         .map_err(Error::from)?;
 
@@ -125,7 +125,7 @@ pub async fn delete_handler(
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    if let Err(err) = delete_task(data.db.pool(), task_id, session.user_id())
+    if let Err(err) = delete_task(data.db.pool(), task_id, session.user_id)
         .await
         .map_err(Error::from)
     {
@@ -145,7 +145,7 @@ pub async fn restore_handler(
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    restore_task(data.db.pool(), task_id, session.user_id())
+    restore_task(data.db.pool(), task_id, session.user_id)
         .await
         .map_err(Error::from)?;
 
@@ -159,7 +159,7 @@ pub async fn complete_handler(
     Path(task_id): Path<Uuid>,
     Json(Completed { completed }): Json<Completed>,
 ) -> Result<Response, Error> {
-    complete_task(data.db.pool(), task_id, session.user_id(), completed)
+    complete_task(data.db.pool(), task_id, session.user_id, completed)
         .await
         .map_err(Error::from)?;
 

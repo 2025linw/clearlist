@@ -39,7 +39,7 @@ pub async fn query_handler(
         offset,
     };
 
-    let tags = query_tags(data.db.pool(), session.user_id(), opts)
+    let tags = query_tags(data.db.pool(), session.user_id, opts)
         .await
         .map_err(Error::from)?;
 
@@ -55,7 +55,7 @@ pub async fn create_handler(
     State(data): State<AppState>,
     Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
-    let tag = insert_tag(data.db.pool(), session.user_id(), body)
+    let tag = insert_tag(data.db.pool(), session.user_id, body)
         .await
         .map_err(Error::from)?;
 
@@ -68,7 +68,7 @@ pub async fn retrieve_handler(
     State(data): State<AppState>,
     Path(tag_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    if let Some(tag) = select_tag(data.db.pool(), tag_id, session.user_id())
+    if let Some(tag) = select_tag(data.db.pool(), tag_id, session.user_id)
         .await
         .map_err(Error::from)?
     {
@@ -85,7 +85,7 @@ pub async fn update_handler(
     Path(tag_id): Path<Uuid>,
     Json(body): Json<DtoModel>,
 ) -> Result<Response, Error> {
-    let tag = update_tag(data.db.pool(), tag_id, session.user_id(), body)
+    let tag = update_tag(data.db.pool(), tag_id, session.user_id, body)
         .await
         .map_err(Error::from)?;
 
@@ -98,7 +98,7 @@ pub async fn delete_handler(
     State(data): State<AppState>,
     Path(tag_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    if let Err(err) = delete_tag(data.db.pool(), tag_id, session.user_id())
+    if let Err(err) = delete_tag(data.db.pool(), tag_id, session.user_id)
         .await
         .map_err(Error::from)
     {

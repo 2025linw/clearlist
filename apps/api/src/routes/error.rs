@@ -13,6 +13,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde_json::json;
 
 use crate::db::{ApplicationError, Error as DbError};
+use crate::service::Error as ServiceError;
 
 /// Unified error type returned by API handlers
 ///
@@ -28,6 +29,18 @@ pub enum Error {
     NotFound(String),
     InvalidRequest(String),
     InternalServer(String),
+}
+
+// WARN: This is temporary
+impl From<Error> for StatusCode {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::NotAuthorized => Self::UNAUTHORIZED,
+            Error::NotFound(_) => Self::NOT_FOUND,
+            Error::InvalidRequest(_) => Self::BAD_REQUEST,
+            Error::InternalServer(_) => Self::INTERNAL_SERVER_ERROR,
+        }
+    }
 }
 
 impl Display for Error {
@@ -57,6 +70,12 @@ impl From<DbError> for Error {
             },
             err => Self::InternalServer(err.to_string()),
         }
+    }
+}
+
+impl From<ServiceError> for Error {
+    fn from(value: ServiceError) -> Self {
+        Self::InternalServer(value.to_string())
     }
 }
 

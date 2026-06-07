@@ -19,7 +19,7 @@ pub async fn query_handler(
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
 ) -> Result<Response, Error> {
-    let tags = tag::query_task_tags(data.db.pool(), task_id, session.user_id())
+    let tags = tag::query_task_tags(data.db.pool(), task_id, session.user_id)
         .await
         .map_err(Error::from)?;
 
@@ -36,7 +36,7 @@ pub async fn append_handler(
     Path(task_id): Path<Uuid>,
     Json(tag_ids): Json<Vec<Uuid>>,
 ) -> Result<Response, Error> {
-    tag::insert_task_tags(data.db.pool(), task_id, session.user_id(), tag_ids)
+    tag::insert_task_tags(data.db.pool(), task_id, session.user_id, tag_ids)
         .await
         .map_err(Error::from)?;
 
@@ -50,7 +50,7 @@ pub async fn update_handler(
     Path(task_id): Path<Uuid>,
     Json(tag_ids): Json<Vec<Uuid>>,
 ) -> Result<Response, Error> {
-    tag::update_task_tags(data.db.pool(), task_id, session.user_id(), tag_ids)
+    tag::update_task_tags(data.db.pool(), task_id, session.user_id, tag_ids)
         .await
         .map_err(Error::from)?;
 
@@ -63,7 +63,7 @@ pub async fn delete_handler(
     State(data): State<AppState>,
     Path((task_id, tag_id)): Path<(Uuid, Uuid)>,
 ) -> Result<Response, Error> {
-    tag::delete_task_tag(data.db.pool(), task_id, session.user_id(), tag_id)
+    tag::delete_task_tag(data.db.pool(), task_id, session.user_id, tag_id)
         .await
         .map_err(Error::from)?;
 
