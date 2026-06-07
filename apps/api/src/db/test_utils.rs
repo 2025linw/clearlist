@@ -35,11 +35,10 @@ pub async fn db_init() -> (
 
             // add dummy user
             sqlx::query(
-                "INSERT INTO app.users (id, auth_user_id, display_name)
-                VALUES ($1, $2, $3)
+                "INSERT INTO app.users (id, display_name)
+                VALUES ($1, $2)
                 ON CONFLICT (\"id\") DO NOTHING;",
             )
-            .bind(Uuid::nil())
             .bind(Uuid::nil())
             .bind("testuser")
             .execute(&mut conn)
