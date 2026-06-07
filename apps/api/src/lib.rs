@@ -9,24 +9,49 @@ mod response;
 mod db;
 mod routes;
 
+use std::env;
+
 pub use db::{DatabaseConn, run_migration};
 
 use axum::Router;
+use reqwest::Url;
 
 use crate::routes::missing_404_handler;
+
+#[derive(Clone)]
+pub struct Config {
+    cookie_key: String,
+    auth_server_url: Url,
+}
+
+impl Config {
+    pub fn from_env() -> Self {
+        let cookie_key = env::var("COOKIE_KEY").unwrap_or("better-auth.session_token".to_string());
+        let auth_server_url = Url::parse(
+            &env::var("AUTH_SERVER_URL").expect("AUTH_SERVER_URL must be in environment variables"),
+        )
+        .expect("AUTH_SERVER_URL should be a valid URL format");
+
+        Self {
+            cookie_key,
+            auth_server_url,
+        }
+    }
+}
 
 /// App State Type
 ///
 /// `AppState` is used for reused resources throughout web server (such as database connections, etc)
 #[derive(Clone)]
 pub struct AppState {
+    config: Config,
     db: DatabaseConn,
 }
 
 impl AppState {
     /// Initialize an AppState with a database connection given by DatabaseConn
-    pub fn init(conn: DatabaseConn) -> Self {
-        Self { db: conn }
+    pub fn init(conn: DatabaseConn, config: Config) -> Self {
+        Self { config, db: conn }
     }
 }
 
