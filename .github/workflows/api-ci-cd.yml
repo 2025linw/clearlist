@@ -66,6 +66,7 @@ jobs:
           PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
         run: |
           psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
           cargo run -p clearlist-api migrate
