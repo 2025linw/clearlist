@@ -46,38 +46,12 @@ pub fn create_rate_limiter(
 /// Used to extract session from authentication server response
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct SessionWrapper {
-    // user: User, # use this only when needed
-    session: Session,
+pub struct UserSession {
+    pub user: User,
+    pub session: Session,
 }
 
-/// Session Type
-///
-/// Used for routes that require authorization
-///
-/// Implements FromRequestParts to allow for use as extractor in handlers
-#[allow(dead_code)]
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Session {
-    id: Uuid,
-    token: String,
-    user_id: Uuid,
-    user_agent: Option<String>,
-    ip_address: Option<String>,
-    expires_at: DateTime<Utc>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-}
-
-impl Session {
-    /// Gets user_id from session
-    pub fn user_id(&self) -> Uuid {
-        self.user_id
-    }
-}
-
-impl FromRequestParts<AppState> for Session {
+impl FromRequestParts<AppState> for UserSession {
     type Rejection = Error;
 
     async fn from_request_parts(
@@ -114,13 +88,67 @@ impl FromRequestParts<AppState> for Session {
             ));
         }
 
-        let session_wrapper = res.json::<SessionWrapper>().await.map_err(|_| {
+        let user_session = res.json::<UserSession>().await.map_err(|_| {
             Error::InternalServer("Invalid session format received from auth server".to_string())
         })?;
 
-        Ok(session_wrapper.session)
+        Ok(user_session)
     }
 }
+
+/// User Type
+///
+/// User for routes that require authorization
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct User {
+    pub id: Uuid,
+    pub name: String,
+    pub email: String,
+    pub email_verified: bool,
+    pub image: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// Session Type
+///
+/// Used for routes that require authorization
+///
+/// Implements FromRequestParts to allow for use as extractor in handlers
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Session {
+    pub id: Uuid,
+    pub token: String,
+    pub user_id: Uuid,
+    pub user_agent: Option<String>,
+    pub ip_address: Option<String>,
+    pub expires_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl FromRequestParts<AppState> for Session {
+    type Rejection = (StatusCode, &'static str);
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &AppState,
+    ) -> Result<Self, Self::Rejection> {
+        match UserSession::from_request_parts(parts, state).await {
+            Ok(session) => Ok(session.session),
+            Err(err) => {
+                let status_code: StatusCode = err.into();
+
+                Err((status_code, "This should be fixed"))
+            },
+        }
+    }
+}
+
 
 /// Optional Session Type
 ///
@@ -136,8 +164,8 @@ impl FromRequestParts<AppState> for OptionalSession {
         parts: &mut axum::http::request::Parts,
         state: &AppState,
     ) -> Result<Self, Self::Rejection> {
-        match Session::from_request_parts(parts, state).await {
-            Ok(session) => Ok(Some(session)),
+        match UserSession::from_request_parts(parts, state).await {
+            Ok(session) => Ok(Some(session.session)),
             Err(_) => Ok(None),
         }
     }

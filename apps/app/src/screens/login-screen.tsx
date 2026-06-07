@@ -110,7 +110,7 @@ export default function LoginScreen(props: Props) {
           </View>
 
           <View style={styles.msgBox}>
-            <Typography>{errorText}</Typography>
+            <Typography palette="danger">{errorText}</Typography>
           </View>
         </View>
       </View>

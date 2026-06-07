@@ -7,7 +7,9 @@ use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Map, Value};
 
-use crate::models::{helper::Start, tag::Model as TagModel, task::Model as TaskModel};
+use crate::models::{
+    helper::Start, tag::Model as TagModel, task::Model as TaskModel, user::Model as UserModel,
+};
 
 /// Response type representing a JSON response
 ///
@@ -152,6 +154,31 @@ impl From<TagModel> for TagResponse {
             category: value.category,
             created_at: value.created_at,
             updated_at: value.updated_at,
+        }
+    }
+}
+
+/// Response type for User
+///
+/// DTO model for User
+///
+/// This model is returned back to the user in response to `/api/me`
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserResponse {
+    pub id: uuid::Uuid,
+
+    pub display_name: String,
+
+    pub created_at: chrono::DateTime<Utc>,
+}
+
+impl From<UserModel> for UserResponse {
+    fn from(value: UserModel) -> Self {
+        Self {
+            id: value.id,
+            display_name: value.display_name,
+            created_at: value.created_at,
         }
     }
 }
