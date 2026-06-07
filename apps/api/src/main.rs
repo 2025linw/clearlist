@@ -8,7 +8,7 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 
-use clearlist_api::{AppState, DatabaseConn, create_app, run_migration};
+use clearlist_api::{AppState, Config, DatabaseConn, create_app, run_migration};
 
 // TODO: add anyhow
 
@@ -80,6 +80,8 @@ async fn main() {
     let srv_port =
         env::var("SRV_PORT").expect("SRV_PORT existence should have already been checked");
 
+    let config = Config::from_env();
+
     // Setup Database Connection Pool
     debug!("Setting up database connection");
     let db_conn = if let Ok(conn) = DatabaseConn::connect_env().await {
@@ -97,7 +99,7 @@ async fn main() {
     }
 
     // Setup app state
-    let app_state = AppState::init(db_conn);
+    let app_state = AppState::init(db_conn, config);
 
     // Setup route logging
     let trace_layer = TraceLayer::new_for_http()

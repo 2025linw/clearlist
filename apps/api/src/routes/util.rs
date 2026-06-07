@@ -2,8 +2,6 @@
 //!
 //! This module contains utilities used in routes, such as session extractors and rate limiters
 
-use std::{env, sync::LazyLock};
-
 use axum::{
     extract::{
         FromRequest, FromRequestParts, Request,
@@ -14,8 +12,9 @@ use axum::{
 use axum_extra::extract::CookieJar;
 use chrono::{DateTime, Utc};
 use governor::{clock::QuantaInstant, middleware::NoOpMiddleware};
+use reqwest::header::COOKIE;
+use serde::Deserialize;
 use serde_qs::axum::QsQueryRejection;
-use sqlx::{FromRow, Postgres};
 use tower_governor::{
     governor::{GovernorConfig, GovernorConfigBuilder},
     key_extractor::SmartIpKeyExtractor,
@@ -23,10 +22,6 @@ use tower_governor::{
 use uuid::Uuid;
 
 use crate::{AppState, routes::Error};
-
-/// Key for cookie holding authorization session token
-static COOKIE_KEY: LazyLock<String> =
-    LazyLock::new(|| env::var("COOKIE_KEY").unwrap_or("better-auth.session_token".to_string()));
 
 /// Creates a rate limiter
 ///
@@ -46,23 +41,33 @@ pub fn create_rate_limiter(
         .unwrap()
 }
 
+/// Session Wrapper Type
+///
+/// Used to extract session from authentication server response
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SessionWrapper {
+    // user: User, # use this only when needed
+    session: Session,
+}
+
 /// Session Type
 ///
 /// Used for routes that require authorization
 ///
 /// Implements FromRequestParts to allow for use as extractor in handlers
 #[allow(dead_code)]
-#[derive(Debug, FromRow)]
-#[sqlx(rename_all = "camelCase")]
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Session {
     id: Uuid,
     token: String,
     user_id: Uuid,
     user_agent: Option<String>,
     ip_address: Option<String>,
+    expires_at: DateTime<Utc>,
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
-    expires_at: DateTime<Utc>,
 }
 
 impl Session {
@@ -82,32 +87,38 @@ impl FromRequestParts<AppState> for Session {
         let cookies = CookieJar::from_headers(&parts.headers);
 
         let session_id = cookies
-            .get(&COOKIE_KEY)
-            .ok_or(Error::NotAuthorized)?
-            .value_trimmed()
-            .split('.')
-            .next()
-            .ok_or(Error::InvalidRequest(
-                "unexpected session id found".to_string(),
-            ))?;
+            .get(&state.config.cookie_key)
+            .ok_or(Error::NotAuthorized)?;
 
-        let conn = state.db.pool();
-        let session: Session = match sqlx::query_as::<Postgres, Session>(
-            "SELECT * FROM auth.session WHERE token = $1",
-        )
-        .bind(session_id)
-        .fetch_one(&conn)
-        .await
-        {
-            Err(_) => return Err(Error::NotAuthorized),
-            Ok(session) => session,
-        };
+        let auth_req = reqwest::Client::new()
+            .get(
+                state
+                    .config
+                    .auth_server_url
+                    .clone()
+                    .join("/api/auth/get-session")
+                    .expect("This should be a valid URL"),
+            )
+            .header(COOKIE, session_id.to_string());
 
-        if session.expires_at < Utc::now() {
+        let res = auth_req
+            .send()
+            .await
+            .map_err(|_| Error::InternalServer("Unable to check session".to_string()))?;
+
+        if res.status() == StatusCode::UNAUTHORIZED {
             return Err(Error::NotAuthorized);
+        } else if !res.status().is_success() {
+            return Err(Error::InternalServer(
+                "Unknown response from auth server".to_string(),
+            ));
         }
 
-        Ok(session)
+        let session_wrapper = res.json::<SessionWrapper>().await.map_err(|_| {
+            Error::InternalServer("Invalid session format received from auth server".to_string())
+        })?;
+
+        Ok(session_wrapper.session)
     }
 }
 
