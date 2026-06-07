@@ -68,7 +68,7 @@ jobs:
           PGPASSWORD: test
         run: |
           psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
-          cargo run migrate
+          cargo run -p clearlist-api migrate
 
       - name: Run test
         env:
