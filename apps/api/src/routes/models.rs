@@ -7,4 +7,4 @@ pub mod task;
 
 mod query;
 
-pub use query::{BracketInterval, Completed, DateFilter, Pagination, SortOrder};
+pub use query::{BracketInterval, DateFilter, Pagination, SortOrder};

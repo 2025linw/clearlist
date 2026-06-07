@@ -15,7 +15,7 @@ pub use error::Error;
 use std::sync::Arc;
 
 use axum::{
-    Router, extract::State, http::StatusCode, response::IntoResponse, routing::{get, patch}
+    Router, extract::State, http::StatusCode, response::IntoResponse, routing::{get, post}
 };
 use serde_json::json;
 use tower_governor::GovernorLayer;
@@ -35,8 +35,9 @@ pub fn create_api_router() -> Router<AppState> {
                 .put(task::update_handler)
                 .delete(task::delete_handler),
         )
-        .route("/{task_id}/restore", patch(task::restore_handler))
-        .route("/{task_id}/complete", patch(task::complete_handler))
+        .route("/{task_id}/restore", post(task::restore_handler))
+        .route("/{task_id}/complete", post(task::complete_handler))
+        .route("/{task_id}/reopen", post(task::reopen_handler))
         .nest(
             "/{task_id}/tags",
             Router::new()
@@ -46,7 +47,7 @@ pub fn create_api_router() -> Router<AppState> {
                 )
                 .route(
                     "/{tag_id}",
-                    patch(task::tag::append_handler).delete(task::tag::delete_handler),
+                    post(task::tag::append_handler).delete(task::tag::delete_handler),
                 ),
         );
 

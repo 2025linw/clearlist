@@ -85,14 +85,6 @@ pub enum SortOrder {
     Descending,
 }
 
-/// Completed Body Type
-///
-/// This represents the body format for task complete route
-#[derive(Debug, Deserialize)]
-pub struct Completed {
-    pub completed: bool,
-}
-
 /// Internel serde helper to deserialize iso8601 date ranges
 ///
 /// Deserialize '<start>/<end>` into `[NaiveDate, NaiveDate]`

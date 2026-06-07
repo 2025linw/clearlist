@@ -10,7 +10,7 @@ use uuid::Uuid;
 
 use super::{
     Error,
-    models::{Completed, Pagination, task::Filter},
+    models::{Pagination, task::Filter},
     util::{Json, Path, Query, Session},
 };
 use crate::{
@@ -157,9 +157,21 @@ pub async fn complete_handler(
     session: Session,
     State(data): State<AppState>,
     Path(task_id): Path<Uuid>,
-    Json(Completed { completed }): Json<Completed>,
 ) -> Result<Response, Error> {
-    complete_task(data.db.pool(), task_id, session.user_id, completed)
+    complete_task(data.db.pool(), task_id, session.user_id, true)
+        .await
+        .map_err(Error::from)?;
+
+    Ok(Response::new(StatusCode::NO_CONTENT))
+}
+
+/// Task Reopen Handler
+pub async fn reopen_handler(
+    session: Session,
+    State(data): State<AppState>,
+    Path(task_id): Path<Uuid>,
+) -> Result<Response, Error> {
+    complete_task(data.db.pool(), task_id, session.user_id, false)
         .await
         .map_err(Error::from)?;
 
