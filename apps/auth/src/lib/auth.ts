@@ -28,7 +28,7 @@ export const auth = betterAuth({
     },
 
     database: {
-      generateId: 'uuid',
+      generateId: () => crypto.randomUUID(),
     },
   },
 });
