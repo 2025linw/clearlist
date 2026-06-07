@@ -11,9 +11,8 @@ use ts_rs::TS;
 ///
 /// This is the ground truth model for tag; it exactly matches database schema
 #[allow(dead_code)]
-#[derive(Debug, FromRow, TS)]
+#[derive(Debug, FromRow)]
 #[cfg_attr(test, derive(Clone, PartialEq))]
-#[ts(export, rename = "Tag")]
 pub struct Model {
     pub id: uuid::Uuid,
 

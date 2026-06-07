@@ -6,6 +6,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use chrono::Utc;
 use serde::Serialize;
 use serde_json::{Map, Value};
+use ts_rs::TS;
 
 use crate::models::{
     helper::Start, tag::Model as TagModel, task::Model as TaskModel, user::Model as UserModel,
@@ -84,8 +85,9 @@ impl IntoResponse for Response {
 /// DTO model for Task
 ///
 /// This model is returned back to the user in responses that contain task(s)
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, rename = "Task")]
 pub struct TaskResponse {
     pub id: uuid::Uuid,
 
@@ -134,8 +136,9 @@ impl From<TaskModel> for TaskResponse {
 /// DTO model for Tag
 ///
 /// This model is returned back to the user in responses that contain tag(s)
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, rename = "Tag")]
 pub struct TagResponse {
     pub id: uuid::Uuid,
 
@@ -163,8 +166,9 @@ impl From<TagModel> for TagResponse {
 /// DTO model for User
 ///
 /// This model is returned back to the user in response to `/api/me`
-#[derive(Serialize)]
+#[derive(Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, rename = "User")]
 pub struct UserResponse {
     pub id: uuid::Uuid,
 

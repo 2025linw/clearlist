@@ -1,9 +1,7 @@
 use chrono::Utc;
 use sqlx::prelude::FromRow;
-use ts_rs::TS;
 
-#[derive(Debug, FromRow, TS)]
-#[ts(export, rename = "Task")]
+#[derive(Debug, FromRow)]
 pub struct Model {
     pub id: uuid::Uuid,
 
