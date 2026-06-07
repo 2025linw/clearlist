@@ -60,7 +60,7 @@ jobs:
       - name: Run clippy
         run: cargo clippy -p clearlist-api -- -D warnings
 
-      - name: Bootstrap database
+      - name: Bootstrap and run database migration
         env:
           PGHOST: localhost
           PGDATABASE: testdb
@@ -68,6 +68,7 @@ jobs:
           PGPASSWORD: test
         run: |
           psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
+          cargo run migrate
 
       - name: Run test
         env:

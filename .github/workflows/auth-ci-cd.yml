@@ -66,7 +66,7 @@ jobs:
       - name: Run lint
         run: pnpm auth:lint
 
-      - name: Bootstrap database
+      - name: Bootstrap and run database migration
         env:
           PGHOST: localhost
           PGDATABASE: testdb
@@ -74,6 +74,7 @@ jobs:
           PGPASSWORD: test
         run: |
           psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
+          pnpm auth:migrate
 
       - name: Run test
         run: pnpm auth:test
