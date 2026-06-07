@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { useSessionApi } from '@/context/auth';
+import { useSession, useSessionApi } from '@/context/auth';
 import { useThemeMode } from '@/context/theme';
 
 import FormField from '@/components/forms/form-field';
@@ -9,17 +9,13 @@ import Layout from '@/components/layout';
 import Button from '@/components/primitives/button';
 import Typography from '@/components/primitives/typography';
 
-import { authClient } from '@/lib/auth-client';
-
 export default function Index() {
   const router = useRouter();
   const { logout } = useSessionApi();
-
+  const { hasSession } = useSession();
   const [themeMode, setThemeMode] = useThemeMode();
 
-  const { data, isPending } = authClient.useSession();
-
-  return !isPending && data ? (
+  return hasSession ? (
     <Layout
       headerText={'Settings'}
       showBackButton={true}
