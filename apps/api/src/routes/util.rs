@@ -78,7 +78,7 @@ impl FromRequestParts<AppState> for UserSession {
         let res = auth_req
             .send()
             .await
-            .map_err(|_| Error::InternalServer("Unable to check session".to_string()))?;
+            .map_err(|err| Error::InternalServer(format!("Unable to check session: {}", err)))?;
 
         if res.status() == StatusCode::UNAUTHORIZED {
             return Err(Error::NotAuthorized);

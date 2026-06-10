@@ -1,9 +1,8 @@
 import 'dotenv/config';
 
-export const trustedOrigins = [
-  'https://todo.localhost:8443',
-  'https://todo.saphynet.io',
-  'clearlist://',
-];
+export const trustedOrigins =
+  process.env['NODE_ENV'] === 'development'
+    ? ['https://todo.localhost:8081', 'clearlist://']
+    : ['https://todo.saphynet.io', 'clearlist://'];
 
 export const port = process.env['SRV_PORT'];

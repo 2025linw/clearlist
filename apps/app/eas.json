@@ -6,20 +6,27 @@
   "build": {
     "base": {
       "node": "24.16.0",
-      "pnpm": "11.3.0",
+      "pnpm": "11.3.0"
     },
     "development": {
       "extends": "base",
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {}
     },
     "preview": {
       "extends": "base",
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "API_URL": "https://todo.saphynet.io/api"
+      }
     },
     "production": {
       "extends": "base",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "API_URL": "https://todo.saphynet.io/api"
+      }
     }
   },
   "submit": {

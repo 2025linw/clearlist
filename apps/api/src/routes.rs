@@ -15,12 +15,22 @@ pub use error::Error;
 use std::sync::Arc;
 
 use axum::{
-    Router, extract::State, http::StatusCode, response::IntoResponse, routing::{get, post}
+    Router,
+    extract::State,
+    http::StatusCode,
+    response::IntoResponse,
+    routing::{get, post},
 };
 use serde_json::json;
 use tower_governor::GovernorLayer;
 
-use crate::{AppState, models::user::Model as UserModel, response::{Response, UserResponse}, routes::util::UserSession, service::user::UserServiceTrait};
+use crate::{
+    AppState,
+    models::user::Model as UserModel,
+    response::{Response, UserResponse},
+    routes::util::UserSession,
+    service::user::UserServiceTrait,
+};
 
 /// Create API router for all resources
 ///
@@ -91,14 +101,16 @@ pub async fn missing_404_handler() -> impl IntoResponse {
 pub async fn me(
     user_session: UserSession,
     State(data): State<AppState>,
-) -> Result<Response, Error>  {
+) -> Result<Response, Error> {
     let auth_user = user_session.user;
 
     let user = data.user_service.clone().get(auth_user.id).await?;
 
-    let user = if let Some(user) = user { // existing user without app.users row
+    let user = if let Some(user) = user {
+        // existing user without app.users row
         user
-    } else { // new user
+    } else {
+        // new user
         let user = UserModel {
             id: auth_user.id,
             display_name: auth_user.name,
