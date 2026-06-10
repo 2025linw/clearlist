@@ -1,21 +1,34 @@
-import { Tag, Task } from '@clearlist/types';
+export enum Cmp {
+  Equal = '=',
+  NotEqual = '!=',
+  Less = '<',
+  LessEq = '<=',
+  Greater = '>',
+  GreaterEq = '>=',
+}
 
-export type BaseResponse = {
-  message?: string;
+export type DateQuery =
+  | { type: 'ex'; state: boolean }
+  | { type: 'eq'; date: Date }
+  | {
+      type: 'cmp';
+      date: Date;
+      cmp: Cmp;
+    };
+
+export type TaskQuery = {
+  startDate?: DateQuery;
+  deadline?: DateQuery;
+
+  completed?: boolean;
+  deleted?: boolean;
 };
 
-export type TaskResponse = {
-  message?: string;
-  data: {
-    count: number;
-    tasks: Task[];
-  };
-};
-
-export type TagResponse = {
-  message?: string;
-  data: {
-    count: number;
-    tags: Tag[];
-  };
-};
+export enum Category {
+  Inbox,
+  Today,
+  Upcoming,
+  Deadline,
+  Logged,
+  Trash,
+}

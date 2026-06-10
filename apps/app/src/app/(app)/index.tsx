@@ -1,12 +1,11 @@
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
-import { Tag } from '@clearlist/types';
+// import { Tag } from '@clearlist/types';
 
+// import { useNotificationContext } from '@/context/error';
 import { useTheme } from '@/context/theme';
-import { getTags } from '@/services/api';
 
 import Layout from '@/components/layout';
 import Button from '@/components/primitives/button';
@@ -15,16 +14,20 @@ import Typography from '@/components/primitives/typography';
 
 export default function Index() {
   const router = useRouter();
-
   const theme = useTheme();
+  // const { showError } = useNotificationContext();
 
-  const [tags, setTags] = useState<Tag[] | null>(null);
+  // const [tags, setTags] = useState<Tag[] | null>(null);
 
-  useEffect(() => {
-    getTags().then((tags) => {
-      setTags(tags);
-    });
-  }, []);
+  // useEffect(() => {
+  //   getTags()
+  //     .then((tags) => {
+  //       setTags(tags);
+  //     })
+  //     .catch(() => {
+  //       // showError('Unable to get tags');
+  //     });
+  // }, []);
 
   return (
     <Layout>
@@ -40,6 +43,9 @@ export default function Index() {
           }
           onPress={() => router.navigate('/lists/inbox')}
         />
+
+        <HorizontalDivider />
+
         <Button
           text="Today"
           leftIcon={
@@ -73,6 +79,9 @@ export default function Index() {
           }
           onPress={() => router.navigate('/lists/deadline')}
         />
+
+        <HorizontalDivider />
+
         <Button
           text="Logbook"
           leftIcon={
@@ -96,25 +105,11 @@ export default function Index() {
           onPress={() => router.navigate('/lists/trash')}
         />
 
-        {process.env.NODE_ENV === 'development' && (
-          <Button
-            text="Debug"
-            leftIcon={
-              <Ionicons
-                name="bug"
-                size={18}
-                color="blue"
-              />
-            }
-            onPress={() => router.navigate('/lists/debug')}
-          />
-        )}
-
         <HorizontalDivider />
 
         <Typography style={{ color: theme.palette.text }}>Tags</Typography>
 
-        <FlatList
+        {/* <FlatList
           data={tags}
           keyExtractor={(tag) => tag.id}
           renderItem={({ item }) => (
@@ -124,7 +119,7 @@ export default function Index() {
               </Typography>
             </View>
           )}
-        />
+        /> */}
 
         <HorizontalDivider />
 

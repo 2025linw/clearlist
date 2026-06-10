@@ -1,6 +1,8 @@
 export type AuthContextType = {
+  loaded: boolean;
+
   currentSession: string | undefined;
-  hasSession: boolean | undefined;
+  hasSession: boolean;
 };
 
 export type ApiContextType = {

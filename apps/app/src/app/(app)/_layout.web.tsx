@@ -5,7 +5,7 @@ import { useSession } from '@/context/auth';
 
 import Sidebar from '@/components/sidebar';
 
-export default function RootLayout() {
+export default function WebRootLayout() {
   const { hasSession } = useSession();
   if (!hasSession) {
     return <Redirect href="/login" />;

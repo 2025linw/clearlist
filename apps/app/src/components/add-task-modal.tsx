@@ -17,19 +17,22 @@ import Animated, {
 } from 'react-native-reanimated';
 import { runOnJS } from 'react-native-worklets';
 
+import { useNotificationContext } from '@/context/error';
 import { useTheme } from '@/context/theme';
-import { addTasks } from '@/services/api';
 
 import Button from '@/components/primitives/button';
 import TextInput from '@/components/primitives/text-input';
 
 type Props = {
+  visible?: boolean;
+  onSubmit?: () => void;
   style?: StyleProp<ViewStyle>;
   buttonStyle?: Pick<ViewStyle, 'top' | 'bottom' | 'left' | 'right'>;
 };
 
 export default function AddTaskModal(props: Props) {
   const theme = useTheme();
+  const { showError } = useNotificationContext();
 
   const [isLoading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -42,14 +45,16 @@ export default function AddTaskModal(props: Props) {
     setLoading(true);
 
     try {
-      await addTasks({
-        title,
-        notes,
-      });
+      // await addTasks({
+      //   title,
+      //   notes,
+      //   start,
+      // });
 
       setShowModal(false);
     } catch (e) {
       console.error(e);
+      showError('Unable to add task');
     } finally {
       setLoading(false);
     }
@@ -82,15 +87,17 @@ export default function AddTaskModal(props: Props) {
             <View style={[styles.content, props.style]}>
               <TextInput
                 placeholder="New Task"
+                value={title}
                 onChangeText={(title) => setTitle(title)}
               />
 
               <TextInput
                 placeholder="Notes"
+                value={notes}
+                onChangeText={(notes) => setNotes(notes)}
                 multiline
                 textAlignVertical="top"
                 style={styles.noteBox}
-                onChangeText={(notes) => setNotes(notes)}
               />
 
               <Button

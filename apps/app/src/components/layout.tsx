@@ -1,7 +1,13 @@
 import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { useRouter } from 'expo-router';
 import { PropsWithChildren, ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/context/theme';
@@ -12,7 +18,8 @@ type LayoutProps = PropsWithChildren & {
   showBackButton?: boolean;
   hasOptions?: boolean;
   headerText?: string;
-  headerIcon?: ReactNode; // TODO: create Icon node
+  headerIcon?: ReactNode; // TODO: create Icon node,
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Layout({
@@ -64,7 +71,7 @@ export default function Layout({
         </View>
       )}
 
-      <View style={styles.container}>{children}</View>
+      <View style={[styles.container, props.style]}>{children}</View>
     </SafeAreaView>
   );
 }

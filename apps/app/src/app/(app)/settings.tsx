@@ -9,7 +9,7 @@ import Layout from '@/components/layout';
 import Button from '@/components/primitives/button';
 import Typography from '@/components/primitives/typography';
 
-export default function Index() {
+export default function SettingsPage() {
   const router = useRouter();
   const { logout } = useSessionApi();
   const { hasSession } = useSession();

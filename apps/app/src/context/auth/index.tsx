@@ -10,13 +10,15 @@ import {
 
 import { API_URL } from '@/constants';
 
-import { apiFetch } from '@/services/api';
+import { useNotificationContext } from '@/context/error';
 
+import { apiFetch } from '@/lib/api-client';
 import { authClient } from '@/lib/auth-client';
 
 import { ApiContextType, AuthContextType } from './types';
 
 const AuthContext = createContext<AuthContextType>({
+  loaded: false,
   currentSession: undefined,
   hasSession: false,
 });
@@ -27,28 +29,22 @@ const ApiContext = createContext<ApiContextType>({
 });
 
 export function Provider({ children }: PropsWithChildren) {
+  const { showError } = useNotificationContext();
+
   const [user, setUser] = useState<AuthContextType>({
+    loaded: false,
     currentSession: undefined,
-    hasSession: undefined,
+    hasSession: false,
   });
 
   useEffect(() => {
     const getSession = async () => {
       const { data, error } = await authClient.getSession();
       if (error) {
-        console.error(error);
+        showError('Unable to connect to authentication service');
 
         setUser({
-          currentSession: undefined,
-          hasSession: false,
-        });
-
-        throw error;
-      }
-
-      if (!data) {
-        // if there isn't an existing session or session expired
-        setUser({
+          loaded: true,
           currentSession: undefined,
           hasSession: false,
         });
@@ -56,14 +52,33 @@ export function Provider({ children }: PropsWithChildren) {
         return;
       }
 
+      if (!data) {
+        showError('Your session has expired');
+
+        setUser({
+          loaded: true,
+          currentSession: undefined,
+          hasSession: false,
+        });
+
+        return;
+      }
+
+      try {
+        await apiFetch(API_URL + '/api/me');
+      } catch {
+        showError('Unable to get user information');
+      }
+
       setUser({
+        loaded: true,
         currentSession: data.session.token,
         hasSession: true,
       });
     };
 
     getSession();
-  }, []);
+  }, [showError]);
 
   const createAccount = useCallback<ApiContextType['createAccount']>(
     async (params) => {
@@ -82,6 +97,7 @@ export function Provider({ children }: PropsWithChildren) {
       await apiFetch(API_URL + '/api/me');
 
       setUser({
+        loaded: true,
         currentSession: data.token!,
         hasSession: true,
       });
@@ -104,6 +120,7 @@ export function Provider({ children }: PropsWithChildren) {
     await apiFetch(API_URL + '/api/me');
 
     setUser({
+      loaded: true,
       currentSession: data.token!,
       hasSession: true,
     });
@@ -119,6 +136,7 @@ export function Provider({ children }: PropsWithChildren) {
     }
 
     setUser({
+      loaded: true,
       currentSession: undefined,
       hasSession: false,
     });

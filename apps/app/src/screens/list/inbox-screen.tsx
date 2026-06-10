@@ -1,41 +1,27 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 
-import { Task } from '@clearlist/types';
+import { useTasks } from '@/hooks/use-tasks';
+import { categoryQueryMap } from '@/services/helpers';
+import { Category } from '@/services/types';
 
 import AddTaskModal from '@/components/add-task-modal';
 import Layout from '@/components/layout';
-import Typography from '@/components/primitives/typography';
 import TaskItem from '@/components/task-item';
 
-export type Props = {
-  listName: string;
+export default function InboxScreen() {
+  const searchQuery = categoryQueryMap[Category.Inbox];
+  const query = useTasks(searchQuery);
 
-  tasks?: Task[] | null;
-
-  emptyText?: string;
-};
-
-export default function ListScreen(props: Props) {
   return (
     <>
       <Layout
-        headerText={props.listName}
+        headerText="Inbox"
         showBackButton
       >
         <FlatList
-          data={props.tasks}
+          data={query.data}
           keyExtractor={(task) => task.id}
           renderItem={({ item }) => <TaskItem task={item} />}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyComponent}>
-              <Typography>
-                {props.tasks === null
-                  ? 'Loading tasks...'
-                  : props.emptyText || 'No tasks'}
-              </Typography>
-            </View>
-          }
         />
       </Layout>
 

@@ -1,4 +1,4 @@
-import { ReactNode, createContext, useContext } from 'react';
+import { PropsWithChildren, createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
 import usePersisted from '@/hooks/use-persisted';
@@ -10,11 +10,10 @@ const ThemeContext = createContext<ThemeContextType>(
 ); // TODO: fix this jank?
 
 type Props = {
-  children: ReactNode;
   onThemeVariantChange?: (_v: ColorTheme) => void; // TODO: is this needed?
 };
 
-export function Provider({ children, ...props }: Props) {
+export function Provider({ children, ...props }: PropsWithChildren<Props>) {
   const {
     value: themeMode,
     setValue: _setThemeMode,
