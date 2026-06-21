@@ -18,8 +18,11 @@ use super::{
 use crate::{
     com::constants::{DEFAULT_LIMIT, MAX_LIMIT},
     db::utils::order_task_tag,
-    models::tag::Model as TagModel,
-    models::task::{DtoModel as TaskCreate, Model, TaskTag},
+    models::{
+        helper::TimestampPrecision,
+        tag::Model as TagModel,
+        task::{DtoModel as TaskCreate, Model, TaskTag},
+    },
     routes::models::SortOrder,
 };
 use tag::{
@@ -114,14 +117,14 @@ async fn query_tasks_inner(
         let mut separated = builder.separated(" AND ");
         for (cmp, date) in start.into_sql() {
             if matches!(cmp, SQLCmp::Exists | SQLCmp::NotExists) {
-                separated.push(format!("start_dt {}", cmp));
+                separated.push(format!("start {}", cmp));
             } else {
-                separated.push(format!("((start_dt::date {} ", cmp));
+                separated.push(format!("((start::date {} ", cmp));
                 separated.push_bind_unseparated(date);
                 separated.push_unseparated(")");
 
                 if matches!(cmp, SQLCmp::NotEqual) {
-                    separated.push_unseparated(" OR (start_dt IS NULL)");
+                    separated.push_unseparated(" OR (start IS NULL)");
                 }
                 separated.push_unseparated(")");
             }
@@ -163,10 +166,10 @@ async fn query_tasks_inner(
             builder.push(" ORDER BY LOWER(title) DESC, updated_at DESC, id ASC")
         }
         TaskSort::Start(SortOrder::Ascending) => {
-            builder.push(" ORDER BY start_dt ASC NULLS LAST, updated_at DESC, id ASC")
+            builder.push(" ORDER BY start ASC NULLS LAST, updated_at DESC, id ASC")
         }
         TaskSort::Start(SortOrder::Descending) => {
-            builder.push(" ORDER BY start_dt DESC NULLS LAST, updated_at DESC, id ASC")
+            builder.push(" ORDER BY start DESC NULLS LAST, updated_at DESC, id ASC")
         }
         TaskSort::Deadline(SortOrder::Ascending) => {
             builder.push(" ORDER BY deadline ASC NULLS LAST, updated_at DESC, id ASC")
@@ -290,27 +293,19 @@ async fn insert_task_inner(
     user_id: Uuid,
     insert_task: TaskCreate,
 ) -> Result<Model> {
+    let has_time = insert_task.start.is_some()
+        && matches!(insert_task.start_precision, TimestampPrecision::DateTime);
+
     let res = query_as_wrapper::<Model>(
-        "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
+        "INSERT INTO app.tasks (id, title, notes, start, has_time, deadline, created_by)
         VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING *",
     )
     .bind(Uuid::new_v4())
     .bind(insert_task.title)
     .bind(insert_task.notes)
-    .bind(insert_task.start.as_ref().and_then(|s| match s.as_at() {
-        Some(dt) => Some(dt),
-        None => match s.as_on() {
-            Some(d) => Some(d.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            None => unreachable!(),
-        },
-    }))
-    .bind(
-        insert_task
-            .start
-            .as_ref()
-            .is_some_and(|s| s.as_at().is_some()),
-    )
+    .bind(insert_task.start)
+    .bind(has_time)
     .bind(insert_task.deadline)
     .bind(user_id)
     .fetch_one(conn.as_mut())
@@ -374,9 +369,12 @@ async fn update_task_inner(
     user_id: Uuid,
     update_task: TaskCreate,
 ) -> Result<Model> {
+    let has_time = update_task.start.is_some()
+        && matches!(update_task.start_precision, TimestampPrecision::DateTime);
+
     let task_opt = query_as_wrapper::<Model>(
         "UPDATE app.tasks
-        SET (title, notes, start_dt, has_time, deadline)
+        SET (title, notes, start, has_time, deadline)
         = ($3, $4, $5, $6, $7)
         WHERE id = $1 AND created_by = $2 AND deleted_at IS NULL
         RETURNING *",
@@ -385,19 +383,8 @@ async fn update_task_inner(
     .bind(user_id)
     .bind(update_task.title)
     .bind(update_task.notes)
-    .bind(update_task.start.as_ref().and_then(|s| match s.as_at() {
-        Some(dt) => Some(dt),
-        None => match s.as_on() {
-            Some(d) => Some(d.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            None => unreachable!(),
-        },
-    }))
-    .bind(
-        update_task
-            .start
-            .as_ref()
-            .is_some_and(|s| s.as_at().is_some()),
-    )
+    .bind(update_task.start)
+    .bind(has_time)
     .bind(update_task.deadline)
     .fetch_optional(conn.as_mut())
     .await?;
@@ -595,7 +582,7 @@ async fn complete_task_inner(
 mod query {
     use std::{collections::HashSet, time::Duration};
 
-    use chrono::Days;
+    use chrono::{Days, DurationRound, TimeDelta};
     use tokio::test;
     use uuid::Uuid;
 
@@ -606,7 +593,9 @@ mod query {
             filters::{DateBound, DateFilter, TaskSort},
             test_utils::{create_test_tag, create_test_task, db_init},
         },
-        models::{helper::Start, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
+        models::{
+            helper::TimestampPrecision, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate,
+        },
         routes::models::SortOrder,
     };
 
@@ -1340,7 +1329,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1352,7 +1342,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1364,7 +1355,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1376,7 +1368,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1389,7 +1382,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1401,7 +1395,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1413,7 +1408,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1425,7 +1421,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1438,7 +1435,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1450,7 +1450,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1462,7 +1465,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1474,7 +1480,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1487,7 +1496,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1499,7 +1509,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1511,7 +1522,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1523,7 +1535,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1547,15 +1560,15 @@ mod query {
             let mut seen_nulls = false;
             assert!(
                 tasks.is_sorted_by(|a, b| {
-                    let start_a = a.start_dt.map(|dt| {
-                        if a.has_time {
+                    let start_a = a.start.map(|dt| {
+                        if let true = a.has_time {
                             dt
                         } else {
                             dt.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
                         }
                     });
-                    let start_b = b.start_dt.map(|dt| {
-                        if b.has_time {
+                    let start_b = b.start.map(|dt| {
+                        if let true = b.has_time {
                             dt
                         } else {
                             dt.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
@@ -1643,7 +1656,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1655,7 +1669,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1667,7 +1682,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1679,7 +1695,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time.duration_trunc(TimeDelta::days(1)).unwrap()),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1692,7 +1709,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1704,7 +1722,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1716,7 +1735,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1728,7 +1748,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1741,7 +1762,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1753,7 +1777,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1765,7 +1792,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1777,7 +1807,10 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(
+                        base_time.duration_trunc(TimeDelta::days(1)).unwrap() + Days::new(1),
+                    ),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -1790,7 +1823,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1802,7 +1836,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1814,7 +1849,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1826,7 +1862,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -1850,15 +1887,15 @@ mod query {
             let mut seen_nulls = false;
             assert!(
                 tasks.is_sorted_by(|a, b| {
-                    let start_a = a.start_dt.map(|dt| {
-                        if a.has_time {
+                    let start_a = a.start.map(|dt| {
+                        if let true = a.has_time {
                             dt
                         } else {
                             dt.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
                         }
                     });
-                    let start_b = b.start_dt.map(|dt| {
-                        if b.has_time {
+                    let start_b = b.start.map(|dt| {
+                        if let true = b.has_time {
                             dt
                         } else {
                             dt.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
@@ -2796,7 +2833,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -2808,7 +2846,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -2830,7 +2869,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| task.start_dt.is_some()),
+                tasks.iter().all(|task| task.start.is_some()),
                 "should only return tasks with start date"
             );
         }
@@ -2846,7 +2885,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| task.start_dt.is_none()),
+                tasks.iter().all(|task| task.start.is_none()),
                 "should only return tasks without start date"
             );
         }
@@ -2870,7 +2909,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -2882,7 +2922,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -2894,7 +2935,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -2906,7 +2948,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -2918,7 +2961,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -2930,7 +2974,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -2952,7 +2997,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() == base_time.date_naive()
                 } else {
                     false
@@ -2972,7 +3017,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() != base_time.date_naive()
                 } else {
                     true
@@ -3000,7 +3045,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3012,7 +3058,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3024,7 +3071,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3036,7 +3084,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3048,7 +3097,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3060,7 +3110,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3084,7 +3135,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() > base_time.date_naive()
                 } else {
                     false
@@ -3112,7 +3163,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3124,7 +3176,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+
                     ..Default::default()
                 },
                 None,
@@ -3136,7 +3189,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3148,7 +3202,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3160,7 +3215,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3172,7 +3228,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3196,7 +3253,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() >= base_time.date_naive()
                 } else {
                     false
@@ -3224,7 +3281,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3236,7 +3294,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3248,7 +3307,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3260,7 +3320,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3272,7 +3333,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3284,7 +3346,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3308,7 +3371,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() < base_time.date_naive()
                 } else {
                     false
@@ -3336,7 +3399,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3348,7 +3412,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3360,7 +3425,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3372,7 +3438,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3384,7 +3451,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3396,7 +3464,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3420,7 +3489,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() <= base_time.date_naive()
                 } else {
                     false
@@ -3448,7 +3517,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On((base_time - Days::new(2)).date_naive())),
+                    start: Some(base_time - Days::new(2)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3460,7 +3530,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(2))),
+                    start: Some(base_time - Days::new(2)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3472,7 +3543,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3484,7 +3556,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time - Days::new(1))),
+                    start: Some(base_time - Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3496,7 +3569,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive())),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3508,7 +3582,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time)),
+                    start: Some(base_time),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3520,7 +3595,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On(base_time.date_naive() + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3532,7 +3608,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(1))),
+                    start: Some(base_time + Days::new(1)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3544,7 +3621,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::On((base_time + Days::new(2)).date_naive())),
+                    start: Some(base_time + Days::new(2)),
+                    start_precision: TimestampPrecision::Date,
                     ..Default::default()
                 },
                 None,
@@ -3556,7 +3634,8 @@ mod query {
             create_test_task(
                 &mut tx,
                 TaskCreate {
-                    start: Some(Start::At(base_time + Days::new(2))),
+                    start: Some(base_time + Days::new(2)),
+                    start_precision: TimestampPrecision::DateTime,
                     ..Default::default()
                 },
                 None,
@@ -3581,7 +3660,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() > base_time.date_naive() - Days::new(1)
                         && dt.date_naive() < base_time.date_naive() + Days::new(1)
                 } else {
@@ -3605,7 +3684,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() > base_time.date_naive() - Days::new(1)
                         && dt.date_naive() <= base_time.date_naive() + Days::new(1)
                 } else {
@@ -3629,7 +3708,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() >= base_time.date_naive() - Days::new(1)
                         && dt.date_naive() <= base_time.date_naive() + Days::new(1)
                 } else {
@@ -3653,7 +3732,7 @@ mod query {
             assert!(!tasks.is_empty(), "must have data to test on");
 
             assert!(
-                tasks.iter().all(|task| if let Some(dt) = task.start_dt {
+                tasks.iter().all(|task| if let Some(dt) = task.start {
                     dt.date_naive() >= base_time.date_naive() - Days::new(1)
                         && dt.date_naive() < base_time.date_naive() + Days::new(1)
                 } else {
@@ -4508,7 +4587,8 @@ mod select {
         assert_eq!(ret_task.id, task.id);
         assert_eq!(ret_task.title, "");
         assert!(ret_task.notes.is_none());
-        assert!(ret_task.start_dt.is_none());
+        assert!(ret_task.start.is_none());
+        assert!(!ret_task.has_time);
         assert!(ret_task.deadline.is_none());
         assert!(ret_task.tags.is_empty());
         assert!(ret_task.completed_at.is_none());
@@ -4546,7 +4626,7 @@ mod select {
             assert_eq!(task.id, id);
             assert_eq!(task.title, "");
             assert!(task.notes.is_none());
-            assert!(task.start_dt.is_none());
+            assert!(task.start.is_none());
             assert!(task.deadline.is_none());
             assert!(task.tags.is_empty());
             assert!(task.completed_at.is_none());
@@ -4741,7 +4821,9 @@ mod insert {
             ApplicationError, Error,
             test_utils::{create_test_tag, db_init},
         },
-        models::{helper::Start, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
+        models::{
+            helper::TimestampPrecision, tag::DtoModel as TagCreate, task::DtoModel as TaskCreate,
+        },
     };
 
     #[test]
@@ -4754,7 +4836,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_none());
         assert!(task.tags.is_empty());
 
@@ -4785,7 +4867,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "This is a test title for with_title test");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_none());
         assert!(task.tags.is_empty());
 
@@ -4820,7 +4902,7 @@ mod insert {
             task.notes.unwrap(),
             "This is the notes section in the with_notes test"
         );
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_none());
         assert!(task.tags.is_empty());
 
@@ -4837,13 +4919,14 @@ mod insert {
     async fn with_start_date() {
         let (_, mut tx, base_time) = db_init().await;
 
-        let date = base_time.date_naive();
+        let date = base_time;
 
         let res = insert_task_inner(
             &mut tx,
             Uuid::nil(),
             TaskCreate {
-                start: Some(Start::On(date)),
+                start: Some(date),
+                start_precision: TimestampPrecision::Date,
                 ..Default::default()
             },
         )
@@ -4853,8 +4936,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_some());
-        assert_eq!(task.start_dt.unwrap().date_naive(), date);
+        assert!(task.start.is_some());
         assert!(!task.has_time);
         assert!(task.deadline.is_none());
         assert!(task.tags.is_empty());
@@ -4878,7 +4960,8 @@ mod insert {
             &mut tx,
             Uuid::nil(),
             TaskCreate {
-                start: Some(Start::At(datetime)),
+                start: Some(datetime),
+                start_precision: TimestampPrecision::DateTime,
                 ..Default::default()
             },
         )
@@ -4888,7 +4971,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_some());
+        assert!(task.start.is_some());
         assert!(task.has_time);
         assert!(task.deadline.is_none());
         assert!(task.tags.is_empty());
@@ -4922,7 +5005,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_some());
         assert_eq!(task.deadline.unwrap(), date);
         assert!(task.tags.is_empty());
@@ -4965,7 +5048,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_none());
 
         assert_eq!(task.tags.len(), 1);
@@ -5035,7 +5118,7 @@ mod insert {
         let task = res.unwrap();
         assert_eq!(task.title, "Test Task");
         assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
+        assert!(task.start.is_none());
         assert!(task.deadline.is_none());
         assert_eq!(task.tags.len(), 3);
         for (i, tag) in task.tags.iter().enumerate() {
@@ -5093,8 +5176,12 @@ mod insert {
         let title = "Homework 1".to_string();
         let notes =
             "Introduction assignment to warm up to the content being taught in class".to_string();
-        let start = NaiveDate::from_ymd_opt(2027, 9, 16).unwrap();
-        let deadline = start + Duration::weeks(2);
+        let start = NaiveDate::from_ymd_opt(2027, 9, 16)
+            .unwrap()
+            .and_hms_opt(0, 0, 0)
+            .unwrap()
+            .and_utc();
+        let deadline = (start + Duration::weeks(2)).date_naive();
 
         let res = insert_task_inner(
             &mut tx,
@@ -5102,7 +5189,8 @@ mod insert {
             TaskCreate {
                 title: title.clone(),
                 notes: Some(notes.clone()),
-                start: Some(Start::On(start)),
+                start: Some(start),
+                start_precision: TimestampPrecision::Date,
                 deadline: Some(deadline),
                 ..Default::default()
             },
@@ -5114,9 +5202,9 @@ mod insert {
         assert_eq!(task.title, "Homework 1");
         assert!(task.notes.is_some());
         assert_eq!(task.notes.unwrap(), notes);
-        assert!(task.start_dt.is_some());
+        assert!(task.start.is_some());
         assert!(!task.has_time);
-        assert_eq!(task.start_dt.unwrap().date_naive(), start);
+        assert_eq!(task.start.unwrap(), start);
         assert!(task.deadline.is_some());
         assert_eq!(task.deadline.unwrap(), deadline);
         assert!(task.tags.is_empty());
@@ -5151,7 +5239,8 @@ mod insert {
             TaskCreate {
                 title: title.clone(),
                 notes: Some(notes.clone()),
-                start: Some(Start::At(start_datetime)),
+                start: Some(start_datetime),
+                start_precision: TimestampPrecision::DateTime,
                 deadline: Some(deadline),
                 ..Default::default()
             },
@@ -5163,9 +5252,8 @@ mod insert {
         assert_eq!(task.title, "Study for Exam 1");
         assert!(task.notes.is_some());
         assert_eq!(task.notes.unwrap(), notes);
-        assert!(task.start_dt.is_some());
+        assert!(task.start.is_some());
         assert!(task.has_time);
-        assert_eq!(task.start_dt.unwrap(), start_datetime);
         assert!(task.deadline.is_some());
         assert_eq!(task.deadline.unwrap(), deadline);
         assert!(task.tags.is_empty());
@@ -5193,7 +5281,7 @@ mod update {
             test_utils::{create_test_tag, create_test_task, db_init, get_task},
         },
         models::{
-            helper::Start,
+            helper::TimestampPrecision,
             tag::DtoModel as TagCreate,
             task::{DtoModel as TaskCreate, Model},
         },
@@ -5257,7 +5345,7 @@ mod update {
         assert_eq!(after_task.title, "New title");
 
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.has_time, before_task.has_time);
         assert_eq!(after_task.deadline, before_task.deadline);
         assert_eq!(after_task.tags, before_task.tags);
@@ -5294,7 +5382,7 @@ mod update {
         }
 
         assert_eq!(after_task.title, before_task.title);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.has_time, before_task.has_time);
         assert_eq!(after_task.deadline, before_task.deadline);
         assert_eq!(after_task.tags, before_task.tags);
@@ -5317,17 +5405,18 @@ mod update {
         )
         .await;
 
-        let updated_start = base_time.date_naive();
+        let updated_start = base_time;
         let mut updated_task: TaskCreate = before_task.clone().into();
-        updated_task.start = Some(Start::On(updated_start));
+        updated_task.start = Some(updated_start);
+        updated_task.start_precision = TimestampPrecision::Date;
 
         let res = update_task_inner(&mut tx, before_task.id, Uuid::nil(), updated_task).await;
         assert!(res.is_ok());
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        assert_eq!(after_task.start_dt.unwrap().date_naive(), updated_start);
+        assert_ne!(after_task.start, before_task.start);
+        assert_eq!(after_task.start.unwrap(), updated_start);
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
@@ -5341,7 +5430,8 @@ mod update {
         let before_task = create_test_task(
             &mut tx,
             TaskCreate {
-                start: Some(Start::At(base_time)),
+                start: Some(base_time),
+                start_precision: TimestampPrecision::DateTime,
                 ..Default::default()
             },
             None,
@@ -5351,17 +5441,16 @@ mod update {
         )
         .await;
 
-        let updated_start = base_time.date_naive();
+        let updated_start = base_time;
         let mut updated_task: TaskCreate = before_task.clone().into();
-        updated_task.start = Some(Start::On(updated_start));
+        updated_task.start = Some(updated_start);
+        updated_task.start_precision = TimestampPrecision::Date;
 
         let res = update_task_inner(&mut tx, before_task.id, Uuid::nil(), updated_task).await;
         assert!(res.is_ok());
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        assert_eq!(after_task.start_dt.unwrap().date_naive(), updated_start);
         assert_ne!(after_task.has_time, before_task.has_time);
         assert!(!after_task.has_time);
 
@@ -5390,16 +5479,17 @@ mod update {
 
         let updated_start = base_time;
         let mut updated_task: TaskCreate = before_task.clone().into();
-        updated_task.start = Some(Start::At(updated_start));
+        updated_task.start = Some(updated_start);
+        updated_task.start_precision = TimestampPrecision::DateTime;
 
         let res = update_task_inner(&mut tx, before_task.id, Uuid::nil(), updated_task).await;
         assert!(res.is_ok());
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
+        assert_ne!(after_task.start, before_task.start);
         assert_ne!(after_task.has_time, before_task.has_time);
-        assert_eq!(after_task.start_dt.unwrap(), updated_start);
+        assert_eq!(after_task.start.unwrap(), updated_start);
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
@@ -5412,7 +5502,8 @@ mod update {
         let before_task = create_test_task(
             &mut tx,
             TaskCreate {
-                start: Some(Start::On(base_time.date_naive())),
+                start: Some(base_time),
+                start_precision: TimestampPrecision::Date,
                 ..Default::default()
             },
             None,
@@ -5424,15 +5515,16 @@ mod update {
 
         let updated_start = base_time;
         let mut updated_task: TaskCreate = before_task.clone().into();
-        updated_task.start = Some(Start::At(updated_start));
+        updated_task.start = Some(updated_start);
+        updated_task.start_precision = TimestampPrecision::DateTime;
 
         let res = update_task_inner(&mut tx, before_task.id, Uuid::nil(), updated_task).await;
         assert!(res.is_ok());
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        assert_eq!(after_task.start_dt.unwrap(), updated_start);
+        assert_ne!(after_task.start, before_task.start);
+        assert_eq!(after_task.start.unwrap(), updated_start);
         assert_ne!(after_task.has_time, before_task.has_time);
         assert!(after_task.has_time);
 
@@ -5452,7 +5544,8 @@ mod update {
         let before_task = create_test_task(
             &mut tx,
             TaskCreate {
-                start: Some(Start::On(base_time.date_naive())),
+                start: Some(base_time),
+                start_precision: TimestampPrecision::Date,
                 ..Default::default()
             },
             None,
@@ -5470,8 +5563,8 @@ mod update {
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        assert!(after_task.start_dt.is_none());
+        assert_ne!(after_task.start, before_task.start);
+        assert!(after_task.start.is_none());
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
@@ -5485,7 +5578,8 @@ mod update {
         let before_task = create_test_task(
             &mut tx,
             TaskCreate {
-                start: Some(Start::At(base_time)),
+                start: Some(base_time),
+                start_precision: TimestampPrecision::DateTime,
                 ..Default::default()
             },
             None,
@@ -5503,8 +5597,8 @@ mod update {
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        assert!(after_task.start_dt.is_none());
+        assert_ne!(after_task.start, before_task.start);
+        assert!(after_task.start.is_none());
         assert_ne!(after_task.has_time, before_task.has_time);
         assert!(!after_task.has_time);
 
@@ -5547,7 +5641,7 @@ mod update {
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.tags, before_task.tags);
 
         verify_scope(after_task, before_task);
@@ -5598,7 +5692,7 @@ mod update {
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.deadline, before_task.deadline);
 
         verify_scope(after_task, before_task);
@@ -5670,7 +5764,7 @@ mod update {
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.deadline, before_task.deadline);
 
         verify_scope(after_task, before_task);
@@ -5737,7 +5831,7 @@ mod update {
 
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.deadline, before_task.deadline);
 
         verify_scope(after_task, before_task);
@@ -5833,7 +5927,14 @@ mod update {
             TaskCreate {
                 title: "Homework 2".to_string(),
                 notes: Some("Finish problems 1-38 from textbook".to_string()),
-                start: Some(Start::On(NaiveDate::from_ymd_opt(2026, 10, 5).unwrap())),
+                start: Some(
+                    NaiveDate::from_ymd_opt(2026, 10, 5)
+                        .unwrap()
+                        .and_hms_opt(0, 0, 0)
+                        .unwrap()
+                        .and_utc(),
+                ),
+                start_precision: TimestampPrecision::Date,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 10, 19).unwrap()),
                 ..Default::default()
             },
@@ -5845,8 +5946,8 @@ mod update {
         .await;
 
         let mut updated_task: TaskCreate = before_task.clone().into();
-        if let Some(Start::On(date)) = updated_task.start {
-            updated_task.start = Some(Start::On(date + Duration::weeks(1)));
+        if let Some(date) = updated_task.start {
+            updated_task.start = Some(date + Duration::weeks(1));
         }
         if let Some(date) = updated_task.deadline {
             updated_task.deadline = Some(date + Duration::weeks(1));
@@ -5857,8 +5958,8 @@ mod update {
 
         let after_task = res.unwrap();
         assert_ne!(after_task.updated_at, before_task.updated_at);
-        assert_ne!(after_task.start_dt, before_task.start_dt);
-        if let (Some(after_date), Some(before_date)) = (after_task.start_dt, before_task.start_dt) {
+        assert_ne!(after_task.start, before_task.start);
+        if let (Some(after_date), Some(before_date)) = (after_task.start, before_task.start) {
             assert_eq!(after_date, before_date + Duration::weeks(1));
         }
         assert_ne!(after_task.deadline, before_task.deadline);
@@ -6046,7 +6147,7 @@ mod delete {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.has_time, before_task.has_time);
         assert_eq!(after_task.deadline, before_task.deadline);
         assert_eq!(after_task.tags, before_task.tags);
@@ -6204,7 +6305,7 @@ mod restore {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.has_time, before_task.has_time);
         assert_eq!(after_task.deadline, before_task.deadline);
         assert_eq!(after_task.tags, before_task.tags);
@@ -6363,7 +6464,7 @@ mod complete {
         assert_eq!(after_task.id, before_task.id);
         assert_eq!(after_task.title, before_task.title);
         assert_eq!(after_task.notes, before_task.notes);
-        assert_eq!(after_task.start_dt, before_task.start_dt);
+        assert_eq!(after_task.start, before_task.start);
         assert_eq!(after_task.has_time, before_task.has_time);
         assert_eq!(after_task.deadline, before_task.deadline);
         assert_eq!(after_task.tags, before_task.tags);

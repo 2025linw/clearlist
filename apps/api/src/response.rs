@@ -9,7 +9,8 @@ use serde_json::{Map, Value};
 use ts_rs::TS;
 
 use crate::models::{
-    helper::Start, tag::Model as TagModel, task::Model as TaskModel, user::Model as UserModel,
+    helper::TimestampPrecision, tag::Model as TagModel, task::Model as TaskModel,
+    user::Model as UserModel,
 };
 
 /// Response type representing a JSON response
@@ -93,7 +94,8 @@ pub struct TaskResponse {
 
     pub title: String,
     pub notes: Option<String>,
-    pub start: Option<Start>,
+    pub start: Option<chrono::DateTime<Utc>>,
+    pub start_precision: TimestampPrecision,
     pub deadline: Option<chrono::NaiveDate>,
     pub tags: Vec<TagResponse>,
 
@@ -106,21 +108,18 @@ pub struct TaskResponse {
 
 impl From<TaskModel> for TaskResponse {
     fn from(value: TaskModel) -> Self {
-        let start = if let Some(dt) = value.start_dt {
-            if value.has_time {
-                Some(Start::At(dt))
-            } else {
-                Some(Start::On(dt.date_naive()))
-            }
+        let start_precision = if value.has_time {
+            TimestampPrecision::DateTime
         } else {
-            None
+            TimestampPrecision::Date
         };
 
         Self {
             id: value.id,
             title: value.title,
             notes: value.notes,
-            start,
+            start: value.start,
+            start_precision,
             deadline: value.deadline,
             tags: value.tags.into_iter().map(TagResponse::from).collect(),
             completed_at: value.completed_at,

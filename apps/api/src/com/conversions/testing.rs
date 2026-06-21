@@ -9,27 +9,24 @@
 //! * From model-level Tag to user request Tag
 
 use crate::models::{
-    helper::Start,
+    helper::TimestampPrecision,
     tag::{DtoModel as TagCreate, Model as TagModel},
     task::{DtoModel as TaskCreate, Model as TaskModel},
 };
 
 impl From<TaskModel> for TaskCreate {
     fn from(value: TaskModel) -> Self {
-        let start = if let Some(dt) = value.start_dt {
-            if value.has_time {
-                Some(Start::At(dt))
-            } else {
-                Some(Start::On(dt.date_naive()))
-            }
+        let start_precision = if value.has_time {
+            TimestampPrecision::DateTime
         } else {
-            None
+            TimestampPrecision::Date
         };
 
         Self {
             title: value.title,
             notes: value.notes,
-            start,
+            start: value.start,
+            start_precision,
             deadline: value.deadline,
             tags: value.tags.iter().map(|tag| tag.id).collect(),
         }

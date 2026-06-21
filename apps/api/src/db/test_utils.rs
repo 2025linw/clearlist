@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, collections::HashSet, env};
 
-use chrono::{DateTime, SubsecRound, Utc};
+use chrono::{DateTime, DurationRound, SubsecRound, TimeDelta, Utc};
 use sqlx::{Connection, PgConnection, PgPool, Postgres, Transaction, postgres::PgPoolOptions};
 use tokio::sync::OnceCell;
 use uuid::Uuid;
@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::{
     db::{query_as_wrapper, utils::order_task_tag},
     models::{
-        helper::Start,
+        helper::TimestampPrecision,
         tag::{DtoModel as TagCreate, Model as TagModel},
         task::{DtoModel as TaskCreate, Model as TaskModel},
     },
@@ -66,22 +66,25 @@ pub async fn create_test_task(
     created_at: DateTime<Utc>,
     updated_at: DateTime<Utc>,
 ) -> TaskModel {
+    let has_time =
+        task.start.is_some() && matches!(task.start_precision, TimestampPrecision::DateTime);
+
     // Add task
     let task_id = sqlx::query_scalar(
-        "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, created_by)
+        "INSERT INTO app.tasks (id, title, notes, start, has_time, deadline, created_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
     )
     .bind(Uuid::new_v4())
     .bind(task.title.clone())
     .bind(task.notes.clone())
-    .bind(task.start.as_ref().and_then(|s| match s.as_at() {
-        Some(dt) => Some(dt),
-        None => match s.as_on() {
-            Some(d) => Some(d.and_hms_opt(0, 0, 0).unwrap().and_utc()),
-            None => unreachable!(),
-        },
+    .bind(task.start.map(|start| {
+        if has_time {
+            start
+        } else {
+            start.duration_trunc(TimeDelta::days(1)).unwrap()
+        }
     }))
-    .bind(task.start.as_ref().is_some_and(|s| s.as_at().is_some()))
+    .bind(has_time)
     .bind(task.deadline)
     .bind(Uuid::nil())
     .fetch_one(conn.as_mut())
@@ -114,15 +117,16 @@ pub async fn create_test_task(
     assert_eq!(ret_task.title, task.title, "title does not match input");
     assert_eq!(ret_task.notes, task.notes, "notes does not match input");
     if task.start.is_some() {
-        assert!(ret_task.start_dt.is_some());
+        assert!(ret_task.start.is_some());
         if let Some(dt) = task.start {
-            match dt {
-                Start::On(date) => assert_eq!(ret_task.start_dt.unwrap().date_naive(), date),
-                Start::At(date_time) => assert_eq!(ret_task.start_dt.unwrap(), date_time),
+            if matches!(task.start_precision, TimestampPrecision::DateTime) {
+                assert_eq!(ret_task.start.unwrap(), dt);
+            } else {
+                assert_eq!(ret_task.start.unwrap().date_naive(), dt.date_naive());
             }
         }
     } else {
-        assert!(ret_task.start_dt.is_none())
+        assert!(ret_task.start.is_none())
     }
     assert_eq!(
         ret_task.deadline, task.deadline,

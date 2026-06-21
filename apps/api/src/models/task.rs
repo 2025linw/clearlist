@@ -7,7 +7,7 @@ use serde::Deserialize;
 use sqlx::FromRow;
 use ts_rs::TS;
 
-use super::{helper::Start, tag::Model as TagModel};
+use super::{helper::TimestampPrecision, tag::Model as TagModel};
 
 /// Task Model Type
 ///
@@ -20,7 +20,7 @@ pub struct Model {
 
     pub title: String,
     pub notes: Option<String>,
-    pub start_dt: Option<chrono::DateTime<Utc>>,
+    pub start: Option<chrono::DateTime<Utc>>,
     pub has_time: bool,
     pub deadline: Option<chrono::NaiveDate>,
     #[sqlx(skip)]
@@ -46,7 +46,8 @@ pub struct DtoModel {
     #[serde(default)]
     pub title: String,
     pub notes: Option<String>,
-    pub start: Option<Start>,
+    pub start: Option<chrono::DateTime<Utc>>,
+    pub start_precision: TimestampPrecision,
     pub deadline: Option<chrono::NaiveDate>,
     #[serde(default)]
     pub tags: Vec<uuid::Uuid>,
