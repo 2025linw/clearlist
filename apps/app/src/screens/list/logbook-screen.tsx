@@ -1,5 +1,12 @@
-import Layout from '@/components/layout';
+import { Category } from '@/services/types';
 
-export default function LogbookScreen() {
-  return <Layout></Layout>;
+import ListScreen from '@/screens/list/base-list-screen';
+
+export default function DeadlineScreen() {
+  return (
+    <ListScreen
+      headerText="Logbook"
+      category={Category.Logged}
+    />
+  );
 }

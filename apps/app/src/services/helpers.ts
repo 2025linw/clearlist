@@ -1,4 +1,28 @@
+import dayjs from 'dayjs';
+
+import { DateType } from 'react-native-ui-datepicker';
+
 import { Category, Cmp, TaskQuery } from './types';
+
+export function getTodayDate() {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+export function getTomorrowDate() {
+  const today = getTodayDate();
+  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+}
+
+export function toDate(value: DateType) {
+  if (!value) return null;
+
+  if (value instanceof Date) return value;
+
+  if (dayjs.isDayjs(value)) return value.toDate();
+
+  return new Date(value);
+}
 
 export function toYYYYMMDD(date: Date) {
   const year = date.getFullYear();
@@ -10,13 +34,13 @@ export function toYYYYMMDD(date: Date) {
 
 export const categoryQueryMap: Record<Category, TaskQuery> = {
   [Category.Inbox]: {
-    startDate: { type: 'ex', state: false },
+    startDate: { type: 'cmp', date: getTomorrowDate(), cmp: Cmp.Less },
   },
   [Category.Today]: {
-    startDate: { type: 'eq', date: new Date() },
+    startDate: { type: 'eq', date: getTodayDate() },
   },
   [Category.Upcoming]: {
-    startDate: { type: 'cmp', date: new Date(), cmp: Cmp.Greater },
+    startDate: { type: 'cmp', date: getTomorrowDate(), cmp: Cmp.GreaterEq },
   },
   [Category.Deadline]: {
     deadline: { type: 'ex', state: true },
@@ -48,19 +72,19 @@ export function buildTaskQuery(query: TaskQuery): string {
   if (query.deadline !== undefined) {
     const type = query.deadline.type;
     if (type === 'ex') {
-      params.set('start', String(query.deadline.state));
+      params.set('deadline', String(query.deadline.state));
     } else if (type === 'eq') {
-      params.set('start', toYYYYMMDD(query.deadline.date));
+      params.set('deadline', toYYYYMMDD(query.deadline.date));
     } else {
       params.set(
-        `start[${query.deadline.cmp}]`,
+        `deadline[${query.deadline.cmp}]`,
         toYYYYMMDD(query.deadline.date),
       );
     }
   }
 
   if (query.completed !== undefined) {
-    params.set('complete', String(query.completed));
+    params.set('completed', String(query.completed));
   }
   if (query.deleted !== undefined) {
     params.set('deleted', String(query.deleted));

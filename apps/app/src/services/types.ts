@@ -1,10 +1,12 @@
+import { Tag, Task } from '@clearlist/types';
+
 export enum Cmp {
   Equal = '=',
   NotEqual = '!=',
   Less = '<',
-  LessEq = '<=',
+  LessEq = 'lte',
   Greater = '>',
-  GreaterEq = '>=',
+  GreaterEq = 'gte',
 }
 
 export type DateQuery =
@@ -32,3 +34,30 @@ export enum Category {
   Logged,
   Trash,
 }
+
+type Response = {
+  message?: string;
+  data?: unknown;
+};
+
+export type TaskResponse = Response & {
+  data: Task;
+};
+
+export type TaskQueryResponse = Response & {
+  data: {
+    count: number;
+    tasks: Task[];
+  };
+};
+
+export type TagResponse = Response & {
+  data: Tag;
+};
+
+export type TagQueryResponse = Response & {
+  data: {
+    count: number;
+    tags: Tag[];
+  };
+};

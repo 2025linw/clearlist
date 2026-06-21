@@ -2,9 +2,9 @@ import { Platform } from 'react-native';
 
 import { authClient } from '@/lib/auth-client';
 
-export type Response = {
-  message?: string;
-};
+// export type Response = {
+//   message?: string;
+// };
 
 export class ApiError extends Error {
   readonly status: number;
@@ -21,10 +21,10 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(
+export async function apiFetch(
   input: string,
   init?: RequestInit,
-): Promise<T> {
+): Promise<Response> {
   const headers = init?.headers ? new Headers(init.headers) : new Headers();
   if (Platform.OS !== 'web') {
     const cookie = authClient.getCookie();
@@ -34,30 +34,9 @@ export async function apiFetch<T>(
     }
   }
 
-  const res = await fetch(input, {
+  return fetch(input, {
     ...init,
     credentials: Platform.OS === 'web' ? 'include' : 'omit',
     headers,
   });
-  const contentType = res.headers.get('content-type');
-  const isJson = contentType?.includes('application/json');
-
-  if (!isJson) {
-    const text = await res.text();
-
-    throw new ApiError(text, res.status, res.statusText);
-  }
-
-  if (!res.ok) {
-    const json = (await res.json()) as Response;
-
-    console.log(json);
-    throw new ApiError(
-      json.message ?? 'Request failed',
-      res.status,
-      res.statusText,
-    );
-  }
-
-  return (await res.json()) as T;
 }

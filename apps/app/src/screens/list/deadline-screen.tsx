@@ -1,5 +1,12 @@
-import Layout from '@/components/layout';
+import { Category } from '@/services/types';
+
+import ListScreen from '@/screens/list/base-list-screen';
 
 export default function DeadlineScreen() {
-  return <Layout></Layout>;
+  return (
+    <ListScreen
+      headerText="Deadline"
+      category={Category.Deadline}
+    />
+  );
 }

@@ -1,7 +1,13 @@
 import { StyleSheet, View } from 'react-native';
 
+import { useTheme } from '@/context/theme';
+
 export default function HorizontalDivider() {
-  return <View style={styles.line} />;
+  const theme = useTheme();
+
+  return (
+    <View style={[styles.line, { backgroundColor: theme.palette.border }]} />
+  );
 }
 
 const styles = StyleSheet.create({
@@ -10,7 +16,5 @@ const styles = StyleSheet.create({
     width: '100%',
 
     marginVertical: 5,
-
-    backgroundColor: 'black',
   },
 });

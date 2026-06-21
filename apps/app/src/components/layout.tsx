@@ -1,17 +1,12 @@
-import Ionicons from '@react-native-vector-icons/ionicons/static';
 import { useRouter } from 'expo-router';
 import { PropsWithChildren, ReactNode } from 'react';
-import {
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/context/theme';
+import { Theme } from '@/context/theme/types';
 
+import Button from '@/components/primitives/button';
 import Typography from '@/components/primitives/typography';
 
 type LayoutProps = PropsWithChildren & {
@@ -28,28 +23,27 @@ export default function Layout({
   hasOptions = false,
   ...props
 }: LayoutProps) {
-  const router = useRouter();
-
   const theme = useTheme();
+  const styles = buildStyles(theme);
+  const router = useRouter();
 
   const canGoBack = router.canGoBack() && showBackButton;
 
   return (
     <SafeAreaView
       edges={['top', 'bottom']}
-      style={[styles.backdrop, { backgroundColor: theme.palette.background }]}
+      style={[StyleSheet.absoluteFill, styles.layoutContainer]}
     >
       {(canGoBack || props.headerText || props.headerIcon) && (
         <View style={styles.header}>
           <View style={styles.headerEle}>
             {canGoBack && (
-              <Pressable onPress={() => router.back()}>
-                <Ionicons
-                  name="arrow-back-circle"
-                  size={40}
-                  color={theme.palette.navigation}
-                />
-              </Pressable>
+              <Button
+                iconName="arrow-back-circle"
+                iconSize={40}
+                iconColor={theme.palette.navigation}
+                onPress={() => router.back()}
+              />
             )}
           </View>
 
@@ -59,13 +53,12 @@ export default function Layout({
 
           <View style={styles.headerEle}>
             {hasOptions && (
-              <Pressable>
-                <Ionicons
-                  name="ellipsis-horizontal-circle"
-                  size={40}
-                  color={theme.palette.primary}
-                />
-              </Pressable>
+              <Button
+                iconName="ellipsis-horizontal-circle"
+                iconSize={40}
+                iconColor={theme.palette.primary}
+                onPress={() => router.back()}
+              />
             )}
           </View>
         </View>
@@ -76,27 +69,33 @@ export default function Layout({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    height: '100%',
-    width: '100%',
-  },
-  header: {
-    height: 40,
+function buildStyles(theme: Theme) {
+  const styles = StyleSheet.create({
+    layoutContainer: {
+      backgroundColor: theme.palette.background,
+    },
+    header: {
+      height: 40,
 
-    paddingHorizontal: 10,
+      marginBottom: theme.spacings.lg,
+      paddingHorizontal: theme.spacings.lg,
 
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  headerEle: {
-    width: 40,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    headerEle: {
+      width: 40,
 
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  container: {
-    flex: 1,
-  },
-});
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    container: {
+      flex: 1,
+
+      padding: 10,
+    },
+  });
+
+  return styles;
+}

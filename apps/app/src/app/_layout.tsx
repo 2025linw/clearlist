@@ -12,12 +12,11 @@ import { Provider as ThemeProvider, useThemeContext } from '@/context/theme';
 
 SplashScreen.preventAutoHideAsync();
 
-// Intialize TanStack Query in global scope
 const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.rootContainer}>
+    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
@@ -47,9 +46,3 @@ function AppInner() {
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
-
-const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-  },
-});

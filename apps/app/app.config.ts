@@ -11,7 +11,7 @@ export default (): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: 'com.saphy.clearlist',
+    bundleIdentifier: 'com.saphydev.clearlist',
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -21,7 +21,7 @@ export default (): ExpoConfig => ({
     },
   },
   android: {
-    package: 'com.saphy.clearlist',
+    package: 'com.saphydev.clearlist',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',

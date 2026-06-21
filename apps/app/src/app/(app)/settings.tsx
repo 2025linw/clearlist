@@ -7,6 +7,7 @@ import { useThemeMode } from '@/context/theme';
 import FormField from '@/components/forms/form-field';
 import Layout from '@/components/layout';
 import Button from '@/components/primitives/button';
+import HorizontalDivider from '@/components/primitives/horizontal-divider';
 import Typography from '@/components/primitives/typography';
 
 export default function SettingsPage() {
@@ -43,14 +44,27 @@ export default function SettingsPage() {
         </View>
       </FormField>
 
-      <Button
-        text="Debug (Text)"
-        onPress={() => router.navigate('/settings/typography-debug')}
-      />
-      <Button
-        text="Debug (Button)"
-        onPress={() => router.navigate('/settings/button-debug')}
-      />
+      {__DEV__ && (
+        <>
+          <HorizontalDivider />
+
+          <Button
+            text="Debug (Text)"
+            onPress={() => router.navigate('/settings/typography-debug')}
+          />
+          <Button
+            text="Debug (Button)"
+            onPress={() => router.navigate('/settings/button-debug')}
+          />
+          <Button
+            text="Debug (Notification)"
+            onPress={() => router.navigate('/settings/notification-debug')}
+          />
+        </>
+      )}
+
+      <HorizontalDivider />
+
       <Button
         text="Logout"
         onPress={() => logout().finally(() => router.navigate('/login'))}
@@ -65,10 +79,10 @@ export default function SettingsPage() {
 
 const styles = StyleSheet.create({
   buttonRow: {
-    width: '100%',
-
+    display: 'flex',
     flexDirection: 'row',
-    justifyContent: 'center',
+    // justifyContent: 'space-evenly',
+    // alignItems: 'stretch',
   },
   button: {
     flex: 1,

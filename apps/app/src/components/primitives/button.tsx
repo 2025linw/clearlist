@@ -1,86 +1,95 @@
-import { ReactNode } from 'react';
-import {
-  Pressable,
-  PressableProps,
-  StyleSheet,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
+import Icon, { IconColor, IconName } from '@/components/icon';
 import Typography from '@/components/primitives/typography';
 
-type ButtonSchemes = keyof Omit<Theme['components']['Button'], 'disabled'>;
+type ButtonContent =
+  | { text: string; iconName?: IconName }
+  | { text?: string; iconName: IconName };
 
-export type ButtonProps = PressableProps & {
-  text: string;
-  scheme?: ButtonSchemes;
-  leftIcon?: ReactNode;
-};
+type ButtonSchemes = keyof Omit<
+  Theme['components']['Button']['scheme'],
+  'disabled'
+>;
+
+export type ButtonProps = PressableProps &
+  ButtonContent & {
+    iconSize?: number;
+    iconColor?: IconColor;
+    scheme?: ButtonSchemes;
+  };
 
 export default function Button({
   text,
   scheme = 'default',
-  leftIcon,
+  iconName,
+  iconSize,
+  iconColor,
+  disabled,
   ...pressableProps
 }: ButtonProps) {
   const theme = useTheme();
+  const styles = buildStyles(theme, disabled ? 'disabled' : scheme);
 
-  const styles = buildStyle(
-    theme,
-    pressableProps.disabled ? 'disabled' : scheme,
-  );
+  const isOnlyIcon = iconName !== undefined && text === undefined;
 
   return (
     <Pressable
       {...pressableProps}
-      disabled={pressableProps.disabled}
+      disabled={disabled}
+      style={({ pressed }) => [
+        isOnlyIcon ? styles.iconOnlyContainer : styles.container,
+        pressed && styles.pressedStyle,
+        pressableProps.style,
+      ]}
     >
-      <View style={styles.container}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+      {iconName && (
+        <Icon
+          name={iconName}
+          size={iconSize || theme.components.Button.icon.size}
+          color={iconColor}
+        />
+      )}
 
-        <Typography
-          variant="button"
-          style={styles.typography}
-        >
-          {text}
-        </Typography>
-      </View>
+      {text && (
+        <View style={styles.typographyContainer}>
+          <Typography
+            variant="button"
+            style={styles.typography}
+          >
+            {text}
+          </Typography>
+        </View>
+      )}
     </Pressable>
   );
 }
 
-type ButtonStyle = {
-  container: ViewStyle;
-  typography: TextStyle;
-  leftIcon: ViewStyle;
-};
-
-function buildStyle(
-  theme: Theme,
-  scheme: ButtonSchemes | 'disabled',
-): ButtonStyle {
+function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
   const componentStyle = theme.components.Button;
 
   return StyleSheet.create({
+    iconOnlyContainer: {},
     container: {
+      paddingHorizontal: theme.spacings.lg,
+
       flexDirection: 'row',
       alignItems: 'center',
       borderRadius: theme.rounded.base,
-      paddingVertical: theme.spacings.lg,
-      paddingHorizontal: theme.spacings.xl,
+      gap: theme.spacings.lg,
 
-      backgroundColor: componentStyle[scheme].backgroundColor,
-      borderColor: componentStyle[scheme].borderColor,
+      backgroundColor: componentStyle.scheme[scheme].backgroundColor,
+      borderColor: componentStyle.scheme[scheme].borderColor,
+    },
+    pressedStyle: {},
+    typographyContainer: {
+      paddingVertical: theme.spacings.lg,
     },
     typography: {
-      color: componentStyle[scheme].color,
-    },
-    leftIcon: {
-      marginRight: theme.spacings.base,
+      color: componentStyle.scheme[scheme].color,
     },
   });
 }

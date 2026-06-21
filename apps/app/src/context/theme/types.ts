@@ -28,6 +28,8 @@ export type Palette = {
   text: ColorValue;
   subtle: ColorValue;
 
+  success: ColorValue;
+
   danger: ColorValue;
 };
 
@@ -53,6 +55,8 @@ const palettes: Record<ThemeMode, Omit<Palette, 'primary' | 'navigation'>> = {
     text: '#0B0B0B',
     subtle: '#6E6E73',
 
+    success: '#34C759',
+
     danger: '#EE3333',
   },
   dark: {
@@ -62,6 +66,8 @@ const palettes: Record<ThemeMode, Omit<Palette, 'primary' | 'navigation'>> = {
 
     text: '#E4E4E4',
     subtle: '#8E8E93',
+
+    success: '#30D158',
 
     danger: '#FF453A',
   },
@@ -171,6 +177,8 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
   const rounded = {
     sm: 3,
     base: 6,
+    lg: 10,
+    full: 9999,
   };
 
   const boxMultiplier = 4;
@@ -180,6 +188,21 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
     base: boxMultiplier,
     lg: boxMultiplier * 2,
     xl: boxMultiplier * 4,
+  };
+
+  const zHeight = {
+    base: 0,
+
+    content: 1,
+    floating: 10,
+
+    overlay: 100,
+    modal: 1000,
+
+    toast: 1100,
+    tooltip: 1200,
+
+    max: 9999,
   };
 
   return {
@@ -193,28 +216,39 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
     rounded,
     shadows,
     spacings,
+    zHeight,
 
     components: {
       Button: {
-        primary: {
-          backgroundColor: palette.primary,
-          borderColor: palette.primary,
-          color: '#fff',
+        scheme: {
+          primary: {
+            backgroundColor: palette.primary,
+            borderColor: palette.primary,
+            color: '#fff',
+          },
+          default: {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+            color: palette.text,
+          },
+          disabled: {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+            color: palette.subtle,
+          },
+          success: {
+            backgroundColor: palette.success,
+            borderColor: palette.border,
+            color: palette.text,
+          },
+          danger: {
+            backgroundColor: palette.danger,
+            borderColor: palette.danger,
+            color: '#fff',
+          },
         },
-        default: {
-          backgroundColor: palette.surface,
-          borderColor: palette.border,
-          color: palette.text,
-        },
-        disabled: {
-          backgroundColor: palette.surface,
-          borderColor: palette.border,
-          color: palette.subtle,
-        },
-        danger: {
-          backgroundColor: palette.danger,
-          borderColor: palette.danger,
-          color: '#fff',
+        icon: {
+          size: typographyVariants.button.fontSize,
         },
       },
       Typography: {
@@ -233,8 +267,11 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
         input: { color: palette.text },
         placeholder: { color: palette.subtle },
       },
+      Icon: {
+        size: typographyVariants.button.fontSize,
+        color: palette.text,
+      },
     },
   } as const;
 }
-
 export type Theme = ReturnType<typeof buildTheme>;

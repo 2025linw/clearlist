@@ -1,6 +1,8 @@
 import { PropsWithChildren, createContext, useContext, useState } from 'react';
+import { View } from 'react-native';
 
 import NotificationBar from '@/components/notification-bar';
+import Button from '@/components/primitives/button';
 
 import { ErrorContextType } from './types';
 
@@ -19,9 +21,13 @@ export function Provider({ children }: PropsWithChildren) {
     setMessage(message);
   }
 
-  function showWarning(message: string) {}
+  function showWarning(message: string) {
+    setMessage(message);
+  }
 
-  function showNotification(message: string) {}
+  function showNotification(message: string) {
+    setMessage(message);
+  }
 
   return (
     <ErrorContext.Provider value={{ showError, showWarning, showNotification }}>
@@ -45,4 +51,27 @@ export function useNotificationContext() {
   }
 
   return ctx;
+}
+
+export function Demo() {
+  const { showNotification, showWarning, showError } = useNotificationContext();
+
+  return (
+    /* eslint-disable react-native/no-inline-styles */
+    <View style={{ gap: 16 }}>
+      <Button
+        text="Notification"
+        onPress={() => showNotification('This is a notification')}
+      />
+      <Button
+        text="Warning"
+        onPress={() => showWarning('This is a warning')}
+      />
+      <Button
+        text="Error"
+        onPress={() => showError('This is an error')}
+      />
+    </View>
+    /* eslint-enable react-native/no-inline-styles */
+  );
 }

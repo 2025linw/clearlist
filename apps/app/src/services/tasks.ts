@@ -1,4 +1,4 @@
-import { Task } from '@clearlist/types';
+import { TaskDTO } from '@clearlist/types';
 
 import { API_URL } from '@/constants';
 
@@ -6,12 +6,71 @@ import { buildTaskQuery } from '@/services/helpers';
 
 import { apiFetch } from '@/lib/api-client';
 
-import { TaskQuery } from './types';
+import { TaskQuery, TaskQueryResponse, TaskResponse } from './types';
 
-export async function list(query: TaskQuery = {}) {
+export async function create(task: TaskDTO): Promise<TaskResponse> {
+  const res = await apiFetch(API_URL + '/api/tasks', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(task),
+  });
+
+  return res.json();
+}
+
+export async function get(id: string): Promise<TaskResponse> {
+  const res = await apiFetch(API_URL + `/api/tasks/${id}`);
+
+  return res.json();
+}
+
+export async function list(query: TaskQuery = {}): Promise<TaskQueryResponse> {
   const qs = buildTaskQuery(query);
 
-  return apiFetch<Task[]>(
+  const res = await apiFetch(
     qs ? API_URL + `/api/tasks?${qs}` : API_URL + '/api/tasks',
   );
+
+  return res.json();
+}
+
+export async function update({
+  id,
+  ...task
+}: TaskDTO & { id: string }): Promise<TaskResponse> {
+  const res = await apiFetch(API_URL + `/api/tasks/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(task),
+  });
+
+  return res.json();
+}
+
+export async function trash(id: string) {
+  return await apiFetch(API_URL + `/api/tasks/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function restore(id: string) {
+  return await apiFetch(API_URL + `/api/tasks/${id}/restore`, {
+    method: 'POST',
+  });
+}
+
+export async function complete(id: string): Promise<Response> {
+  return apiFetch(API_URL + `/api/tasks/${id}/complete`, {
+    method: 'POST',
+  });
+}
+
+export async function reopen(id: string): Promise<Response> {
+  return apiFetch(API_URL + `/api/tasks/${id}/reopen`, {
+    method: 'POST',
+  });
 }
