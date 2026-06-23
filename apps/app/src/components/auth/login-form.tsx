@@ -4,12 +4,12 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSessionApi } from '@/context/auth';
 import { useTheme } from '@/context/theme';
+import { Theme } from '@/context/theme/types';
 
 import FormField from '@/components/forms/form-field';
 import Button from '@/components/primitives/button';
 import TextInput from '@/components/primitives/text-input';
 import Typography from '@/components/primitives/typography';
-import Box from '@/components/styling/box';
 
 export type State = 'login' | 'register';
 
@@ -18,8 +18,10 @@ type Props = {
 };
 
 export default function LoginForm(props: Props) {
-  const router = useRouter();
   const theme = useTheme();
+  const styles = buildStyles(theme);
+  const router = useRouter();
+
   const { createAccount, login } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
@@ -31,7 +33,7 @@ export default function LoginForm(props: Props) {
 
   return (
     <View style={styles.container}>
-      <Box style={[styles.loginBox, { backgroundColor: theme.palette.subtle }]}>
+      <View style={styles.loginBox}>
         <View style={styles.inputContainer}>
           <FormField
             label={'Email'}
@@ -67,32 +69,30 @@ export default function LoginForm(props: Props) {
           </FormField>
         </View>
 
-        <View style={styles.loginField}>
-          <Button
-            text={props.type === 'login' ? 'Login' : 'Register'}
-            scheme="primary"
-            disabled={isLoading}
-            onPress={async () => {
-              if (isLoading) return;
-              setLoading(true);
+        <Button
+          text={props.type === 'login' ? 'Login' : 'Register'}
+          scheme="primary"
+          disabled={isLoading}
+          onPress={async () => {
+            if (isLoading) return;
+            setLoading(true);
 
-              try {
-                if (props.type === 'login') {
-                  await login({ email, password });
-                } else {
-                  await createAccount({ email, password });
-                }
-
-                router.replace('/');
-              } catch (e) {
-                setErrorText(`${JSON.stringify(e)}`);
-              } finally {
-                setLoading(false);
+            try {
+              if (props.type === 'login') {
+                await login({ email, password });
+              } else {
+                await createAccount({ email, password });
               }
-            }}
-          />
-        </View>
-      </Box>
+
+              router.replace('/');
+            } catch (e) {
+              setErrorText(`${JSON.stringify(e)}`);
+            } finally {
+              setLoading(false);
+            }
+          }}
+        />
+      </View>
 
       <Button
         text={
@@ -112,27 +112,36 @@ export default function LoginForm(props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    padding: 25,
+function buildStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+      padding: theme.spacings.base,
 
-    justifyContent: 'space-between',
-  },
-  loginBox: {
-    padding: 25,
-  },
-  inputContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    loginBox: {
+      borderRadius: theme.rounded.lg,
+      padding: theme.spacings.xl,
 
-    gap: 10,
-  },
-  loginField: {
-    padding: 5,
-    gap: 10,
-  },
-  msgBox: {
-    height: '10%',
-  },
-});
+      gap: theme.spacings.xl,
+
+      backgroundColor: theme.palette.subtle,
+    },
+    inputContainer: {
+      padding: theme.spacings.lg,
+
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 10,
+    },
+    loginField: {
+      padding: 5,
+
+      gap: 10,
+    },
+    msgBox: {
+      height: '10%',
+    },
+  });
+}
