@@ -5,7 +5,7 @@ import ListScreen from '@/screens/list/base-list-screen';
 export default function DeadlineScreen() {
   return (
     <ListScreen
-      headerText="Deadline"
+      listName="Deadline"
       category={Category.Deadline}
     />
   );

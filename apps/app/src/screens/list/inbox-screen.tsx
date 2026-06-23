@@ -5,7 +5,7 @@ import ListScreen from '@/screens/list/base-list-screen';
 export default function InboxScreen() {
   return (
     <ListScreen
-      headerText="Inbox"
+      listName="Inbox"
       category={Category.Inbox}
     />
   );

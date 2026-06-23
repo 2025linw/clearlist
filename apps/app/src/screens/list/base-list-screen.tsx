@@ -16,7 +16,7 @@ import Button from '@/components/primitives/button';
 import TaskItem from '@/components/task-item';
 
 type Props = {
-  headerText: string;
+  listName: string;
   category: Category;
 };
 
@@ -112,7 +112,7 @@ export default function ListScreen(props: Props) {
   return (
     <>
       <Layout
-        headerText={props.headerText}
+        headerText={props.listName}
         showBackButton
       >
         <FlatList

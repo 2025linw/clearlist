@@ -5,7 +5,7 @@ import ListScreen from '@/screens/list/base-list-screen';
 export default function UpcomingScreen() {
   return (
     <ListScreen
-      headerText="Upcoming"
+      listName="Upcoming"
       category={Category.Upcoming}
     />
   );

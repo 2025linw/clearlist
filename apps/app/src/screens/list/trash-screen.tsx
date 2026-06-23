@@ -5,7 +5,7 @@ import ListScreen from '@/screens/list/base-list-screen';
 export default function TrashScreen() {
   return (
     <ListScreen
-      headerText="Trash"
+      listName="Trash"
       category={Category.Trash}
     />
   );
