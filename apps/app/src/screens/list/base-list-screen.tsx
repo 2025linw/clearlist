@@ -3,6 +3,7 @@ import { FlatList, StyleSheet } from 'react-native';
 
 import { TaskDTO } from '@clearlist/types';
 
+import { useNotificationContext } from '@/context/error';
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 import * as TaskHook from '@/hooks/use-tasks';
@@ -22,6 +23,7 @@ type Props = {
 export default function ListScreen(props: Props) {
   const theme = useTheme();
   const styles = buildStyles(theme);
+  const { showError } = useNotificationContext();
 
   const searchQuery = categoryQueryMap[props.category];
 
@@ -46,7 +48,7 @@ export default function ListScreen(props: Props) {
       (task) => task.id === id,
     );
     if (!activeTask) {
-      console.error('whoopsie');
+      showError(`A task with id ${id} does not exist on this page`);
 
       return;
     }
@@ -61,7 +63,6 @@ export default function ListScreen(props: Props) {
       deadline: activeTask.deadline,
       tags: activeTask.tags.map((tag) => tag.id),
     });
-    // setDateModalDate(activeTask.start ?? undefined);
   }
 
   function collapseTask() {
@@ -105,7 +106,7 @@ export default function ListScreen(props: Props) {
         setDateModalDate(draft?.deadline || undefined);
       }
     },
-    [draft?.deadline, draft?.start],
+    [draft?.start, draft?.deadline],
   );
 
   return (

@@ -87,11 +87,10 @@ export function Provider({ children }: PropsWithChildren) {
         password: params.password,
         name: params.email.split('@')[0],
       });
-
       if (error) {
-        console.error(error);
+        showError('Unable to create new account');
 
-        throw error;
+        return;
       }
 
       await apiFetch(API_URL + '/api/me');
@@ -102,37 +101,38 @@ export function Provider({ children }: PropsWithChildren) {
         hasSession: true,
       });
     },
-    [],
+    [showError],
   );
 
-  const login = useCallback<ApiContextType['login']>(async (params) => {
-    const { data, error } = await authClient.signIn.email({
-      email: params.email,
-      password: params.password,
-    });
+  const login = useCallback<ApiContextType['login']>(
+    async (params) => {
+      const { data, error } = await authClient.signIn.email({
+        email: params.email,
+        password: params.password,
+      });
+      if (error) {
+        showError('Unable to login to account');
 
-    if (error) {
-      console.error(error);
+        return;
+      }
 
-      throw error;
-    }
+      await apiFetch(API_URL + '/api/me');
 
-    await apiFetch(API_URL + '/api/me');
-
-    setUser({
-      loaded: true,
-      currentSession: data.token!,
-      hasSession: true,
-    });
-  }, []);
+      setUser({
+        loaded: true,
+        currentSession: data.token!,
+        hasSession: true,
+      });
+    },
+    [showError],
+  );
 
   const logout = useCallback<ApiContextType['logout']>(async () => {
     const { error } = await authClient.signOut();
-
     if (error) {
-      console.error(error);
+      showError('Unable to logout of account');
 
-      throw error;
+      return;
     }
 
     setUser({
@@ -140,7 +140,7 @@ export function Provider({ children }: PropsWithChildren) {
       currentSession: undefined,
       hasSession: false,
     });
-  }, []);
+  }, [showError]);
 
   const api = useMemo(
     () => ({

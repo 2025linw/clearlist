@@ -25,8 +25,6 @@ export default function usePersisted<K extends keyof StorageSchema>(key: K) {
 
           setValue(parsed);
         } catch {
-          console.error('Invalid format found in storage');
-
           setValue(storageDefaults[key]);
         }
       }
@@ -39,7 +37,7 @@ export default function usePersisted<K extends keyof StorageSchema>(key: K) {
     setValue(val);
 
     Storage.setItem(key, JSON.stringify(val)).catch((e) => {
-      console.error('Failed to persist', e);
+      throw Error(e);
     });
   }
 
