@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { PropsWithChildren } from 'react';
 import {
   StyleProp,
   StyleSheet,
@@ -11,14 +11,13 @@ import Typography from '@/components/primitives/typography';
 
 // TODO: Add label orientation (top or left (default))
 
-export type FormFieldProps = {
+export type Props = PropsWithChildren<{
   label?: string;
   labelStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
-  children: ReactNode;
-};
+}>;
 
-export default function FormField({ children, ...props }: FormFieldProps) {
+export default function FormField({ children, ...props }: Props) {
   return (
     <View style={styles.container}>
       {props.label && (
@@ -41,7 +40,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   label: {
-    width: 90,
+    width: 100,
   },
   content: { flex: 1 },
 });

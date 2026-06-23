@@ -9,13 +9,13 @@ import { Theme } from '@/context/theme/types';
 import Button from '@/components/primitives/button';
 import Typography from '@/components/primitives/typography';
 
-type LayoutProps = PropsWithChildren & {
+type LayoutProps = PropsWithChildren<{
   showBackButton?: boolean;
   hasOptions?: boolean;
   headerText?: string;
   headerIcon?: ReactNode; // TODO: create Icon node,
   style?: StyleProp<ViewStyle>;
-};
+}>;
 
 export default function Layout({
   children,
