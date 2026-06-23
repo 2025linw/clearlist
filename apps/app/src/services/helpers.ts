@@ -34,7 +34,7 @@ export function toYYYYMMDD(date: Date) {
 
 export const categoryQueryMap: Record<Category, TaskQuery> = {
   [Category.Inbox]: {
-    startDate: { type: 'cmp', date: getTomorrowDate(), cmp: Cmp.Less },
+    startDate: { type: 'ex', state: false },
   },
   [Category.Today]: {
     startDate: { type: 'eq', date: getTodayDate() },
