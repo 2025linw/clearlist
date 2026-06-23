@@ -51,7 +51,7 @@ export default function DateSelectModal({ initialDate, ...props }: Props) {
 }
 
 function buildStyles(theme: Theme) {
-  const styles = StyleSheet.create({
+  return StyleSheet.create({
     overlay: {
       flex: 1,
 
@@ -69,6 +69,4 @@ function buildStyles(theme: Theme) {
       backgroundColor: theme.palette.surface,
     },
   });
-
-  return styles;
 }

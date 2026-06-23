@@ -99,7 +99,7 @@ export default function TaskItem({
 }
 
 function buildStyles(theme: Theme) {
-  const styles = StyleSheet.create({
+  return StyleSheet.create({
     container: {
       borderRadius: theme.rounded.lg,
       padding: theme.spacings.xl,
@@ -149,6 +149,4 @@ function buildStyles(theme: Theme) {
       gap: theme.spacings.xl,
     },
   });
-
-  return styles;
 }

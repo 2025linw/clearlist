@@ -204,7 +204,7 @@ export default function ListScreen(props: Props) {
 }
 
 function buildStyles(theme: Theme) {
-  const styles = StyleSheet.create({
+  return StyleSheet.create({
     container: {
       ...StyleSheet.absoluteFill,
     },
@@ -226,6 +226,4 @@ function buildStyles(theme: Theme) {
       paddingLeft: theme.spacings.lg + 10,
     },
   });
-
-  return styles;
 }

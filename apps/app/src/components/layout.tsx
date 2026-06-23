@@ -70,7 +70,7 @@ export default function Layout({
 }
 
 function buildStyles(theme: Theme) {
-  const styles = StyleSheet.create({
+  return StyleSheet.create({
     layoutContainer: {
       backgroundColor: theme.palette.background,
     },
@@ -96,6 +96,4 @@ function buildStyles(theme: Theme) {
       padding: 10,
     },
   });
-
-  return styles;
 }
