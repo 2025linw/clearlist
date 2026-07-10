@@ -144,11 +144,10 @@ impl FromRequestParts<AppState> for Session {
                 let status_code: StatusCode = err.into();
 
                 Err((status_code, "This should be fixed"))
-            },
+            }
         }
     }
 }
-
 
 /// Optional Session Type
 ///

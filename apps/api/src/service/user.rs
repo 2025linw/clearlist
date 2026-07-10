@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
-use crate::{db::user::UserRepository, models::user::Model};
 use super::Result;
+use crate::{db::user::UserRepository, models::user::Model};
 
 // WARN: REMOVE THIS
 #[allow(dead_code)]

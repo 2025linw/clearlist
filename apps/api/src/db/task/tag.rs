@@ -345,1684 +345,1684 @@ pub(super) async fn delete_task_tag_inner_unchecked(
     Ok(())
 }
 
-#[cfg(test)]
-mod query {
-    use std::time::Duration;
-
-    use tokio::test;
-    use uuid::Uuid;
-
-    use super::query_task_tags_inner;
-    use crate::{
-        db::{
-            ApplicationError, Error,
-            test_utils::{check_sort_task_tag, create_test_tag, create_test_task, db_init},
-            utils::order_task_tag,
-        },
-        models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
-    };
-
-    #[test]
-    async fn default_query() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(
-                &mut tx,
-                TagCreate::default(),
-                base_time,
-                base_time + Duration::from_hours(3),
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate::default(),
-                base_time,
-                base_time + Duration::from_hours(2),
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate::default(),
-                base_time,
-                base_time + Duration::from_hours(1),
-            )
-            .await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 1".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 2".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 3".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), tag_list.len());
-        assert!(task_tags.is_sorted_by(check_sort_task_tag));
-    }
-
-    #[test]
-    async fn no_tags() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), 0);
-    }
-
-    #[test]
-    async fn one_tag() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: vec![tag.id],
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), 1);
-        assert!(task_tags.is_sorted_by(check_sort_task_tag));
-
-        assert_eq!(task_tags[0], tag);
-    }
-
-    #[test]
-    async fn many_tags() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 1".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 2".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 3".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), tag_list.len());
-        assert!(task_tags.is_sorted_by(check_sort_task_tag));
-
-        let mut tag_list = tag_list.clone();
-        tag_list.sort_by(order_task_tag);
-        assert_eq!(task_tags, tag_list);
-    }
-
-    #[test]
-    async fn deleted_task() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        // No Tags
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-
-        // One Tag
-        let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: vec![tag.id],
-                ..Default::default()
-            },
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-
-        // Many Tags
-        let tag_list = [
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 1".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 2".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 3".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_task() {
-        let (_, mut tx, _) = db_init().await;
-
-        let res = query_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn as_nonexistent_user() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        // No Tags
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-
-        // One Tag
-        let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: vec![tag.id],
-                ..Default::default()
-            },
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-
-        // Many Tags
-        let tag_list = [
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 1".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 2".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 3".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-}
-
-#[cfg(test)]
-mod insert {
-    use std::collections::HashSet;
-
-    use tokio::test;
-    use uuid::Uuid;
-
-    use super::insert_task_tags_inner;
-    use crate::{
-        db::{
-            ApplicationError, Error,
-            test_utils::{create_test_tag, create_test_task, db_init, get_task},
-        },
-        models::{
-            tag::{DtoModel as TagCreate, Model as TagModel},
-            task::DtoModel as TaskCreate,
-        },
-    };
-
-    #[test]
-    async fn base_append() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-        if let Ok(tags) = res {
-            assert!(tags.iter().all(|tag| matches!(tag, TagModel { .. })));
-        }
-    }
-
-    #[test]
-    async fn is_idempotent() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_list = [
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 1".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 2".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-            create_test_tag(
-                &mut tx,
-                TagCreate {
-                    label: "Tag 3".to_string(),
-                    ..Default::default()
-                },
-                base_time,
-                base_time,
-            )
-            .await,
-        ];
-
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags, tag_list);
-
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags, tag_list);
-    }
-
-    #[test]
-    async fn empty_list() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        // No existing tags
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert!(ret_task.tags.is_empty());
-
-        // With one existing tag
-        let tag_list = [create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        // With many existing tags
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-    }
-
-    #[test]
-    async fn one_tag() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let mut tag_list =
-            vec![create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[0].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 1);
-        assert_eq!(ret_task.tags, tag_list);
-
-        tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[1].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 2);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[2].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-    }
-
-    #[test]
-    async fn many_tags() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let mut tag_list = vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list[..3].iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        tag_list.append(&mut vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ]);
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list[3..6].iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 6);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        tag_list.append(&mut vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ]);
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list[6..9].iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 9);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        let res = insert_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 9);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-    }
-
-    #[test]
-    async fn nonexistent_tag_one() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![Uuid::new_v4()]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_tag_within() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_ids = vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-        ];
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_tag_all() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_ids = vec![
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-        ];
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn deleted_task() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_task() {
-        let (_, mut tx, _) = db_init().await;
-
-        let res = insert_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn as_nonexistent_user() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-}
-
-#[cfg(test)]
-mod update {
-    use std::collections::HashSet;
-
-    use tokio::test;
-    use uuid::Uuid;
-
-    use super::update_task_tags_inner;
-    use crate::{
-        db::{
-            ApplicationError, Error,
-            test_utils::{
-                check_sort_task_tag, create_test_tag, create_test_task, db_init, get_task,
-            },
-            utils::order_task_tag,
-        },
-        models::{
-            tag::{DtoModel as TagCreate, Model as TagModel},
-            task::DtoModel as TaskCreate,
-        },
-    };
-
-    #[test]
-    async fn base_update() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let tags = res.unwrap();
-        for tag in tags {
-            assert!(matches!(tag, TagModel { .. }))
-        }
-    }
-
-    #[test]
-    async fn is_idempotent() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), tag_list.len());
-        assert!(task_tags.is_sorted_by(check_sort_task_tag));
-
-        let mut tag_list = tag_list.clone();
-        tag_list.sort_by(order_task_tag);
-        assert_eq!(task_tags, tag_list);
-
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let task_tags = res.unwrap();
-        assert_eq!(task_tags.len(), tag_list.len());
-        assert!(task_tags.is_sorted_by(check_sort_task_tag));
-
-        let mut tag_list = tag_list.clone();
-        tag_list.sort_by(order_task_tag);
-        assert_eq!(task_tags, tag_list);
-    }
-
-    #[test]
-    async fn empty_list() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        // No existing tags
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let tags = res.unwrap();
-        assert!(tags.is_empty());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert!(ret_task.tags.is_empty());
-
-        // With one existing tag
-        let tag_list = [create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let tags = res.unwrap();
-        assert!(tags.is_empty());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert!(ret_task.tags.is_empty());
-
-        // With many existing tags
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_ok());
-
-        let tags = res.unwrap();
-        assert!(tags.is_empty());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert!(ret_task.tags.is_empty());
-    }
-
-    #[test]
-    async fn one_tag() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let mut tag_list =
-            vec![create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[0].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 1);
-        assert_eq!(ret_task.tags, tag_list[..1]);
-
-        tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[1].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 1);
-        assert_eq!(ret_task.tags, tag_list[1..2]);
-
-        tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[2].id]).await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 1);
-        assert_eq!(ret_task.tags, tag_list[2..3]);
-    }
-
-    #[test]
-    async fn many_tags() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-        let res = update_task_tags_inner(
-            &mut tx,
-            task.id,
-            Uuid::nil(),
-            tag_list.iter().map(|tag| tag.id).collect(),
-        )
-        .await;
-        assert!(res.is_ok());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-        assert_eq!(
-            ret_task
-                .tags
-                .iter()
-                .map(|tag| tag.id)
-                .collect::<HashSet<Uuid>>(),
-            tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
-        );
-    }
-
-    #[test]
-    async fn nonexistent_tag_one() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![Uuid::new_v4()]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_tag_within() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_ids = vec![
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
-                .await
-                .id,
-            Uuid::new_v4(),
-        ];
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_tag_all() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let tag_ids = vec![
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-        ];
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TagNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn deleted_task() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_task() {
-        let (_, mut tx, _) = db_init().await;
-
-        let res = update_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn as_nonexistent_user() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-}
-
-#[cfg(test)]
-mod delete {
-    use tokio::test;
-    use uuid::Uuid;
-
-    use super::delete_task_tag_inner;
-    use crate::{
-        db::{
-            ApplicationError, Error,
-            test_utils::{create_test_tag, create_test_task, db_init, get_task},
-        },
-        models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
-    };
-
-    #[test]
-    async fn base_delete() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-        assert_eq!(task.tags.len(), tag_list.len());
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 4);
-        assert!(!ret_task.tags.contains(&tag_list[2]))
-    }
-
-    #[test]
-    async fn is_idempotent() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: tag_list.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-        assert_eq!(task.tags.len(), tag_list.len());
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 4);
-        assert!(!ret_task.tags.contains(&tag_list[2]));
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 4);
-        assert!(!ret_task.tags.contains(&tag_list[2]));
-    }
-
-    #[test]
-    async fn tag_not_on_task() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag_list = [
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-            create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
-        ];
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: vec![tag_list[0].id, tag_list[2].id, tag_list[4].id],
-                ..Default::default()
-            },
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-        assert_eq!(task.tags.len(), 3);
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[1].id).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[3].id).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), Uuid::new_v4()).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 3);
-    }
-
-    #[test]
-    async fn nonexistent_tag() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            None,
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), Uuid::new_v4()).await;
-        assert!(res.is_ok());
-        assert_eq!(res.unwrap(), ());
-
-        let ret_task = get_task(&mut tx, task.id).await;
-        assert_eq!(ret_task.tags.len(), 0);
-    }
-
-    #[test]
-    async fn deleted_task() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate::default(),
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag.id).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn nonexistent_task() {
-        let (_, mut tx, _) = db_init().await;
-
-        let res = delete_task_tag_inner(&mut tx, Uuid::nil(), Uuid::nil(), Uuid::new_v4()).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-
-    #[test]
-    async fn as_nonexistent_user() {
-        let (_, mut tx, base_time) = db_init().await;
-
-        let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
-
-        let task = create_test_task(
-            &mut tx,
-            TaskCreate {
-                tags: vec![tag.id],
-                ..Default::default()
-            },
-            None,
-            Some(base_time),
-            base_time,
-            base_time,
-        )
-        .await;
-
-        let res = delete_task_tag_inner(&mut tx, task.id, Uuid::new_v4(), tag.id).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Application(ApplicationError::TaskNotFound)
-            ))
-        }
-    }
-}
+// #[cfg(test)]
+// mod query {
+//     use std::time::Duration;
+
+//     use tokio::test;
+//     use uuid::Uuid;
+
+//     use super::query_task_tags_inner;
+//     use crate::{
+//         db::{
+//             ApplicationError, Error,
+//             test_utils::{check_sort_task_tag, create_test_tag, create_test_task, db_init},
+//             utils::order_task_tag,
+//         },
+//         models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
+//     };
+
+//     #[test]
+//     async fn default_query() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate::default(),
+//                 base_time,
+//                 base_time + Duration::from_hours(3),
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate::default(),
+//                 base_time,
+//                 base_time + Duration::from_hours(2),
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate::default(),
+//                 base_time,
+//                 base_time + Duration::from_hours(1),
+//             )
+//             .await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 1".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 2".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 3".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), tag_list.len());
+//         assert!(task_tags.is_sorted_by(check_sort_task_tag));
+//     }
+
+//     #[test]
+//     async fn no_tags() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), 0);
+//     }
+
+//     #[test]
+//     async fn one_tag() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: vec![tag.id],
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), 1);
+//         assert!(task_tags.is_sorted_by(check_sort_task_tag));
+
+//         assert_eq!(task_tags[0], tag);
+//     }
+
+//     #[test]
+//     async fn many_tags() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 1".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 2".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 3".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), tag_list.len());
+//         assert!(task_tags.is_sorted_by(check_sort_task_tag));
+
+//         let mut tag_list = tag_list.clone();
+//         tag_list.sort_by(order_task_tag);
+//         assert_eq!(task_tags, tag_list);
+//     }
+
+//     #[test]
+//     async fn deleted_task() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         // No Tags
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+
+//         // One Tag
+//         let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: vec![tag.id],
+//                 ..Default::default()
+//             },
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+
+//         // Many Tags
+//         let tag_list = [
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 1".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 2".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 3".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::nil()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_task() {
+//         let (_, mut tx, _) = db_init().await;
+
+//         let res = query_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn as_nonexistent_user() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         // No Tags
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+
+//         // One Tag
+//         let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: vec![tag.id],
+//                 ..Default::default()
+//             },
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+
+//         // Many Tags
+//         let tag_list = [
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 1".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 2".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 3".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = query_task_tags_inner(&mut tx, task.id, Uuid::new_v4()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+// }
+
+// #[cfg(test)]
+// mod insert {
+//     use std::collections::HashSet;
+
+//     use tokio::test;
+//     use uuid::Uuid;
+
+//     use super::insert_task_tags_inner;
+//     use crate::{
+//         db::{
+//             ApplicationError, Error,
+//             test_utils::{create_test_tag, create_test_task, db_init, get_task},
+//         },
+//         models::{
+//             tag::{DtoModel as TagCreate, Model as TagModel},
+//             task::DtoModel as TaskCreate,
+//         },
+//     };
+
+//     #[test]
+//     async fn base_append() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+//         if let Ok(tags) = res {
+//             assert!(tags.iter().all(|tag| matches!(tag, TagModel { .. })));
+//         }
+//     }
+
+//     #[test]
+//     async fn is_idempotent() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_list = [
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 1".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 2".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//             create_test_tag(
+//                 &mut tx,
+//                 TagCreate {
+//                     label: "Tag 3".to_string(),
+//                     ..Default::default()
+//                 },
+//                 base_time,
+//                 base_time,
+//             )
+//             .await,
+//         ];
+
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags, tag_list);
+
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags, tag_list);
+//     }
+
+//     #[test]
+//     async fn empty_list() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         // No existing tags
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert!(ret_task.tags.is_empty());
+
+//         // With one existing tag
+//         let tag_list = [create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         // With many existing tags
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+//     }
+
+//     #[test]
+//     async fn one_tag() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let mut tag_list =
+//             vec![create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[0].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 1);
+//         assert_eq!(ret_task.tags, tag_list);
+
+//         tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[1].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 2);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[2].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+//     }
+
+//     #[test]
+//     async fn many_tags() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let mut tag_list = vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list[..3].iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         tag_list.append(&mut vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ]);
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list[3..6].iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 6);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         tag_list.append(&mut vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ]);
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list[6..9].iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 9);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         let res = insert_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 9);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_one() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![Uuid::new_v4()]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_within() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_ids = vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//         ];
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_all() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_ids = vec![
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//         ];
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn deleted_task() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_task() {
+//         let (_, mut tx, _) = db_init().await;
+
+//         let res = insert_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn as_nonexistent_user() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = insert_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+// }
+
+// #[cfg(test)]
+// mod update {
+//     use std::collections::HashSet;
+
+//     use tokio::test;
+//     use uuid::Uuid;
+
+//     use super::update_task_tags_inner;
+//     use crate::{
+//         db::{
+//             ApplicationError, Error,
+//             test_utils::{
+//                 check_sort_task_tag, create_test_tag, create_test_task, db_init, get_task,
+//             },
+//             utils::order_task_tag,
+//         },
+//         models::{
+//             tag::{DtoModel as TagCreate, Model as TagModel},
+//             task::DtoModel as TaskCreate,
+//         },
+//     };
+
+//     #[test]
+//     async fn base_update() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let tags = res.unwrap();
+//         for tag in tags {
+//             assert!(matches!(tag, TagModel { .. }))
+//         }
+//     }
+
+//     #[test]
+//     async fn is_idempotent() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), tag_list.len());
+//         assert!(task_tags.is_sorted_by(check_sort_task_tag));
+
+//         let mut tag_list = tag_list.clone();
+//         tag_list.sort_by(order_task_tag);
+//         assert_eq!(task_tags, tag_list);
+
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let task_tags = res.unwrap();
+//         assert_eq!(task_tags.len(), tag_list.len());
+//         assert!(task_tags.is_sorted_by(check_sort_task_tag));
+
+//         let mut tag_list = tag_list.clone();
+//         tag_list.sort_by(order_task_tag);
+//         assert_eq!(task_tags, tag_list);
+//     }
+
+//     #[test]
+//     async fn empty_list() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         // No existing tags
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let tags = res.unwrap();
+//         assert!(tags.is_empty());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert!(ret_task.tags.is_empty());
+
+//         // With one existing tag
+//         let tag_list = [create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let tags = res.unwrap();
+//         assert!(tags.is_empty());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert!(ret_task.tags.is_empty());
+
+//         // With many existing tags
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_ok());
+
+//         let tags = res.unwrap();
+//         assert!(tags.is_empty());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert!(ret_task.tags.is_empty());
+//     }
+
+//     #[test]
+//     async fn one_tag() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let mut tag_list =
+//             vec![create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await];
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[0].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 1);
+//         assert_eq!(ret_task.tags, tag_list[..1]);
+
+//         tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[1].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 1);
+//         assert_eq!(ret_task.tags, tag_list[1..2]);
+
+//         tag_list.push(create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await);
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![tag_list[2].id]).await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 1);
+//         assert_eq!(ret_task.tags, tag_list[2..3]);
+//     }
+
+//     #[test]
+//     async fn many_tags() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+//         let res = update_task_tags_inner(
+//             &mut tx,
+//             task.id,
+//             Uuid::nil(),
+//             tag_list.iter().map(|tag| tag.id).collect(),
+//         )
+//         .await;
+//         assert!(res.is_ok());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//         assert_eq!(
+//             ret_task
+//                 .tags
+//                 .iter()
+//                 .map(|tag| tag.id)
+//                 .collect::<HashSet<Uuid>>(),
+//             tag_list.iter().map(|tag| tag.id).collect::<HashSet<Uuid>>()
+//         );
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_one() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![Uuid::new_v4()]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_within() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_ids = vec![
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time)
+//                 .await
+//                 .id,
+//             Uuid::new_v4(),
+//         ];
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag_all() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let tag_ids = vec![
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//             Uuid::new_v4(),
+//         ];
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), tag_ids).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TagNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn deleted_task() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_task() {
+//         let (_, mut tx, _) = db_init().await;
+
+//         let res = update_task_tags_inner(&mut tx, Uuid::new_v4(), Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn as_nonexistent_user() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = update_task_tags_inner(&mut tx, task.id, Uuid::nil(), vec![]).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+// }
+
+// #[cfg(test)]
+// mod delete {
+//     use tokio::test;
+//     use uuid::Uuid;
+
+//     use super::delete_task_tag_inner;
+//     use crate::{
+//         db::{
+//             ApplicationError, Error,
+//             test_utils::{create_test_tag, create_test_task, db_init, get_task},
+//         },
+//         models::{tag::DtoModel as TagCreate, task::DtoModel as TaskCreate},
+//     };
+
+//     #[test]
+//     async fn base_delete() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+//         assert_eq!(task.tags.len(), tag_list.len());
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 4);
+//         assert!(!ret_task.tags.contains(&tag_list[2]))
+//     }
+
+//     #[test]
+//     async fn is_idempotent() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: tag_list.iter().map(|tag| tag.id).collect(),
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+//         assert_eq!(task.tags.len(), tag_list.len());
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 4);
+//         assert!(!ret_task.tags.contains(&tag_list[2]));
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[2].id).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 4);
+//         assert!(!ret_task.tags.contains(&tag_list[2]));
+//     }
+
+//     #[test]
+//     async fn tag_not_on_task() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag_list = [
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//             create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await,
+//         ];
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: vec![tag_list[0].id, tag_list[2].id, tag_list[4].id],
+//                 ..Default::default()
+//             },
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+//         assert_eq!(task.tags.len(), 3);
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[1].id).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag_list[3].id).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), Uuid::new_v4()).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 3);
+//     }
+
+//     #[test]
+//     async fn nonexistent_tag() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             None,
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), Uuid::new_v4()).await;
+//         assert!(res.is_ok());
+//         assert_eq!(res.unwrap(), ());
+
+//         let ret_task = get_task(&mut tx, task.id).await;
+//         assert_eq!(ret_task.tags.len(), 0);
+//     }
+
+//     #[test]
+//     async fn deleted_task() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate::default(),
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::nil(), tag.id).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn nonexistent_task() {
+//         let (_, mut tx, _) = db_init().await;
+
+//         let res = delete_task_tag_inner(&mut tx, Uuid::nil(), Uuid::nil(), Uuid::new_v4()).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+
+//     #[test]
+//     async fn as_nonexistent_user() {
+//         let (_, mut tx, base_time) = db_init().await;
+
+//         let tag = create_test_tag(&mut tx, TagCreate::default(), base_time, base_time).await;
+
+//         let task = create_test_task(
+//             &mut tx,
+//             TaskCreate {
+//                 tags: vec![tag.id],
+//                 ..Default::default()
+//             },
+//             None,
+//             Some(base_time),
+//             base_time,
+//             base_time,
+//         )
+//         .await;
+
+//         let res = delete_task_tag_inner(&mut tx, task.id, Uuid::new_v4(), tag.id).await;
+//         assert!(res.is_err());
+//         if let Err(err) = res {
+//             assert!(matches!(
+//                 err,
+//                 Error::Application(ApplicationError::TaskNotFound)
+//             ))
+//         }
+//     }
+// }

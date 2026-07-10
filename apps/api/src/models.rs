@@ -6,6 +6,6 @@
 
 pub mod helper;
 
-pub mod user;
 pub mod tag;
 pub mod task;
+pub mod user;
