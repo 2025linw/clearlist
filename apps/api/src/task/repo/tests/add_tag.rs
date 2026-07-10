@@ -1,0 +1,232 @@
+use sqlx::{PgPool, test};
+
+use crate::{
+    error::repo::{ConstraintViolation, Error, Resource},
+    tag::{
+        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
+        types::TagID,
+    },
+    task::{
+        repo::{CreateModel, PgTaskRepository, TaskRepository},
+        types::TaskID,
+    },
+    tests::helpers::{create_test_user, soft_delete_task},
+    user::repo::PgUserRepository,
+};
+
+#[test]
+async fn add_tag_task_existing(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, test_tag.id).await;
+    assert!(res.is_ok());
+    let task = repo
+        .get(test_task.id, user.id)
+        .await
+        .unwrap()
+        .expect("task was just created for the test");
+    assert_eq!(task.tags[0], test_tag);
+}
+
+#[test]
+async fn add_tag_updates_task_updated_at(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, test_tag.id).await;
+    assert!(res.is_ok());
+    let task = repo
+        .get(test_task.id, user.id)
+        .await
+        .unwrap()
+        .expect("task was just created for the test");
+    assert!(task.updated_at > test_task.updated_at);
+}
+
+#[test]
+async fn add_tag_task_soft_deleted(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    soft_delete_task(&repo, test_task.id, user.id).await;
+
+    let res = repo.add_tag(test_task.id, user.id, test_tag.id).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_task_deleted(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    repo.delete(test_task.id, user.id).await.unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, test_tag.id).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_task_not_owned(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let other_user = create_test_user(&user_repo).await;
+    let other_task = repo
+        .create(other_user.id, CreateModel::default())
+        .await
+        .unwrap();
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+
+    let res = repo.add_tag(other_task.id, user.id, test_tag.id).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_task_nonexistent(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+
+    let res = repo.add_tag(TaskID::new_v4(), user.id, test_tag.id).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_not_owned(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let other_user = create_test_user(&user_repo).await;
+    let other_tag = tag_repo
+        .create(other_user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, other_tag.id).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_nonexistent(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, TagID::new_v4()).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
+        ))
+    }
+}
+
+#[test]
+async fn add_tag_already_tagged(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo
+        .create(
+            user.id,
+            CreateModel {
+                tags: vec![test_tag.id],
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let res = repo.add_tag(test_task.id, user.id, test_tag.id).await;
+    assert!(res.is_ok(), "{res:?}");
+    let task = repo
+        .get(test_task.id, user.id)
+        .await
+        .unwrap()
+        .expect("task was just created for the test");
+    assert_eq!(task.tags[0], test_tag);
+}

@@ -10,6 +10,19 @@ mod db;
 mod routes;
 mod service;
 
+//// Refactor
+pub mod error;
+pub mod types;
+pub mod utils;
+
+// Resources
+pub mod tag;
+pub mod task;
+pub mod user;
+
+#[cfg(test)]
+pub mod tests;
+
 use std::env;
 
 pub use db::{DatabaseConn, run_migration};
@@ -55,7 +68,11 @@ impl AppState {
     pub fn init(conn: DatabaseConn, config: Config) -> Self {
         let user_service = UserService::new(PgUserRepository::new(conn.pool().clone()));
 
-        Self { config, db: conn, user_service }
+        Self {
+            config,
+            db: conn,
+            user_service,
+        }
     }
 }
 
