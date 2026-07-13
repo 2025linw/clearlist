@@ -1,3 +1,7 @@
+#![allow(warnings)]
+#![allow(clippy::all)]
+// WARN: REMOVE ABOVE
+
 use chrono::{DateTime, NaiveDate, Utc};
 
 use crate::{

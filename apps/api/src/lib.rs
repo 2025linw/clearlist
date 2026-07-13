@@ -10,7 +10,7 @@ mod db;
 mod routes;
 mod service;
 
-//// Refactor
+/// Refactor
 pub mod error;
 pub mod types;
 pub mod utils;

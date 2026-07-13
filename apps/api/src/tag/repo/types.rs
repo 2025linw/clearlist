@@ -1,3 +1,7 @@
+#![allow(warnings)]
+#![allow(clippy::all)]
+// WARN: REMOVE ABOVE
+
 use crate::{tag::types::SortBy, types::order::SortOrder};
 
 #[derive(Debug, Default)]

@@ -1,3 +1,7 @@
+#![allow(warnings)]
+#![allow(clippy::all)]
+// WARN: REMOVE ABOVE
+
 use async_trait::async_trait;
 
 use super::{
@@ -40,10 +44,7 @@ struct TaskService<R: TaskRepository> {
 }
 
 #[async_trait]
-impl<R> TaskServiceTrait for TaskService<R>
-where
-    R: TaskRepository,
-{
+impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
     async fn list(&self, user_id: UserID, query: Option<URLQueryOpts>) -> Result<Vec<Model>> {
         todo!()
     }

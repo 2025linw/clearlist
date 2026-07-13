@@ -1,3 +1,7 @@
+#![allow(warnings)]
+#![allow(clippy::all)]
+// WARN: REMOVE ABOVE
+
 use async_trait::async_trait;
 
 use super::{
@@ -18,7 +22,7 @@ struct UserService<R: UserRepository> {
 }
 
 #[async_trait]
-impl<R> UserServiceTrait for UserService<R> where R: UserRepository {
+impl<R: UserRepository> UserServiceTrait for UserService<R> {
     async fn create(&self, user: CreateModel) -> Result<Model> {
         todo!()
     }
