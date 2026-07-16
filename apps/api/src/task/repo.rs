@@ -405,17 +405,16 @@ impl TaskRepository for PgTaskRepository {
         let mut state = Self::update_task(&mut tx, id, user_id, task).await?;
 
         // Update tags, if needed
-        if let TaskState::Existing(ref mut task) = state {
-            if let Some(tag_ids) = tags
-                && !tag_ids.is_empty()
-            {
-                let res = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
-                match res {
-                    TaskState::Existing(tags) => {
-                        task.tags = tags;
-                    }
-                    _ => unreachable!(),
+        if let TaskState::Existing(ref mut task) = state
+            && let Some(tag_ids) = tags
+            && !tag_ids.is_empty()
+        {
+            let res = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
+            match res {
+                TaskState::Existing(tags) => {
+                    task.tags = tags;
                 }
+                _ => unreachable!(),
             }
         }
 

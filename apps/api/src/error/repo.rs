@@ -42,10 +42,10 @@ impl From<sqlx::Error> for Error {
             sqlx::Error::Database(err) => {
                 let mut error = Self::Programming(err.to_string());
 
-                if let Some(pg_err) = err.try_downcast_ref::<PgDatabaseError>() {
-                    if let Some(integrity) = Integrity::try_from_code(pg_err.code()) {
-                        error = Self::Constraint(ConstraintViolation::Integrity(integrity));
-                    }
+                if let Some(pg_err) = err.try_downcast_ref::<PgDatabaseError>()
+                    && let Some(integrity) = Integrity::try_from_code(pg_err.code())
+                {
+                    error = Self::Constraint(ConstraintViolation::Integrity(integrity));
                 }
 
                 error
