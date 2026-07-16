@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[test]
-async fn create_minimum(pool: PgPool) {
+async fn create_required(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 

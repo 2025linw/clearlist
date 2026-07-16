@@ -3,7 +3,6 @@ pub mod task;
 pub mod user;
 
 use chrono::Utc;
-use uuid::Uuid;
 
 use crate::{
     tag::types::Model as TagModel,
@@ -17,8 +16,6 @@ use crate::{
         types::{Model as UserModel, UserID},
     },
 };
-
-pub const TEST_USER_ID: UserID = UserID(Uuid::nil());
 
 // Assertions
 pub fn is_task_ordered<F, K>(tasks: &[TaskModel], mut f: F, sort: SortOrder) -> bool
