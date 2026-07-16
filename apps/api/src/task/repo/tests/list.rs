@@ -534,8 +534,8 @@ async fn list_filter_bool(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
-    for completed in vec![false, true] {
-        for deleted in vec![false, true] {
+    for completed in [false, true] {
+        for deleted in [false, true] {
             seed_tasks(
                 &repo,
                 5,

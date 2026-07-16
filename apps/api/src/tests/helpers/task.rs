@@ -17,7 +17,7 @@ pub async fn seed_tasks(
     builder: impl Fn(usize, Vec<TagID>) -> CreateModel,
 ) {
     for i in 0..n {
-        let tag_ids = tag_ids.iter().copied().collect();
+        let tag_ids = tag_ids.to_vec();
         let task = repo.create(user_id, builder(i, tag_ids)).await.unwrap();
 
         if let Some((completed, deleted)) = state {

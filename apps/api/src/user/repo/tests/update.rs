@@ -20,7 +20,6 @@ async fn update_existing(pool: PgPool) {
             test_user.id,
             UpdateModel {
                 display_name: Some(String::from("Updated User")),
-                ..Default::default()
             },
         )
         .await;

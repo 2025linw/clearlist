@@ -5,11 +5,9 @@ use crate::{
     error::repo::{ConstraintViolation, Error, Resource},
     tag::{
         repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
-        types::{TagID},
+        types::TagID,
     },
-    task::{
-        repo::{CreateModel, PgTaskRepository, TaskRepository},
-    },
+    task::repo::{CreateModel, PgTaskRepository, TaskRepository},
     tests::helpers::{create_test_user, generate_a_z},
     types::date::StartPrecision,
     user::{repo::PgUserRepository, types::UserID},
@@ -179,7 +177,7 @@ async fn create_nonexistent_user(pool: PgPool) {
     if let Err(err) = res {
         assert!(matches!(
             err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::User))
+            Error::Constraint(ConstraintViolation::MissingUser)
         ))
     }
 }

@@ -3,8 +3,8 @@ use sqlx::{PgPool, test};
 use crate::{
     error::repo::{ConstraintViolation, Error, Resource},
     tag::{
-        repo::{CreateModel as TagCreateModel,PgTagRepository, TagRepository},
-        types::{ TagID},
+        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
+        types::TagID,
     },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
@@ -40,7 +40,9 @@ async fn set_tags_task_existing(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(tags) = res {
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+        let tags = task_state.unwrap();
         for tag in tags {
             assert!(test_tags.contains(&tag));
         }
@@ -116,12 +118,9 @@ async fn set_tags_task_soft_deleted(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
     }
 }
 
@@ -151,12 +150,9 @@ async fn set_tags_task_deleted(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -189,12 +185,9 @@ async fn set_tags_task_not_owned(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -222,12 +215,9 @@ async fn set_tags_task_nonexistent(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -324,7 +314,9 @@ async fn set_tags_full_replacement(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(tags) = res {
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+        let tags = task_state.unwrap();
         for tag in tags {
             assert!(test_tags.contains(&tag));
         }

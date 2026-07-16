@@ -87,3 +87,66 @@ impl Pagination {
         Self { limit, offset }
     }
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum TaskState<T> {
+    Existing(T),
+    Deleted(T),
+    Missing,
+}
+
+impl<T> TaskState<T> {
+    pub fn exists(&self) -> bool {
+        matches!(self, Self::Existing(_))
+    }
+
+    pub fn deleted(&self) -> bool {
+        matches!(self, Self::Deleted(_))
+    }
+
+    pub fn missing(&self) -> bool {
+        matches!(self, Self::Missing)
+    }
+
+    pub fn expect(self, msg: &str) -> T {
+        match self {
+            Self::Existing(var) => var,
+            Self::Deleted(_) => {
+                panic!("{msg}: Deleted")
+            }
+            Self::Missing => {
+                panic!("{msg}: Missing")
+            }
+        }
+    }
+
+    pub fn unwrap(self) -> T {
+        match self {
+            Self::Existing(var) => var,
+            Self::Deleted(_) | Self::Missing => {
+                panic!("called `TaskState::unwrap()` on a non-`Existing` value")
+            }
+        }
+    }
+
+    pub fn map<U, F>(self, f: F) -> TaskState<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            Self::Existing(x) => TaskState::Existing(f(x)),
+            Self::Deleted(x) => TaskState::Deleted(f(x)),
+            Self::Missing => TaskState::Missing,
+        }
+    }
+}
+
+impl<T> std::fmt::Display for TaskState<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Existing(_) => write!(f, "operation succeeded"),
+            Self::Deleted(_) => write!(f, "operation performed with deleted task"),
+            Self::Missing => write!(f, "operation performed with missing task"),
+        }
+    }
+}

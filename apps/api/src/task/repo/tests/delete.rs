@@ -1,7 +1,6 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
         types::TaskID,
@@ -19,7 +18,10 @@ async fn delete_existing(pool: PgPool) {
     let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
 
     let res = repo.delete(test_task.id, user.id).await;
-    assert!(matches!(res, Ok(())));
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+    }
 }
 
 #[test]
@@ -32,11 +34,9 @@ async fn delete_soft_deleted(pool: PgPool) {
     soft_delete_task(&repo, test_task.id, user.id).await;
 
     let res = repo.delete(test_task.id, user.id).await;
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
     }
 }
 
@@ -50,11 +50,9 @@ async fn delete_deleted(pool: PgPool) {
     repo.delete(test_task.id, user.id).await.unwrap();
 
     let res = repo.delete(test_task.id, user.id).await;
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -71,12 +69,9 @@ async fn delete_not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo.delete(other_task.id, user.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -88,11 +83,8 @@ async fn delete_nonexistent(pool: PgPool) {
     let user = create_test_user(&user_repo).await;
 
     let res = repo.delete(TaskID::new_v4(), user.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }

@@ -37,6 +37,9 @@ async fn update_existing(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+    }
 }
 
 #[test]
@@ -46,17 +49,14 @@ async fn update_soft_deleted(pool: PgPool) {
 
     let user = create_test_user(&user_repo).await;
     let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    soft_delete_task(&repo, test_task.id, user.id).await;
+    let test_task = soft_delete_task(&repo, test_task.id, user.id).await;
 
     let res = repo
         .update(test_task.id, user.id, UpdateModel::default())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
     }
 }
 
@@ -72,12 +72,9 @@ async fn update_deleted(pool: PgPool) {
     let res = repo
         .update(test_task.id, user.id, UpdateModel::default())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -96,12 +93,9 @@ async fn update_not_owned(pool: PgPool) {
     let res = repo
         .update(other_task.id, user.id, UpdateModel::default())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -115,12 +109,9 @@ async fn update_nonexistent(pool: PgPool) {
     let res = repo
         .update(TaskID::new_v4(), user.id, UpdateModel::default())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -175,18 +166,19 @@ async fn update_full(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task) = res {
-        assert_eq!(task.title, "Updated task");
-        assert_eq!(task.notes.unwrap(), "Notes for 'Updated task'");
-        assert_eq!(task.start_dt.unwrap(), dt + Duration::from_hours(24 * 7));
-        assert!(task.has_time);
-        assert_eq!(task.deadline.unwrap(), dt.date_naive());
+    let task_state = res.unwrap();
 
-        assert!(task.completed_at.is_some());
-        assert!(task.deleted_at.is_some());
+    let task = task_state.unwrap();
+    assert_eq!(task.title, "Updated task");
+    assert_eq!(task.notes.unwrap(), "Notes for 'Updated task'");
+    assert_eq!(task.start_dt.unwrap(), dt + Duration::from_hours(24 * 7));
+    assert!(task.has_time);
+    assert_eq!(task.deadline.unwrap(), dt.date_naive());
 
-        assert_eq!(task.position_key, format!("full{}", generate_a_z(0)));
-    }
+    assert!(task.completed_at.is_some());
+    assert!(task.deleted_at.is_some());
+
+    assert_eq!(task.position_key, format!("full{}", generate_a_z(0)));
 }
 
 #[test]
@@ -233,16 +225,17 @@ async fn update_full_clear(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task) = res {
-        assert_eq!(task.title, "");
-        assert!(task.notes.is_none());
-        assert!(task.start_dt.is_none());
-        assert!(!task.has_time);
-        assert!(task.deadline.is_none());
+    let task_state = res.unwrap();
 
-        assert!(task.completed_at.is_none());
-        assert!(task.deleted_at.is_none());
-    }
+    let task = task_state.unwrap();
+    assert_eq!(task.title, "");
+    assert!(task.notes.is_none());
+    assert!(task.start_dt.is_none());
+    assert!(!task.has_time);
+    assert!(task.deadline.is_none());
+
+    assert!(task.completed_at.is_none());
+    assert!(task.deleted_at.is_none());
 }
 
 #[test]
@@ -274,7 +267,8 @@ async fn update_with_tags(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task) = res {
+    if let Ok(task_state) = res {
+        let task = task_state.unwrap();
         assert_eq!(task.tags.len(), 5);
         for tag in task.tags {
             assert!(test_tags.contains(&tag));
@@ -312,7 +306,8 @@ async fn update_with_tags_full_clear(pool: PgPool) {
         .update(test_task.id, user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
-    if let Ok(task) = res {
+    if let Ok(task_state) = res {
+        let task = task_state.unwrap();
         assert_eq!(task.tags.len(), 0);
     }
 }

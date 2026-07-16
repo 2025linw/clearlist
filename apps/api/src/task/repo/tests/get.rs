@@ -1,10 +1,7 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    tag::{
-        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
-        
-    },
+    tag::repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
         types::TaskID,
@@ -23,11 +20,9 @@ async fn get_existing(pool: PgPool) {
 
     let res = repo.get(test_task.id, user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_some());
-        if let Some(task) = task_opt {
-            assert_eq!(task, test_task);
-        }
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+        assert_eq!(task_state.unwrap(), test_task);
     }
 }
 
@@ -42,8 +37,8 @@ async fn get_soft_deleted(pool: PgPool) {
 
     let res = repo.get(test_task.id, user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_none());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
     }
 }
 
@@ -58,8 +53,8 @@ async fn get_deleted(pool: PgPool) {
 
     let res = repo.get(test_task.id, user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_none());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -77,8 +72,8 @@ async fn get_not_owned(pool: PgPool) {
 
     let res = repo.get(other_task.id, user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_none());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -91,8 +86,8 @@ async fn get_nonexistent(pool: PgPool) {
 
     let res = repo.get(TaskID::new_v4(), user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_none());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -125,13 +120,12 @@ async fn get_has_tags(pool: PgPool) {
 
     let res = repo.get(test_task.id, user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_opt) = res {
-        assert!(task_opt.is_some());
-        if let Some(task) = task_opt {
-            assert_eq!(task.tags.len(), test_task.tags.len());
-            for tag in task.tags {
-                assert!(test_tags.contains(&tag));
-            }
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+        let task = task_state.unwrap();
+        assert_eq!(task.tags.len(), test_task.tags.len());
+        for tag in task.tags {
+            assert!(test_tags.contains(&tag));
         }
     }
 }

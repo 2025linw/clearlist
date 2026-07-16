@@ -1,10 +1,9 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
     tag::{
-        repo::{CreateModel as TagCreateModel,PgTagRepository, TagRepository},
-        types::{ TagID},
+        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
+        types::TagID,
     },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
@@ -38,6 +37,9 @@ async fn remove_tag_task_existing(pool: PgPool) {
 
     let res = repo.remove_tag(test_task.id, user.id, test_tag.id).await;
     assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.exists());
+    }
     let task = repo
         .get(test_task.id, user.id)
         .await
@@ -102,12 +104,9 @@ async fn remove_tag_task_soft_deleted(pool: PgPool) {
     soft_delete_task(&repo, test_task.id, user.id).await;
 
     let res = repo.remove_tag(test_task.id, user.id, test_tag.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
     }
 }
 
@@ -135,12 +134,9 @@ async fn remove_tag_task_deleted(pool: PgPool) {
     repo.delete(test_task.id, user.id).await.unwrap();
 
     let res = repo.remove_tag(test_task.id, user.id, test_tag.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -168,12 +164,9 @@ async fn remove_tag_task_not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo.remove_tag(other_task.id, user.id, other_tag.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -192,12 +185,9 @@ async fn remove_tag_task_nonexistent(pool: PgPool) {
     let res = repo
         .remove_tag(TaskID::new_v4(), user.id, test_tag.id)
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ))
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 

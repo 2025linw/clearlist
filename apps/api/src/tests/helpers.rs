@@ -72,7 +72,7 @@ pub async fn create_test_user(repo: &PgUserRepository) -> UserModel {
     repo.create(create_user_model()).await.unwrap()
 }
 
-pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: UserID) {
+pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: UserID) -> TaskModel {
     repo.update(
         id,
         user_id,
@@ -82,5 +82,6 @@ pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: User
         },
     )
     .await
-    .unwrap();
+    .unwrap()
+    .unwrap()
 }

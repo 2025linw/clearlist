@@ -1,7 +1,7 @@
-#[cfg(test)]
-pub mod tests;
-
 mod types;
+
+#[cfg(test)]
+mod tests;
 
 use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder};
