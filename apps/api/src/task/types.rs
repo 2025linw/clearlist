@@ -1,13 +1,11 @@
 pub mod repo;
+pub mod route;
 
 use serde::Deserialize;
 use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
-use crate::{
-    tag::types::{Model as TagModel, TagID},
-    user::types::UserID,
-};
+use crate::{tag::types::Model as TagModel, user::types::UserID};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Type)]
 #[sqlx(transparent)]

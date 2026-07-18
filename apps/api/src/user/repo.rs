@@ -33,7 +33,7 @@ impl PgUserRepository {
         Self { db }
     }
 
-    async fn create_inner(conn: &mut PgConnection, create_user: CreateModel) -> Result<Model> {
+    async fn create_user(conn: &mut PgConnection, create_user: CreateModel) -> Result<Model> {
         Ok(query_as::<Model>(
             "INSERT INTO app.users (id, display_name, updated_at, created_at, completed_task_retention)
             VALUES ($1, $2, $3, $3, $4)
@@ -47,7 +47,7 @@ impl PgUserRepository {
         .await?)
     }
 
-    async fn get_inner(conn: &mut PgConnection, id: UserID) -> Result<Option<Model>> {
+    async fn fetch_user(conn: &mut PgConnection, id: UserID) -> Result<Option<Model>> {
         let user_opt = query_as::<Model>(
             "SELECT * FROM app.users
             WHERE id = $1",
@@ -59,7 +59,7 @@ impl PgUserRepository {
         Ok(user_opt)
     }
 
-    async fn update_inner(
+    async fn update_user(
         conn: &mut PgConnection,
         id: UserID,
         update_user: UpdateModel,
@@ -86,7 +86,7 @@ impl PgUserRepository {
 impl UserRepository for PgUserRepository {
     async fn create(&self, create_user: CreateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let user = Self::create_inner(&mut tx, create_user).await?;
+        let user = Self::create_user(&mut tx, create_user).await?;
         tx.commit().await?;
 
         Ok(user)
@@ -94,7 +94,7 @@ impl UserRepository for PgUserRepository {
 
     async fn get(&self, id: UserID) -> Result<Option<Model>> {
         let mut conn = self.db.acquire().await?;
-        let user_opt = Self::get_inner(&mut conn, id).await?;
+        let user_opt = Self::fetch_user(&mut conn, id).await?;
         conn.close().await?;
 
         Ok(user_opt)
@@ -102,7 +102,7 @@ impl UserRepository for PgUserRepository {
 
     async fn update(&self, id: UserID, update_user: UpdateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let user = Self::update_inner(&mut tx, id, update_user).await?;
+        let user = Self::update_user(&mut tx, id, update_user).await?;
         tx.commit().await?;
 
         Ok(user)

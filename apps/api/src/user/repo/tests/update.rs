@@ -47,7 +47,7 @@ async fn full_input(pool: PgPool) {
                 display_name: Some("Updated User".to_string()),
                 completed_task_retention: Some(Some(PgInterval {
                     months: 0,
-                    days: 7,
+                    days: 1,
                     microseconds: 0,
                 })),
             },
@@ -62,7 +62,7 @@ async fn null_input(pool: PgPool) {
 
     let retention_interval = PgInterval {
         months: 0,
-        days: 7,
+        days: 1,
         microseconds: 0,
     };
     let test_user = repo
@@ -96,10 +96,10 @@ async fn verify_output(pool: PgPool) {
     let test_user = repo.create(CreateModel::default()).await.unwrap();
 
     let update_user = UpdateModel {
-        display_name: Some("Test User".to_string()),
+        display_name: Some("Updated User".to_string()),
         completed_task_retention: Some(Some(PgInterval {
             months: 0,
-            days: 7,
+            days: 1,
             microseconds: 0,
         })),
     };

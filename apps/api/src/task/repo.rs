@@ -241,7 +241,7 @@ impl PgTaskRepository {
         )
         .bind(id)
         .bind(tag_id)
-        .fetch_one(conn.as_mut())
+        .execute(conn.as_mut())
         .await;
         if let Err(err) = res {
             let mut error = None;
@@ -261,7 +261,9 @@ impl PgTaskRepository {
             return Err(error.unwrap_or(err.into()));
         }
 
-        set_updated_timestamp(conn, id, user_id).await?;
+        if res.unwrap().rows_affected() != 0 {
+            set_updated_timestamp(conn, id, user_id).await?;
+        }
 
         Ok(TaskState::Existing(()))
     }

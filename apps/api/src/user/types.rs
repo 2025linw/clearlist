@@ -1,4 +1,5 @@
 pub mod repo;
+pub mod route;
 
 use serde::Deserialize;
 use sqlx::{FromRow, Type, postgres::types::PgInterval};

@@ -16,9 +16,9 @@ impl std::error::Error for Error {}
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Backend(msg) => write!(f, "backend error: {msg}"),
-            Self::Constraint(violation) => write!(f, "constraint violation: {violation}"),
-            Self::Programming(msg) => write!(f, "programming error: {msg}"),
+            Self::Backend(msg) => write!(f, "repo: backend error - {msg}"),
+            Self::Constraint(violation) => write!(f, "repo: onstraint violation - {violation}"),
+            Self::Programming(msg) => write!(f, "repo: programming error - {msg}"),
         }
     }
 }

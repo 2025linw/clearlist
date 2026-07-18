@@ -4,26 +4,37 @@
 
 use async_trait::async_trait;
 
+use crate::error::service::Result;
+
 use super::{
     repo::UserRepository,
-    types::{Model, UserID},
+    types::{
+        Model, UserID,
+        route::{CreateRequest, UpdateRequest},
+    },
 };
-use crate::error::service::Result;
 
 #[async_trait]
 pub trait UserServiceTrait {
-    async fn create(&self, create_user: CreateModel) -> Result<Model>;
+    async fn create(&self, create_user: CreateRequest) -> Result<Model>;
     async fn get(&self, id: UserID) -> Result<Option<Model>>;
-    async fn update(&self, id: UserID, update_user: UpdateModel) -> Result<Model>;
+    async fn update(&self, id: UserID, update_user: UpdateRequest) -> Result<Model>;
 }
 
-struct UserService<R: UserRepository> {
+#[derive(Clone)]
+pub struct UserService<R: UserRepository> {
     repo: R,
+}
+
+impl<R: UserRepository> UserService<R> {
+    pub fn init(repo: R) -> Self {
+        Self { repo }
+    }
 }
 
 #[async_trait]
 impl<R: UserRepository> UserServiceTrait for UserService<R> {
-    async fn create(&self, user: CreateModel) -> Result<Model> {
+    async fn create(&self, create_user: CreateRequest) -> Result<Model> {
         todo!()
     }
 
@@ -31,22 +42,7 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
         todo!()
     }
 
-    async fn update(&self, id: UserID, user: UpdateModel) -> Result<Model> {
+    async fn update(&self, id: UserID, update_user: UpdateRequest) -> Result<Model> {
         todo!()
     }
-}
-
-#[derive(Debug)]
-pub struct CreateModel {
-    pub id: UserID,
-
-    pub display_name: String,
-
-    pub created_at: chrono::DateTime<chrono::Utc>,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
-pub struct UpdateModel {
-    pub display_name: Option<String>,
 }

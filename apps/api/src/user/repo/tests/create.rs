@@ -53,7 +53,7 @@ async fn verify_output(pool: PgPool) {
         display_name: "Test User".to_string(),
         completed_task_retention: Some(PgInterval {
             months: 0,
-            days: 7,
+            days: 1,
             microseconds: 0,
         }),
         created_at: get_today_date_pg(),
