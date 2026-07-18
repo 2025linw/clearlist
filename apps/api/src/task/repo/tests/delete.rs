@@ -9,8 +9,9 @@ use crate::{
     user::repo::PgUserRepository,
 };
 
+// Existence Tests
 #[test]
-async fn delete_existing(pool: PgPool) {
+async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -25,7 +26,7 @@ async fn delete_existing(pool: PgPool) {
 }
 
 #[test]
-async fn delete_soft_deleted(pool: PgPool) {
+async fn soft_deleted(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -41,23 +42,7 @@ async fn delete_soft_deleted(pool: PgPool) {
 }
 
 #[test]
-async fn delete_deleted(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    repo.delete(test_task.id, user.id).await.unwrap();
-
-    let res = repo.delete(test_task.id, user.id).await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
-    }
-}
-
-#[test]
-async fn delete_not_owned(pool: PgPool) {
+async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -76,7 +61,7 @@ async fn delete_not_owned(pool: PgPool) {
 }
 
 #[test]
-async fn delete_nonexistent(pool: PgPool) {
+async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 

@@ -25,7 +25,7 @@ pub fn default_tag(i: usize) -> CreateModel {
 pub fn tag_with_workflow_category(i: usize) -> CreateModel {
     CreateModel {
         category: Some("Workflow".to_string()),
-        position_key: format!("workcat{}", generate_a_z(i)),
+        position_key: format!("workflow{}", generate_a_z(i)),
         ..Default::default()
     }
 }
@@ -33,8 +33,26 @@ pub fn tag_with_workflow_category(i: usize) -> CreateModel {
 pub fn tag_with_workflow_priority(i: usize) -> CreateModel {
     CreateModel {
         category: Some("Priority".to_string()),
-        position_key: format!("priocat{}", generate_a_z(i)),
+        position_key: format!("priority{}", generate_a_z(i)),
         ..Default::default()
+    }
+}
+
+pub fn full_tag(i: usize) -> CreateModel {
+    CreateModel {
+        label: "Test Tag".to_string(),
+        category: Some("Testing".to_string()),
+        position_key: format!("full{}", generate_a_z(i)),
+    }
+}
+
+impl Default for CreateModel {
+    fn default() -> Self {
+        Self {
+            label: "Test Tag".to_string(),
+            category: None,
+            position_key: generate_a_z(0).to_string(),
+        }
     }
 }
 
@@ -42,8 +60,8 @@ impl Default for UpdateModel {
     fn default() -> Self {
         Self {
             label: Some("Updated Tag".to_string()),
-            category: Some(Some("New Category".to_string())),
-            position_key: Some(generate_a_z(1).to_string()),
+            category: None,
+            position_key: None,
         }
     }
 }

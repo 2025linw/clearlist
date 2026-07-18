@@ -10,7 +10,10 @@ use crate::{
     },
     tests::helpers::{
         create_test_user, is_tag_ordered,
-        tag::{default_tag, seed_tags, tag_with_workflow_category, tag_with_workflow_priority},
+        tag::{
+            default_tag, full_tag, seed_tags, tag_with_workflow_category,
+            tag_with_workflow_priority,
+        },
     },
     types::order::SortOrder,
     user::repo::PgUserRepository,
@@ -29,38 +32,9 @@ struct CategoryCase {
     check: fn(&[Model]),
 }
 
+// Input Tests
 #[test]
-async fn list_tags(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, default_tag).await;
-
-    let res = repo.list(user.id, None).await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn list_returns_correct_format(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, default_tag).await;
-
-    let res = repo.list(user.id, None).await;
-    assert!(res.is_ok());
-    if let Ok(tags) = res {
-        for tag in tags {
-            assert_eq!(tag.label, "");
-            assert!(tag.category.is_none());
-        }
-    }
-}
-
-#[test]
-async fn list_limit(pool: PgPool) {
+async fn pagination_limit(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -83,7 +57,7 @@ async fn list_limit(pool: PgPool) {
 }
 
 #[test]
-async fn list_offset(pool: PgPool) {
+async fn pagination_offset(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -113,7 +87,7 @@ async fn list_offset(pool: PgPool) {
 }
 
 #[test]
-async fn list_sorts(pool: PgPool) {
+async fn sort_variants(pool: PgPool) {
     let cases = vec![
         SortCase {
             name: "id asc",
@@ -233,7 +207,7 @@ async fn list_sorts(pool: PgPool) {
 }
 
 #[test]
-async fn list_filter_category(pool: PgPool) {
+async fn filter_category(pool: PgPool) {
     let cases = vec![
         CategoryCase {
             name: "Workflow category",
@@ -283,4 +257,36 @@ async fn list_filter_category(pool: PgPool) {
             check(&tags);
         }
     }
+}
+
+// Output Tests
+#[test]
+async fn verify_output(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, user.id, full_tag).await;
+
+    let res = repo.list(user.id, None).await;
+    assert!(res.is_ok());
+    if let Ok(tags) = res {
+        for tag in tags {
+            assert_eq!(tag.label, "Test Tag");
+            assert!(tag.category.is_some());
+        }
+    }
+}
+
+// Behavior Tests
+#[test]
+async fn works(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, user.id, default_tag).await;
+
+    let res = repo.list(user.id, None).await;
+    assert!(res.is_ok());
 }

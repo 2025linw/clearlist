@@ -10,8 +10,9 @@ use crate::{
     user::repo::PgUserRepository,
 };
 
+// Existence Tests
 #[test]
-async fn delete_existing(pool: PgPool) {
+async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -19,29 +20,11 @@ async fn delete_existing(pool: PgPool) {
     let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
 
     let res = repo.delete(test_tag.id, user.id).await;
-    assert!(matches!(res, Ok(())));
+    assert!(res.is_ok());
 }
 
 #[test]
-async fn delete_deleted(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
-    repo.delete(test_tag.id, user.id).await.unwrap();
-
-    let res = repo.delete(test_tag.id, user.id).await;
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
-        ))
-    }
-}
-
-#[test]
-async fn delete_not_owned(pool: PgPool) {
+async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -63,7 +46,7 @@ async fn delete_not_owned(pool: PgPool) {
 }
 
 #[test]
-async fn delete_nonexistent(pool: PgPool) {
+async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 

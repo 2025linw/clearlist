@@ -10,8 +10,9 @@ use crate::{
     user::repo::PgUserRepository,
 };
 
+// Existence Tests
 #[test]
-async fn update_existing(pool: PgPool) {
+async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -19,20 +20,13 @@ async fn update_existing(pool: PgPool) {
     let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
 
     let res = repo
-        .update(
-            test_tag.id,
-            user.id,
-            UpdateModel {
-                label: Some(String::from("Updated Tag")),
-                ..Default::default()
-            },
-        )
+        .update(test_tag.id, user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
 }
 
 #[test]
-async fn update_not_owned(pool: PgPool) {
+async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -56,7 +50,7 @@ async fn update_not_owned(pool: PgPool) {
 }
 
 #[test]
-async fn update_nonexistent(pool: PgPool) {
+async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -74,8 +68,65 @@ async fn update_nonexistent(pool: PgPool) {
     }
 }
 
+// Input Tests
 #[test]
-async fn update_is_idempotent(pool: PgPool) {
+async fn full_input(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let res = repo
+        .update(
+            test_tag.id,
+            user.id,
+            UpdateModel {
+                label: Some("Updated Tag".to_string()),
+                category: Some(Some("Category".to_string())),
+                position_key: Some(generate_a_z(1).to_string()),
+            },
+        )
+        .await;
+    assert!(res.is_ok());
+}
+
+#[test]
+async fn null_input(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(
+            user.id,
+            CreateModel {
+                category: Some("Testing".to_string()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let res = repo
+        .update(
+            test_tag.id,
+            user.id,
+            UpdateModel {
+                category: Some(None),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(res.is_ok());
+    if let Ok(tag) = res {
+        assert!(tag.category.is_none());
+    }
+}
+
+// Output Tests
+#[test]
+async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -83,7 +134,30 @@ async fn update_is_idempotent(pool: PgPool) {
     let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
 
     let update_tag = UpdateModel {
-        label: Some(String::from("Updated Tag")),
+        label: Some("Updated Tag".to_string()),
+        category: Some(Some("Category".to_string())),
+        position_key: Some(generate_a_z(1).to_string()),
+    };
+    let tag = repo
+        .update(test_tag.id, user.id, update_tag.clone())
+        .await
+        .unwrap();
+    assert_eq!(tag.label, update_tag.label.unwrap());
+    assert_eq!(tag.category, update_tag.category.unwrap());
+    assert_eq!(tag.position_key, update_tag.position_key.unwrap());
+}
+
+// Behavior Tests
+#[test]
+async fn is_idempotent(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let update_tag = UpdateModel {
+        label: Some("Updated Tag".to_string()),
         ..Default::default()
     };
     let update_1 = repo
@@ -96,68 +170,4 @@ async fn update_is_idempotent(pool: PgPool) {
         .unwrap();
 
     assert_eq!(update_1, update_2);
-}
-
-#[test]
-async fn update_full(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
-
-    let res = repo
-        .update(
-            test_tag.id,
-            user.id,
-            UpdateModel {
-                label: Some(String::from("Updated Tag")),
-                category: Some(Some("Category".to_string())),
-                position_key: Some(format!("full{}", generate_a_z(0))),
-            },
-        )
-        .await;
-    assert!(res.is_ok());
-    if let Ok(tag) = res {
-        assert_eq!(tag.label, "Updated Tag");
-        assert_eq!(tag.category.unwrap(), "Category");
-
-        assert_eq!(tag.position_key, format!("full{}", generate_a_z(0)));
-    }
-}
-
-#[test]
-async fn update_full_clear(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo
-        .create(
-            user.id,
-            CreateModel {
-                label: String::from("Test Tag"),
-                category: Some(String::from("Testing")),
-                position_key: format!("full{}", generate_a_z(0)),
-            },
-        )
-        .await
-        .unwrap();
-
-    let res = repo
-        .update(
-            test_tag.id,
-            user.id,
-            UpdateModel {
-                label: Some(String::new()),
-                category: Some(None),
-                position_key: None,
-            },
-        )
-        .await;
-    assert!(res.is_ok());
-    if let Ok(tag) = res {
-        assert_eq!(tag.label, "");
-        assert!(tag.category.is_none());
-    }
 }

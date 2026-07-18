@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use sqlx::{FromRow, Type};
+use sqlx::{FromRow, Type, postgres::types::PgInterval};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Type)]
@@ -12,11 +12,20 @@ impl UserID {
     }
 }
 
+impl Default for UserID {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, FromRow)]
+#[cfg_attr(test, derive(Clone))]
 pub struct Model {
     pub id: UserID,
 
     pub display_name: String,
+
+    pub completed_task_retention: Option<PgInterval>,
 
     pub created_at: chrono::DateTime<chrono::Utc>,
 }

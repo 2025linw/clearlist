@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate};
 
 use super::generate_a_z;
 use crate::{
@@ -54,13 +54,13 @@ pub fn task_with_start(i: usize, tags: Vec<TagID>) -> CreateModel {
         start: Some(dt),
         start_precision: StartPrecision::Date,
         tags,
-        position_key: format!("s{}", generate_a_z(i)),
+        position_key: format!("start{}", generate_a_z(i)),
         ..Default::default()
     }
 }
 
 pub fn task_with_deadline(i: usize, tags: Vec<TagID>) -> CreateModel {
-    let date = NaiveDate::from_ymd_opt(2026, 01, ((i % 31) + 1) as u32).unwrap();
+    let date = NaiveDate::from_ymd_opt(2026, 1, ((i % 31) + 1) as u32).unwrap();
 
     CreateModel {
         deadline: Some(date),
@@ -77,8 +77,8 @@ pub fn full_task(i: usize, tags: Vec<TagID>) -> CreateModel {
             .to_utc();
 
     CreateModel {
-        title: format!("Task {i}"),
-        notes: Some(format!("Note for 'Task {i}'")),
+        title: "Test Task".to_string(),
+        notes: Some("Note for 'Test Task'".to_string()),
         start: Some(dt),
         start_precision: StartPrecision::DateTime,
         deadline: Some(dt.date_naive()),
@@ -87,18 +87,32 @@ pub fn full_task(i: usize, tags: Vec<TagID>) -> CreateModel {
     }
 }
 
+impl Default for CreateModel {
+    fn default() -> Self {
+        Self {
+            title: "Test Task".to_string(),
+            notes: None,
+            start: None,
+            start_precision: StartPrecision::Date,
+            deadline: None,
+            tags: vec![],
+            position_key: generate_a_z(0).to_string(),
+        }
+    }
+}
+
 impl Default for UpdateModel {
     fn default() -> Self {
         Self {
-            title: Some("Updated task".to_string()),
-            notes: Some(Some("Updated notes".to_string())),
-            start: Some(Some(Utc::now())),
-            start_precision: Some(StartPrecision::DateTime),
-            deadline: Some(Some(Utc::now().date_naive())),
+            title: Some("Updated_Task".to_string()),
+            notes: None,
+            start: None,
+            start_precision: None,
+            deadline: None,
             tags: None,
-            completed: Some(false),
-            deleted: Some(false),
-            position_key: Some(generate_a_z(1).to_string()),
+            completed: None,
+            deleted: None,
+            position_key: None,
         }
     }
 }

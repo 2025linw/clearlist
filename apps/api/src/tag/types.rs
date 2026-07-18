@@ -14,6 +14,12 @@ impl TagID {
     }
 }
 
+impl Default for TagID {
+    fn default() -> Self {
+        Self(Uuid::new_v4())
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub enum SortBy {
     ID,
@@ -42,6 +48,7 @@ pub struct URLQueryOpts {
 }
 
 #[derive(Debug, PartialEq, Eq, FromRow)]
+#[cfg_attr(test, derive(Clone))]
 pub struct Model {
     pub id: TagID,
 

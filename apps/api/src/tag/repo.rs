@@ -33,7 +33,7 @@ impl PgTagRepository {
         Self { db }
     }
 
-    async fn list_inner(
+    async fn fetch_all_tags(
         conn: &mut PgConnection,
         user_id: UserID,
         query: Option<QueryOpts>,
@@ -49,7 +49,7 @@ impl PgTagRepository {
         Ok(query.fetch_all(conn.as_mut()).await?)
     }
 
-    async fn create_inner(
+    async fn create_tag(
         conn: &mut PgConnection,
         user_id: UserID,
         create_tag: CreateModel,
@@ -70,14 +70,14 @@ impl PgTagRepository {
             if let Some(pg_err) = err.as_database_error()
                 && pg_err.is_foreign_key_violation()
             {
-                return Error::Constraint(ConstraintViolation::NotFound(Resource::User));
+                return Error::Constraint(ConstraintViolation::MissingUser);
             }
 
             err.into()
         })
     }
 
-    async fn get_inner(
+    async fn fetch_tag(
         conn: &mut PgConnection,
         id: TagID,
         user_id: UserID,
@@ -94,7 +94,7 @@ impl PgTagRepository {
         Ok(tag_opt)
     }
 
-    async fn update_inner(
+    async fn update_tag(
         conn: &mut PgConnection,
         id: TagID,
         user_id: UserID,
@@ -119,7 +119,7 @@ impl PgTagRepository {
         })
     }
 
-    async fn delete_inner(conn: &mut PgConnection, id: TagID, user_id: UserID) -> Result<()> {
+    async fn delete_tag(conn: &mut PgConnection, id: TagID, user_id: UserID) -> Result<()> {
         query_as::<Model>(
             "DELETE FROM app.tags
             WHERE id = $1 AND created_by = $2
@@ -145,15 +145,15 @@ impl PgTagRepository {
 impl TagRepository for PgTagRepository {
     async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<Model>> {
         let mut conn = self.db.acquire().await?;
-        let tags = Self::list_inner(&mut conn, user_id, query).await?;
+        let tags = Self::fetch_all_tags(&mut conn, user_id, query).await?;
         conn.close().await?;
 
         Ok(tags)
     }
 
-    async fn create(&self, user_id: UserID, tag: CreateModel) -> Result<Model> {
+    async fn create(&self, user_id: UserID, create_tag: CreateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let tag = Self::create_inner(&mut tx, user_id, tag).await?;
+        let tag = Self::create_tag(&mut tx, user_id, create_tag).await?;
         tx.commit().await?;
 
         Ok(tag)
@@ -161,15 +161,15 @@ impl TagRepository for PgTagRepository {
 
     async fn get(&self, id: TagID, user_id: UserID) -> Result<Option<Model>> {
         let mut conn = self.db.acquire().await?;
-        let tag_opt = Self::get_inner(&mut conn, id, user_id).await?;
+        let tag_opt = Self::fetch_tag(&mut conn, id, user_id).await?;
         conn.close().await?;
 
         Ok(tag_opt)
     }
 
-    async fn update(&self, id: TagID, user_id: UserID, tag: UpdateModel) -> Result<Model> {
+    async fn update(&self, id: TagID, user_id: UserID, update_tag: UpdateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let tag = Self::update_inner(&mut tx, id, user_id, tag).await?;
+        let tag = Self::update_tag(&mut tx, id, user_id, update_tag).await?;
         tx.commit().await?;
 
         Ok(tag)
@@ -177,7 +177,7 @@ impl TagRepository for PgTagRepository {
 
     async fn delete(&self, id: TagID, user_id: UserID) -> Result<()> {
         let mut tx = self.db.begin().await?;
-        Self::delete_inner(&mut tx, id, user_id).await?;
+        Self::delete_tag(&mut tx, id, user_id).await?;
         tx.commit().await?;
 
         Ok(())
@@ -217,7 +217,7 @@ impl QueryOpts {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Default, Clone))]
+#[cfg_attr(test, derive(Clone))]
 pub struct CreateModel {
     pub label: String,
     pub category: Option<String>,

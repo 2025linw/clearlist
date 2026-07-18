@@ -2,12 +2,14 @@ pub mod tag;
 pub mod task;
 pub mod user;
 
-use chrono::Utc;
+use chrono::{DateTime, SubsecRound, Utc};
 
 use crate::{
     tag::types::Model as TagModel,
     task::{
-        repo::{PgTaskRepository, TaskRepository, UpdateModel as TaskUpdateModel},
+        repo::{
+            PgTaskRepository, TaskRepository, UpdateModel as TaskUpdateModel, types::TaskState,
+        },
         types::{Model as TaskModel, TaskID},
     },
     types::order::SortOrder,
@@ -41,6 +43,11 @@ where
 }
 
 // Helper Functions
+#[inline]
+pub fn get_today_date_pg() -> DateTime<Utc> {
+    Utc::now().trunc_subsecs(6)
+}
+
 pub fn generate_a_z(i: usize) -> char {
     let offset = (i % 26) as u8;
 
@@ -57,28 +64,26 @@ where
     }
 }
 
-pub fn create_user_model() -> UserCreateModel {
-    UserCreateModel {
-        id: UserID::new_v4(),
-        display_name: String::from("Test User"),
-        created_at: Utc::now(),
-    }
-}
-
 pub async fn create_test_user(repo: &PgUserRepository) -> UserModel {
-    repo.create(create_user_model()).await.unwrap()
+    repo.create(UserCreateModel::default()).await.unwrap()
 }
 
 pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: UserID) -> TaskModel {
-    repo.update(
-        id,
-        user_id,
-        TaskUpdateModel {
-            deleted: Some(true),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap()
-    .unwrap()
+    let state = repo
+        .update(
+            id,
+            user_id,
+            TaskUpdateModel {
+                deleted: Some(true),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    if let TaskState::Existing(task) | TaskState::Deleted(task) = state {
+        task
+    } else {
+        panic!("task should have not been deleted");
+    }
 }

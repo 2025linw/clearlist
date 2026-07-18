@@ -50,71 +50,9 @@ struct BoolCase {
     check: fn(&[Model]),
 }
 
+// Input Tests
 #[test]
-async fn list_tasks(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 25, user.id, Vec::new(), None, default_task).await;
-
-    let res = repo.list(user.id, None).await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn list_returns_correct_format(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    // Task without tags
-    seed_tasks(&repo, 10, user.id, Vec::new(), None, default_task).await;
-    // Task with tags
-    seed_tags(&tag_repo, 10, user.id, default_tag).await;
-    let tags = tag_repo.list(user.id, None).await.unwrap();
-    seed_tasks(
-        &repo,
-        10,
-        user.id,
-        tags.iter().map(|tag| tag.id).collect(),
-        None,
-        full_task,
-    )
-    .await;
-
-    let res = repo.list(user.id, None).await;
-    assert!(res.is_ok());
-    if let Ok(tasks) = res {
-        for task in tasks {
-            if task.title.is_empty() {
-                // default task
-                assert_eq!(task.title, "");
-                assert!(task.notes.is_none());
-                assert!(task.start_dt.is_none());
-                assert!(!task.has_time);
-                assert!(task.deadline.is_none());
-                assert!(task.tags.is_empty());
-                assert!(task.completed_at.is_none());
-                assert!(task.deleted_at.is_none());
-            } else {
-                // full task
-                assert!(task.title.starts_with("Task"));
-                assert!(task.notes.is_some());
-                assert!(task.start_dt.is_some());
-                assert!(task.has_time);
-                assert!(task.deadline.is_some());
-                assert!(!task.tags.is_empty());
-                assert!(task.completed_at.is_none());
-                assert!(task.deleted_at.is_none());
-            }
-        }
-    }
-}
-
-#[test]
-async fn list_limit(pool: PgPool) {
+async fn pagination_limit(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -137,7 +75,7 @@ async fn list_limit(pool: PgPool) {
 }
 
 #[test]
-async fn list_offset(pool: PgPool) {
+async fn pagination_offset(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -167,7 +105,7 @@ async fn list_offset(pool: PgPool) {
 }
 
 #[test]
-async fn list_sorts(pool: PgPool) {
+async fn sort_variants(pool: PgPool) {
     let cases = vec![
         SortCase {
             name: "id asc",
@@ -357,7 +295,7 @@ async fn list_sorts(pool: PgPool) {
 }
 
 #[test]
-async fn list_filter_start(pool: PgPool) {
+async fn filter_start(pool: PgPool) {
     let date_bound = DateTime::parse_from_rfc3339("2026-01-15T12:00:00Z")
         .unwrap()
         .to_utc();
@@ -440,8 +378,8 @@ async fn list_filter_start(pool: PgPool) {
 }
 
 #[test]
-async fn list_filter_deadline(pool: PgPool) {
-    let date_bound = NaiveDate::from_ymd_opt(2026, 01, 15).unwrap();
+async fn filter_deadline(pool: PgPool) {
+    let date_bound = NaiveDate::from_ymd_opt(2026, 1, 15).unwrap();
 
     let cases =
         vec![
@@ -450,7 +388,7 @@ async fn list_filter_deadline(pool: PgPool) {
                 filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
-                        > NaiveDate::from_ymd_opt(2026, 01, 15).unwrap()))
+                        > NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
                 },
             },
             DeadlineCase {
@@ -458,7 +396,7 @@ async fn list_filter_deadline(pool: PgPool) {
                 filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
-                        >= NaiveDate::from_ymd_opt(2026, 01, 15).unwrap()))
+                        >= NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
                 },
             },
             DeadlineCase {
@@ -466,7 +404,7 @@ async fn list_filter_deadline(pool: PgPool) {
                 filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
-                        < NaiveDate::from_ymd_opt(2026, 01, 15).unwrap()))
+                        < NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
                 },
             },
             DeadlineCase {
@@ -474,7 +412,7 @@ async fn list_filter_deadline(pool: PgPool) {
                 filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
-                        <= NaiveDate::from_ymd_opt(2026, 01, 15).unwrap()))
+                        <= NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
                 },
             },
         ];
@@ -506,7 +444,7 @@ async fn list_filter_deadline(pool: PgPool) {
 }
 
 #[test]
-async fn list_filter_bool(pool: PgPool) {
+async fn filter_bool(pool: PgPool) {
     let cases = vec![
         BoolCase {
             name: "completed false",
@@ -578,10 +516,10 @@ async fn list_filter_bool(pool: PgPool) {
 }
 
 #[test]
-async fn list_filter_tags(pool: PgPool) {
+async fn filter_tags(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
     let tag_repo = PgTagRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
     seed_tags(&tag_repo, 2, user.id, default_tag).await;
@@ -614,4 +552,53 @@ async fn list_filter_tags(pool: PgPool) {
             assert_eq!(task.tags.len(), 2);
         }
     }
+}
+
+// Output Tests
+#[test]
+async fn verify_output(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    seed_tags(&tag_repo, 10, user.id, default_tag).await;
+    let tags = tag_repo.list(user.id, None).await.unwrap();
+    seed_tasks(
+        &repo,
+        10,
+        user.id,
+        tags.iter().map(|tag| tag.id).collect(),
+        None,
+        full_task,
+    )
+    .await;
+
+    let res = repo.list(user.id, None).await;
+    assert!(res.is_ok());
+    if let Ok(tasks) = res {
+        for task in tasks {
+            assert!(!task.title.is_empty());
+            assert!(task.notes.is_some());
+            assert!(task.start_dt.is_some());
+            assert!(task.has_time);
+            assert!(task.deadline.is_some());
+            assert!(!task.tags.is_empty());
+            assert!(task.completed_at.is_none());
+            assert!(task.deleted_at.is_none());
+        }
+    }
+}
+
+// Behavior Tests
+#[test]
+async fn works(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    seed_tasks(&repo, 25, user.id, Vec::new(), None, default_task).await;
+
+    let res = repo.list(user.id, None).await;
+    assert!(res.is_ok());
 }

@@ -1,4 +1,4 @@
-mod types;
+pub mod types;
 
 #[cfg(test)]
 mod tests;
@@ -177,7 +177,13 @@ impl PgTaskRepository {
 
         let query = builder.build_query_as::<Model>();
 
-        Ok(TaskState::Existing(query.fetch_one(conn.as_mut()).await?))
+        let task = query.fetch_one(conn.as_mut()).await?;
+
+        if task.deleted_at.is_some() {
+            Ok(TaskState::Deleted(task))
+        } else {
+            Ok(TaskState::Existing(task))
+        }
     }
 
     async fn delete_task(
@@ -265,7 +271,7 @@ impl PgTaskRepository {
         user_id: UserID,
         tag_id: TagID,
     ) -> Result<TaskState<()>> {
-        query(
+        let res = query(
             "DELETE FROM app.task_tags
             WHERE task_id = $1 AND tag_id = $2
             RETURNING *",
@@ -275,7 +281,9 @@ impl PgTaskRepository {
         .execute(conn.as_mut())
         .await?;
 
-        set_updated_timestamp(conn, id, user_id).await?;
+        if res.rows_affected() != 0 {
+            set_updated_timestamp(conn, id, user_id).await?;
+        }
 
         Ok(TaskState::Existing(()))
     }
@@ -352,11 +360,11 @@ impl TaskRepository for PgTaskRepository {
         Ok(tasks)
     }
 
-    async fn create(&self, user_id: UserID, task: CreateModel) -> Result<Model> {
+    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
 
-        let tags = task.tags.clone();
-        let mut task = Self::create_task(&mut tx, user_id, task).await?;
+        let tags = create_task.tags.clone();
+        let mut task = Self::create_task(&mut tx, user_id, create_task).await?;
 
         // Set tags, if needed
         if !tags.is_empty() {
@@ -392,7 +400,7 @@ impl TaskRepository for PgTaskRepository {
         &self,
         id: TaskID,
         user_id: UserID,
-        task: UpdateModel,
+        update_task: UpdateModel,
     ) -> Result<TaskState<Model>> {
         let mut tx = self.db.begin().await?;
 
@@ -401,8 +409,8 @@ impl TaskRepository for PgTaskRepository {
             TaskState::Deleted(task) => return Ok(TaskState::Deleted(task)),
             _ => (),
         }
-        let tags = task.tags.clone();
-        let mut state = Self::update_task(&mut tx, id, user_id, task).await?;
+        let tags = update_task.tags.clone();
+        let mut state = Self::update_task(&mut tx, id, user_id, update_task).await?;
 
         // Update tags, if needed
         if let TaskState::Existing(ref mut task) = state
@@ -563,7 +571,7 @@ impl QueryOpts {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Default, Clone))]
+#[cfg_attr(test, derive(Clone))]
 pub struct CreateModel {
     pub title: String,
     pub notes: Option<String>,

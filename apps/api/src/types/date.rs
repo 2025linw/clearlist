@@ -14,6 +14,12 @@ pub enum StartPrecision {
     DateTime,
 }
 
+impl StartPrecision {
+    pub fn has_time(&self) -> bool {
+        matches!(self, StartPrecision::DateTime)
+    }
+}
+
 #[derive(Debug)]
 pub enum DateBound<T> {
     Exclusive(T),

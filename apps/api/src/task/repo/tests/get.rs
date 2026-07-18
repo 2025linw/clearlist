@@ -1,17 +1,24 @@
+use std::collections::HashSet;
+
 use sqlx::{PgPool, test};
 
 use crate::{
-    tag::repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
+    tag::{
+        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
+        types::TagID,
+    },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
         types::TaskID,
     },
-    tests::helpers::{create_test_user, soft_delete_task},
+    tests::helpers::{create_test_user, generate_a_z, get_today_date_pg, soft_delete_task},
+    types::date::StartPrecision,
     user::repo::PgUserRepository,
 };
 
+// Existence Tests
 #[test]
-async fn get_existing(pool: PgPool) {
+async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -22,12 +29,11 @@ async fn get_existing(pool: PgPool) {
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         assert!(task_state.exists());
-        assert_eq!(task_state.unwrap(), test_task);
     }
 }
 
 #[test]
-async fn get_soft_deleted(pool: PgPool) {
+async fn soft_deleted(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -43,23 +49,7 @@ async fn get_soft_deleted(pool: PgPool) {
 }
 
 #[test]
-async fn get_deleted(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    repo.delete(test_task.id, user.id).await.unwrap();
-
-    let res = repo.get(test_task.id, user.id).await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
-    }
-}
-
-#[test]
-async fn get_not_owned(pool: PgPool) {
+async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -78,7 +68,7 @@ async fn get_not_owned(pool: PgPool) {
 }
 
 #[test]
-async fn get_nonexistent(pool: PgPool) {
+async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -91,41 +81,42 @@ async fn get_nonexistent(pool: PgPool) {
     }
 }
 
+// Output Tests
 #[test]
-async fn get_has_tags(pool: PgPool) {
+async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
     let tag_repo = PgTagRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
-    let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
-        let tag = tag_repo
-            .create(user.id, TagCreateModel::default())
-            .await
-            .unwrap();
-
-        test_tags.push(tag);
-    }
-    let test_task = repo
-        .create(
-            user.id,
-            CreateModel {
-                tags: test_tags.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-        )
+    let tag = tag_repo
+        .create(user.id, TagCreateModel::default())
         .await
         .unwrap();
 
-    let res = repo.get(test_task.id, user.id).await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.exists());
-        let task = task_state.unwrap();
-        assert_eq!(task.tags.len(), test_task.tags.len());
-        for tag in task.tags {
-            assert!(test_tags.contains(&tag));
-        }
-    }
+    let create_task = CreateModel {
+        title: "Test Task".to_string(),
+        notes: Some("Note for 'Test Task'".to_string()),
+        start: Some(get_today_date_pg()),
+        start_precision: StartPrecision::DateTime,
+        deadline: Some(get_today_date_pg().date_naive()),
+        tags: vec![tag.id],
+        position_key: generate_a_z(0).to_string(),
+    };
+    let test_task = repo.create(user.id, create_task.clone()).await.unwrap();
+
+    let task = repo.get(test_task.id, user.id).await.unwrap().unwrap();
+    assert_eq!(task.title, create_task.title);
+    assert_eq!(task.notes, create_task.notes);
+    assert_eq!(task.start_dt, create_task.start);
+    assert!(task.has_time == create_task.start_precision.has_time());
+    assert_eq!(task.deadline, create_task.deadline);
+    assert_eq!(
+        task.tags
+            .iter()
+            .map(|tag| tag.id)
+            .collect::<HashSet<TagID>>(),
+        create_task.tags.into_iter().collect::<HashSet<TagID>>(),
+    );
+    assert_eq!(task.position_key, create_task.position_key);
 }

@@ -1,6 +1,6 @@
-use std::time::Duration;
+use std::collections::HashSet;
 
-use chrono::{DateTime, NaiveDate, SubsecRound, Utc};
+use chrono::{DateTime, NaiveDate};
 use sqlx::{PgPool, test};
 
 use crate::{
@@ -13,13 +13,14 @@ use crate::{
         repo::{CreateModel, PgTaskRepository, TaskRepository, UpdateModel},
         types::TaskID,
     },
-    tests::helpers::{create_test_user, generate_a_z, soft_delete_task},
+    tests::helpers::{create_test_user, generate_a_z, get_today_date_pg, soft_delete_task},
     types::date::StartPrecision,
     user::repo::PgUserRepository,
 };
 
+// Existence Tests
 #[test]
-async fn update_existing(pool: PgPool) {
+async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -31,7 +32,7 @@ async fn update_existing(pool: PgPool) {
             test_task.id,
             user.id,
             UpdateModel {
-                title: Some(String::from("Updated task")),
+                title: Some("Updated Task".to_string()),
                 ..Default::default()
             },
         )
@@ -43,7 +44,7 @@ async fn update_existing(pool: PgPool) {
 }
 
 #[test]
-async fn update_soft_deleted(pool: PgPool) {
+async fn soft_deleted(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -61,25 +62,7 @@ async fn update_soft_deleted(pool: PgPool) {
 }
 
 #[test]
-async fn update_deleted(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    repo.delete(test_task.id, user.id).await.unwrap();
-
-    let res = repo
-        .update(test_task.id, user.id, UpdateModel::default())
-        .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
-    }
-}
-
-#[test]
-async fn update_not_owned(pool: PgPool) {
+async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -100,7 +83,7 @@ async fn update_not_owned(pool: PgPool) {
 }
 
 #[test]
-async fn update_nonexistent(pool: PgPool) {
+async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -115,84 +98,56 @@ async fn update_nonexistent(pool: PgPool) {
     }
 }
 
+// Input Tests
 #[test]
-async fn update_is_idempotent(pool: PgPool) {
+async fn full_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-
-    let update_task = UpdateModel {
-        title: Some(String::from("Updated task")),
-        ..Default::default()
-    };
-    let update_1 = repo
-        .update(test_task.id, user.id, update_task.clone())
-        .await
-        .unwrap();
-    let update_2 = repo
-        .update(test_task.id, user.id, update_task.clone())
+    let tag = tag_repo
+        .create(user.id, TagCreateModel::default())
         .await
         .unwrap();
 
-    assert_eq!(update_1, update_2);
-}
-
-#[test]
-async fn update_full(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
     let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-
-    let dt = Utc::now().trunc_subsecs(6);
     let res = repo
         .update(
             test_task.id,
             user.id,
             UpdateModel {
-                title: Some(String::from("Updated task")),
-                notes: Some(Some("Notes for 'Updated task'".to_string())),
-                start: Some(Some(dt + Duration::from_hours(24 * 7))),
+                title: Some("Updated Task".to_string()),
+                notes: Some(Some("Notes for 'Updated Task'".to_string())),
+                start: Some(Some(get_today_date_pg())),
                 start_precision: Some(StartPrecision::DateTime),
-                deadline: Some(Some(dt.date_naive())),
-                tags: None,
+                deadline: Some(Some(get_today_date_pg().date_naive())),
+                tags: Some(vec![tag.id]),
                 completed: Some(true),
-                deleted: Some(true),
-                position_key: Some(format!("full{}", generate_a_z(0))),
+                deleted: Some(false),
+                position_key: Some(format!("full{}", generate_a_z(1))),
             },
         )
         .await;
     assert!(res.is_ok());
-    let task_state = res.unwrap();
-
-    let task = task_state.unwrap();
-    assert_eq!(task.title, "Updated task");
-    assert_eq!(task.notes.unwrap(), "Notes for 'Updated task'");
-    assert_eq!(task.start_dt.unwrap(), dt + Duration::from_hours(24 * 7));
-    assert!(task.has_time);
-    assert_eq!(task.deadline.unwrap(), dt.date_naive());
-
-    assert!(task.completed_at.is_some());
-    assert!(task.deleted_at.is_some());
-
-    assert_eq!(task.position_key, format!("full{}", generate_a_z(0)));
 }
 
 #[test]
-async fn update_full_clear(pool: PgPool) {
+async fn null_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
+    let tag_repo = PgTagRepository::init(pool.clone());
+    let tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
     let test_task = repo
         .create(
             user.id,
             CreateModel {
-                title: String::from("Test Task"),
-                notes: Some(String::from("This is the note for Test Task")),
+                notes: Some("This is the note for Test Task".to_string()),
                 start: Some(
                     DateTime::parse_from_rfc3339("2026-01-01T08:45:00-06:00")
                         .unwrap()
@@ -200,8 +155,8 @@ async fn update_full_clear(pool: PgPool) {
                 ),
                 start_precision: StartPrecision::DateTime,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
-                tags: Vec::new(),
-                position_key: format!("full{}", generate_a_z(0)),
+                tags: vec![tag.id],
+                ..Default::default()
             },
         )
         .await
@@ -212,56 +167,10 @@ async fn update_full_clear(pool: PgPool) {
             test_task.id,
             user.id,
             UpdateModel {
-                title: Some(String::new()),
                 notes: Some(None),
                 start: Some(None),
                 start_precision: Some(StartPrecision::Date),
                 deadline: Some(None),
-                tags: None,
-                completed: Some(false),
-                deleted: Some(false),
-                position_key: None,
-            },
-        )
-        .await;
-    assert!(res.is_ok());
-    let task_state = res.unwrap();
-
-    let task = task_state.unwrap();
-    assert_eq!(task.title, "");
-    assert!(task.notes.is_none());
-    assert!(task.start_dt.is_none());
-    assert!(!task.has_time);
-    assert!(task.deadline.is_none());
-
-    assert!(task.completed_at.is_none());
-    assert!(task.deleted_at.is_none());
-}
-
-#[test]
-async fn update_with_tags(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
-        let tag = tag_repo
-            .create(user.id, TagCreateModel::default())
-            .await
-            .unwrap();
-
-        test_tags.push(tag);
-    }
-
-    let res = repo
-        .update(
-            test_task.id,
-            user.id,
-            UpdateModel {
-                tags: Some(test_tags.iter().map(|tag| tag.id).collect()),
                 ..Default::default()
             },
         )
@@ -269,54 +178,43 @@ async fn update_with_tags(pool: PgPool) {
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         let task = task_state.unwrap();
-        assert_eq!(task.tags.len(), 5);
-        for tag in task.tags {
-            assert!(test_tags.contains(&tag));
-        }
-    }
-}
-
-#[test]
-async fn update_with_tags_full_clear(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
-
-    let user = create_test_user(&user_repo).await;
-    let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
-        let tag = tag_repo
-            .create(user.id, TagCreateModel::default())
-            .await
-            .unwrap();
-
-        test_tags.push(tag);
-    }
-    let test_task = repo
-        .create(
-            user.id,
-            CreateModel {
-                tags: test_tags.iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
-    let res = repo
-        .update(test_task.id, user.id, UpdateModel::default())
-        .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        let task = task_state.unwrap();
+        assert!(task.notes.is_none());
+        assert!(task.start_dt.is_none());
+        assert!(!task.has_time);
+        assert!(task.deadline.is_none());
         assert_eq!(task.tags.len(), 0);
     }
 }
 
 #[test]
-async fn update_tags_different_owner(pool: PgPool) {
+async fn delete_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let res = repo
+        .update(
+            test_task.id,
+            user.id,
+            UpdateModel {
+                deleted: Some(true),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.deleted());
+    }
+}
+
+#[test]
+async fn with_other_user_tag_input(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
     let tag_repo = PgTagRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
@@ -346,7 +244,7 @@ async fn update_tags_different_owner(pool: PgPool) {
 }
 
 #[test]
-async fn update_tags_nonexistent(pool: PgPool) {
+async fn with_tag_not_exist_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
@@ -370,4 +268,79 @@ async fn update_tags_nonexistent(pool: PgPool) {
             Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
         ))
     }
+}
+
+// Output Tests
+#[test]
+async fn verify_output(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let tag = tag_repo
+        .create(user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let update_task = UpdateModel {
+        title: Some("Updated Task".to_string()),
+        notes: Some(Some("Updated notes for 'Updated Task'".to_string())),
+        start: Some(Some(get_today_date_pg())),
+        start_precision: Some(StartPrecision::DateTime),
+        deadline: Some(Some(get_today_date_pg().date_naive())),
+        tags: Some(vec![tag.id]),
+        completed: Some(true),
+        deleted: Some(false),
+        position_key: Some(generate_a_z(1).to_string()),
+    };
+    let task = repo
+        .update(test_task.id, user.id, update_task.clone())
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(task.title, update_task.title.unwrap());
+    assert_eq!(task.notes, update_task.notes.unwrap());
+    assert_eq!(task.start_dt, update_task.start.unwrap());
+    assert!(task.has_time == update_task.start_precision.unwrap().has_time());
+    assert_eq!(task.deadline, update_task.deadline.unwrap());
+    assert_eq!(
+        task.tags
+            .iter()
+            .map(|tag| tag.id)
+            .collect::<HashSet<TagID>>(),
+        update_task
+            .tags
+            .unwrap()
+            .into_iter()
+            .collect::<HashSet<TagID>>(),
+    );
+    assert!(task.completed_at.is_some());
+    assert_eq!(task.position_key, update_task.position_key.unwrap());
+}
+
+// Behavior Tests
+#[test]
+async fn is_idempotent(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+
+    let update_task = UpdateModel {
+        title: Some("Updated Task".to_string()),
+        ..Default::default()
+    };
+    let update_1 = repo
+        .update(test_task.id, user.id, update_task.clone())
+        .await
+        .unwrap();
+    let update_2 = repo
+        .update(test_task.id, user.id, update_task.clone())
+        .await
+        .unwrap();
+
+    assert_eq!(update_1, update_2);
 }

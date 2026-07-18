@@ -4,7 +4,7 @@
 mod tests;
 
 use async_trait::async_trait;
-use sqlx::{PgConnection, PgPool, QueryBuilder};
+use sqlx::{PgConnection, PgPool, QueryBuilder, postgres::types::PgInterval};
 
 use super::types::{Model, UserID};
 use crate::{
@@ -31,13 +31,14 @@ impl PgUserRepository {
 
     async fn create_inner(conn: &mut PgConnection, create_user: CreateModel) -> Result<Model> {
         Ok(query_as::<Model>(
-            "INSERT INTO app.users (id, display_name, created_at)
-            VALUES ($1, $2, $3)
+            "INSERT INTO app.users (id, display_name, created_at, completed_task_retention)
+            VALUES ($1, $2, $3, $4)
             RETURNING *",
         )
         .bind(create_user.id)
         .bind(create_user.display_name)
         .bind(create_user.created_at)
+        .bind(create_user.completed_task_retention)
         .fetch_one(conn.as_mut())
         .await?)
     }
@@ -79,9 +80,9 @@ impl PgUserRepository {
 
 #[async_trait]
 impl UserRepository for PgUserRepository {
-    async fn create(&self, user: CreateModel) -> Result<Model> {
+    async fn create(&self, create_user: CreateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let user = Self::create_inner(&mut tx, user).await?;
+        let user = Self::create_inner(&mut tx, create_user).await?;
         tx.commit().await?;
 
         Ok(user)
@@ -95,9 +96,9 @@ impl UserRepository for PgUserRepository {
         Ok(user_opt)
     }
 
-    async fn update(&self, id: UserID, user: UpdateModel) -> Result<Model> {
+    async fn update(&self, id: UserID, update_user: UpdateModel) -> Result<Model> {
         let mut tx = self.db.begin().await?;
-        let user = Self::update_inner(&mut tx, id, user).await?;
+        let user = Self::update_inner(&mut tx, id, update_user).await?;
         tx.commit().await?;
 
         Ok(user)
@@ -105,10 +106,13 @@ impl UserRepository for PgUserRepository {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(Clone))]
 pub struct CreateModel {
     pub id: UserID,
 
     pub display_name: String,
+
+    pub completed_task_retention: Option<PgInterval>,
 
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
@@ -117,6 +121,8 @@ pub struct CreateModel {
 #[cfg_attr(test, derive(Clone))]
 pub struct UpdateModel {
     pub display_name: Option<String>,
+
+    pub completed_task_retention: Option<Option<PgInterval>>,
 }
 
 impl UpdateModel {
@@ -125,6 +131,10 @@ impl UpdateModel {
         if let Some(display_name) = self.display_name {
             separated.push("display_name = ");
             separated.push_bind_unseparated(display_name);
+        }
+        if let Some(opt) = self.completed_task_retention {
+            separated.push("completed_task_retention = ");
+            separated.push_bind_unseparated(opt);
         }
     }
 }
