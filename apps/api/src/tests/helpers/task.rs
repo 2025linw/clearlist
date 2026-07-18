@@ -1,12 +1,16 @@
 use chrono::{DateTime, NaiveDate};
 
-use super::generate_a_z;
 use crate::{
     tag::types::TagID,
-    task::repo::{CreateModel, PgTaskRepository, TaskRepository, UpdateModel},
+    task::{
+        repo::{PgTaskRepository, TaskRepository},
+        types::repo::{CreateModel, UpdateModel},
+    },
     types::date::StartPrecision,
     user::types::UserID,
 };
+
+use super::generate_a_z;
 
 pub async fn seed_tasks(
     repo: &PgTaskRepository,
@@ -104,7 +108,7 @@ impl Default for CreateModel {
 impl Default for UpdateModel {
     fn default() -> Self {
         Self {
-            title: Some("Updated_Task".to_string()),
+            title: Some("Updated Task".to_string()),
             notes: None,
             start: None,
             start_precision: None,

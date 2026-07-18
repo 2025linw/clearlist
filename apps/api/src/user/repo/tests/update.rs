@@ -116,6 +116,19 @@ async fn verify_output(pool: PgPool) {
 
 // Behavior Tests
 #[test]
+async fn updates_updated_at(pool: PgPool) {
+    let repo = PgUserRepository::init(pool.clone());
+
+    let test_user = repo.create(CreateModel::default()).await.unwrap();
+
+    let user = repo
+        .update(test_user.id, UpdateModel::default())
+        .await
+        .unwrap();
+    assert!(user.updated_at > test_user.updated_at);
+}
+
+#[test]
 async fn is_idempotent(pool: PgPool) {
     let repo = PgUserRepository::init(pool.clone());
 

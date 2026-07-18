@@ -6,8 +6,8 @@ use sqlx::{PgPool, test};
 use crate::{
     error::repo::{ConstraintViolation, Error, Resource},
     tag::{
-        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
-        types::TagID,
+        repo::{PgTagRepository, TagRepository},
+        types::{TagID, repo::CreateModel as TagCreateModel},
     },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository, UpdateModel},
@@ -24,18 +24,14 @@ async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let res = repo
-        .update(
-            test_task.id,
-            user.id,
-            UpdateModel {
-                title: Some("Updated Task".to_string()),
-                ..Default::default()
-            },
-        )
+        .update(test_task.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
@@ -48,12 +44,15 @@ async fn soft_deleted(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    let test_task = soft_delete_task(&repo, test_task.id, user.id).await;
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+    let test_task = soft_delete_task(&repo, test_task.id, test_user.id).await;
 
     let res = repo
-        .update(test_task.id, user.id, UpdateModel::default())
+        .update(test_task.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
@@ -66,7 +65,7 @@ async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_task = repo
         .create(other_user.id, CreateModel::default())
@@ -74,7 +73,7 @@ async fn not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo
-        .update(other_task.id, user.id, UpdateModel::default())
+        .update(other_task.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
@@ -87,10 +86,10 @@ async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
     let res = repo
-        .update(TaskID::new_v4(), user.id, UpdateModel::default())
+        .update(TaskID::new_v4(), test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
@@ -105,24 +104,27 @@ async fn full_input(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
 
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let res = repo
         .update(
             test_task.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 title: Some("Updated Task".to_string()),
                 notes: Some(Some("Notes for 'Updated Task'".to_string())),
                 start: Some(Some(get_today_date_pg())),
                 start_precision: Some(StartPrecision::DateTime),
                 deadline: Some(Some(get_today_date_pg().date_naive())),
-                tags: Some(vec![tag.id]),
+                tags: Some(vec![test_tag.id]),
                 completed: Some(true),
                 deleted: Some(false),
                 position_key: Some(format!("full{}", generate_a_z(1))),
@@ -135,17 +137,17 @@ async fn full_input(pool: PgPool) {
 #[test]
 async fn null_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let tag_repo = PgTagRepository::init(pool.clone());
-    let tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
     let test_task = repo
         .create(
-            user.id,
+            test_user.id,
             CreateModel {
                 notes: Some("This is the note for Test Task".to_string()),
                 start: Some(
@@ -155,7 +157,7 @@ async fn null_input(pool: PgPool) {
                 ),
                 start_precision: StartPrecision::DateTime,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
-                tags: vec![tag.id],
+                tags: vec![test_tag.id],
                 ..Default::default()
             },
         )
@@ -165,7 +167,7 @@ async fn null_input(pool: PgPool) {
     let res = repo
         .update(
             test_task.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 notes: Some(None),
                 start: Some(None),
@@ -191,13 +193,16 @@ async fn delete_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
     let res = repo
         .update(
             test_task.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 deleted: Some(true),
                 ..Default::default()
@@ -216,18 +221,21 @@ async fn with_other_user_tag_input(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_tag = tag_repo
         .create(other_user.id, TagCreateModel::default())
         .await
         .unwrap();
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let res = repo
         .update(
             test_task.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 tags: Some(vec![other_tag.id]),
                 ..Default::default()
@@ -248,13 +256,16 @@ async fn with_tag_not_exist_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let res = repo
         .update(
             test_task.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 tags: Some(vec![TagID::new_v4()]),
                 ..Default::default()
@@ -277,26 +288,29 @@ async fn verify_output(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(test_user.id, TagCreateModel::default())
+        .await
+        .unwrap();
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
         .await
         .unwrap();
 
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
     let update_task = UpdateModel {
         title: Some("Updated Task".to_string()),
         notes: Some(Some("Updated notes for 'Updated Task'".to_string())),
         start: Some(Some(get_today_date_pg())),
         start_precision: Some(StartPrecision::DateTime),
         deadline: Some(Some(get_today_date_pg().date_naive())),
-        tags: Some(vec![tag.id]),
+        tags: Some(vec![test_tag.id]),
         completed: Some(true),
         deleted: Some(false),
         position_key: Some(generate_a_z(1).to_string()),
     };
     let task = repo
-        .update(test_task.id, user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_task.clone())
         .await
         .unwrap()
         .unwrap();
@@ -322,23 +336,45 @@ async fn verify_output(pool: PgPool) {
 
 // Behavior Tests
 #[test]
+async fn updates_updated_at(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    let task = repo
+        .update(test_task.id, test_user.id, UpdateModel::default())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(task.updated_at > test_task.updated_at);
+}
+
+#[test]
 async fn is_idempotent(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let update_task = UpdateModel {
         title: Some("Updated Task".to_string()),
         ..Default::default()
     };
     let update_1 = repo
-        .update(test_task.id, user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_task.clone())
         .await
         .unwrap();
     let update_2 = repo
-        .update(test_task.id, user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_task.clone())
         .await
         .unwrap();
 

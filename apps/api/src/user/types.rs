@@ -1,3 +1,5 @@
+pub mod repo;
+
 use serde::Deserialize;
 use sqlx::{FromRow, Type, postgres::types::PgInterval};
 use uuid::Uuid;
@@ -27,5 +29,6 @@ pub struct Model {
 
     pub completed_task_retention: Option<PgInterval>,
 
+    pub updated_at: chrono::DateTime<chrono::Utc>,
     pub created_at: chrono::DateTime<chrono::Utc>,
 }

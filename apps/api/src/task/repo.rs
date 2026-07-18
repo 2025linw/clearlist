@@ -1,5 +1,3 @@
-pub mod types;
-
 #[cfg(test)]
 mod tests;
 
@@ -9,7 +7,6 @@ use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder, query, query_scalar};
 use uuid::Uuid;
 
-use super::types::{Model, TaskID, TaskTag};
 use crate::{
     error::repo::{ConstraintViolation, Error, Resource, Result},
     tag::types::{Model as TagModel, TagID},
@@ -17,7 +14,11 @@ use crate::{
     user::types::UserID,
     utils::repo::{query_as, set_updated_timestamp},
 };
-use types::TaskState;
+
+use super::types::{
+    Model, TaskID,
+    repo::{CreateModel, QueryOpts, TaskState, TaskTag, UpdateModel},
+};
 
 #[async_trait]
 pub trait TaskRepository: Send + Sync + Clone {
@@ -503,144 +504,5 @@ impl TaskRepository for PgTaskRepository {
 
         tx.commit().await?;
         Ok(state)
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct QueryOpts {
-    pagination: types::Pagination,
-    sort: types::Sort,
-    filter: types::Filter,
-}
-
-impl QueryOpts {
-    pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
-        // Filter
-        if let Some(filter) = self.filter.start {
-            builder.push(" AND ");
-            filter.add_to_builder(builder);
-        }
-        if let Some(filter) = self.filter.deadline {
-            builder.push(" AND ");
-            filter.add_to_builder(builder);
-        }
-        if let Some(completed) = self.filter.completed {
-            builder.push(" AND ");
-            if completed {
-                builder.push("completed_at IS NOT NULL");
-            } else {
-                builder.push("completed_at IS NULL");
-            }
-        }
-        if let Some(deleted) = self.filter.deleted {
-            builder.push(" AND ");
-            if deleted {
-                builder.push("deleted_at IS NOT NULL");
-            } else {
-                builder.push("deleted_at IS NULL");
-            }
-        }
-        if let Some(tags) = self.filter.tags
-            && !tags.is_empty()
-        {
-            // NOTE: Make sure this is last as it will contain `HAVING` clauses
-            builder.push(" AND tt.tag_id = ANY(");
-            builder.push_bind(tags.clone());
-            builder.push(") GROUP BY t.id HAVING COUNT(DISTINCT tt.tag_id) = cardinality(");
-            builder.push_bind(tags.clone());
-            builder.push(")");
-        } else {
-            builder.push(" GROUP BY t.id");
-        }
-
-        // Sort
-        if let Some((by, order)) = self.sort.sort {
-            builder.push(format!(" ORDER BY {} {} NULLS LAST", by, order));
-        } else {
-            builder.push(" ORDER BY id ASC");
-        }
-
-        // Pagination
-        if let Some(limit) = self.pagination.limit {
-            builder.push(format!(" LIMIT {limit}"));
-        }
-        if let Some(offset) = self.pagination.offset {
-            builder.push(format!(" OFFSET {offset}"));
-        }
-    }
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
-pub struct CreateModel {
-    pub title: String,
-    pub notes: Option<String>,
-    pub start: Option<chrono::DateTime<chrono::Utc>>,
-    pub start_precision: StartPrecision,
-    pub deadline: Option<chrono::NaiveDate>,
-    pub tags: Vec<TagID>,
-
-    pub position_key: String,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
-pub struct UpdateModel {
-    pub title: Option<String>,
-    pub notes: Option<Option<String>>,
-    pub start: Option<Option<chrono::DateTime<chrono::Utc>>>,
-    pub start_precision: Option<StartPrecision>,
-    pub deadline: Option<Option<chrono::NaiveDate>>,
-    pub tags: Option<Vec<TagID>>,
-
-    pub completed: Option<bool>,
-    pub deleted: Option<bool>,
-
-    pub position_key: Option<String>,
-}
-
-impl UpdateModel {
-    pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
-        let mut separated = builder.separated(", ");
-        if let Some(title) = self.title {
-            separated.push("title = ");
-            separated.push_bind_unseparated(title);
-        }
-        if let Some(notes) = self.notes {
-            separated.push("notes = ");
-            separated.push_bind_unseparated(notes);
-        }
-        if let Some(start) = self.start {
-            separated.push("start_dt = ");
-            separated.push_bind_unseparated(start);
-        }
-        if let Some(start_precision) = self.start_precision {
-            separated.push("has_time = ");
-            separated.push_bind_unseparated(matches!(start_precision, StartPrecision::DateTime));
-        }
-        if let Some(deadline) = self.deadline {
-            separated.push("deadline = ");
-            separated.push_bind_unseparated(deadline);
-        }
-
-        if let Some(completed) = self.completed {
-            if completed {
-                separated.push("completed_at = CURRENT_TIMESTAMP");
-            } else {
-                separated.push("completed_at = NULL");
-            }
-        }
-        if let Some(deleted) = self.deleted {
-            if deleted {
-                separated.push("deleted_at = CURRENT_TIMESTAMP");
-            } else {
-                separated.push("deleted_at = NULL");
-            }
-        }
-
-        if let Some(position_key) = self.position_key {
-            separated.push("position_key = ");
-            separated.push_bind_unseparated(position_key);
-        }
     }
 }

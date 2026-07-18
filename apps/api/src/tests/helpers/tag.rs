@@ -1,8 +1,12 @@
-use super::generate_a_z;
 use crate::{
-    tag::repo::{CreateModel, PgTagRepository, TagRepository, UpdateModel},
+    tag::{
+        repo::{PgTagRepository, TagRepository},
+        types::repo::{CreateModel, UpdateModel},
+    },
     user::types::UserID,
 };
+
+use super::generate_a_z;
 
 pub async fn seed_tags(
     repo: &PgTagRepository,

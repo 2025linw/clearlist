@@ -1,8 +1,10 @@
+pub mod repo;
+
 use serde::Deserialize;
 use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
-use crate::{types::order::SortOrder, user::types::UserID};
+use crate::user::types::UserID;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Type)]
 #[sqlx(transparent)]
@@ -37,14 +39,6 @@ impl std::fmt::Display for SortBy {
             SortBy::Position => write!(f, "position_key"),
         }
     }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct URLQueryOpts {
-    pub sort_by: Option<SortBy>,
-    pub sort_order: Option<SortOrder>,
-
-    pub category: Option<String>,
 }
 
 #[derive(Debug, PartialEq, Eq, FromRow)]

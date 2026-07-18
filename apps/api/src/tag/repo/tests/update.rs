@@ -16,11 +16,14 @@ async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let res = repo
-        .update(test_tag.id, user.id, UpdateModel::default())
+        .update(test_tag.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
 }
@@ -30,7 +33,7 @@ async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_tag = repo
         .create(other_user.id, CreateModel::default())
@@ -38,7 +41,7 @@ async fn not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo
-        .update(other_tag.id, user.id, UpdateModel::default())
+        .update(other_tag.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -54,10 +57,10 @@ async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
     let res = repo
-        .update(TagID::new_v4(), user.id, UpdateModel::default())
+        .update(TagID::new_v4(), test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -74,13 +77,16 @@ async fn full_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let res = repo
         .update(
             test_tag.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 label: Some("Updated Tag".to_string()),
                 category: Some(Some("Category".to_string())),
@@ -96,10 +102,10 @@ async fn null_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let test_tag = repo
         .create(
-            user.id,
+            test_user.id,
             CreateModel {
                 category: Some("Testing".to_string()),
                 ..Default::default()
@@ -111,7 +117,7 @@ async fn null_input(pool: PgPool) {
     let res = repo
         .update(
             test_tag.id,
-            user.id,
+            test_user.id,
             UpdateModel {
                 category: Some(None),
                 ..Default::default()
@@ -130,8 +136,11 @@ async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let update_tag = UpdateModel {
         label: Some("Updated Tag".to_string()),
@@ -139,7 +148,7 @@ async fn verify_output(pool: PgPool) {
         position_key: Some(generate_a_z(1).to_string()),
     };
     let tag = repo
-        .update(test_tag.id, user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_tag.clone())
         .await
         .unwrap();
     assert_eq!(tag.label, update_tag.label.unwrap());
@@ -149,23 +158,44 @@ async fn verify_output(pool: PgPool) {
 
 // Behavior Tests
 #[test]
+async fn updates_updated_at(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    let tag = repo
+        .update(test_tag.id, test_user.id, UpdateModel::default())
+        .await
+        .unwrap();
+    assert!(tag.updated_at > test_tag.updated_at);
+}
+
+#[test]
 async fn is_idempotent(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
     let update_tag = UpdateModel {
         label: Some("Updated Tag".to_string()),
         ..Default::default()
     };
     let update_1 = repo
-        .update(test_tag.id, user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_tag.clone())
         .await
         .unwrap();
     let update_2 = repo
-        .update(test_tag.id, user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_tag.clone())
         .await
         .unwrap();
 

@@ -1,5 +1,3 @@
-mod types;
-
 #[cfg(test)]
 mod tests;
 
@@ -7,11 +5,15 @@ use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder};
 use uuid::Uuid;
 
-use super::types::{Model, TagID};
 use crate::{
     error::repo::{ConstraintViolation, Error, Resource, Result},
     user::types::UserID,
     utils::repo::query_as,
+};
+
+use super::types::{
+    Model, TagID,
+    repo::{CreateModel, QueryOpts, UpdateModel},
 };
 
 #[async_trait]
@@ -181,74 +183,5 @@ impl TagRepository for PgTagRepository {
         tx.commit().await?;
 
         Ok(())
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct QueryOpts {
-    filter: types::Filter,
-    sort: types::Sort,
-    pagination: types::Pagination,
-}
-
-impl QueryOpts {
-    pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
-        // Filter
-        if let Some(filter) = self.filter.category {
-            builder.push(" AND category = ");
-            builder.push_bind(filter);
-        }
-
-        // Sort
-        if let Some((by, order)) = self.sort.sort {
-            builder.push(format!(" ORDER BY {} {}", by, order));
-        } else {
-            builder.push(" ORDER BY id ASC");
-        }
-
-        // Pagination
-        if let Some(limit) = self.pagination.limit {
-            builder.push(format!(" LIMIT {limit}"));
-        }
-        if let Some(offset) = self.pagination.offset {
-            builder.push(format!(" OFFSET {offset}"));
-        }
-    }
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
-pub struct CreateModel {
-    pub label: String,
-    pub category: Option<String>,
-
-    pub position_key: String,
-}
-
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
-pub struct UpdateModel {
-    pub label: Option<String>,
-    pub category: Option<Option<String>>,
-
-    pub position_key: Option<String>,
-}
-
-impl UpdateModel {
-    pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
-        let mut separated = builder.separated(", ");
-        if let Some(label) = self.label {
-            separated.push("label = ");
-            separated.push_bind_unseparated(label);
-        }
-        if let Some(category) = self.category {
-            separated.push("category = ");
-            separated.push_bind_unseparated(category);
-        }
-
-        if let Some(position_key) = self.position_key {
-            separated.push("position_key = ");
-            separated.push_bind_unseparated(position_key);
-        }
     }
 }

@@ -6,5 +6,6 @@ CREATE TABLE app.users (
 
     completed_task_retention interval,
 
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

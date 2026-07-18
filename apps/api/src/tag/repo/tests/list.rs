@@ -2,11 +2,11 @@ use sqlx::{PgPool, test};
 
 use crate::{
     tag::{
-        repo::{
-            Model, PgTagRepository, QueryOpts, TagRepository,
-            types::{Filter, Pagination, Sort},
+        repo::{Model, PgTagRepository, QueryOpts, TagRepository},
+        types::{
+            SortBy,
+            repo::{Filter, Pagination, Sort},
         },
-        types::SortBy,
     },
     tests::helpers::{
         create_test_user, is_tag_ordered,
@@ -38,12 +38,12 @@ async fn pagination_limit(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, default_tag).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, test_user.id, default_tag).await;
 
     let res = repo
         .list(
-            user.id,
+            test_user.id,
             Some(QueryOpts {
                 pagination: Pagination::new(Some(5), None),
                 ..Default::default()
@@ -61,18 +61,18 @@ async fn pagination_offset(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, default_tag).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, test_user.id, default_tag).await;
 
     let ref_tags = repo
-        .list(user.id, Some(QueryOpts::default()))
+        .list(test_user.id, Some(QueryOpts::default()))
         .await
         .unwrap();
 
     for offset in 1..=10 {
         let res = repo
             .list(
-                user.id,
+                test_user.id,
                 Some(QueryOpts {
                     pagination: Pagination::new(None, Some(offset)),
                     ..Default::default()
@@ -182,8 +182,8 @@ async fn sort_variants(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 10, user.id, default_tag).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 10, test_user.id, default_tag).await;
 
     for case in cases {
         let SortCase {
@@ -198,7 +198,7 @@ async fn sort_variants(pool: PgPool) {
             ..Default::default()
         };
 
-        let res = repo.list(user.id, Some(opts)).await;
+        let res = repo.list(test_user.id, Some(opts)).await;
         assert!(res.is_ok(), "request failed for {}", name);
         if let Ok(tags) = res {
             check(&tags);
@@ -234,10 +234,10 @@ async fn filter_category(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 5, user.id, default_tag).await;
-    seed_tags(&repo, 5, user.id, tag_with_workflow_category).await;
-    seed_tags(&repo, 5, user.id, tag_with_workflow_priority).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 5, test_user.id, default_tag).await;
+    seed_tags(&repo, 5, test_user.id, tag_with_workflow_category).await;
+    seed_tags(&repo, 5, test_user.id, tag_with_workflow_priority).await;
 
     for case in cases {
         let CategoryCase {
@@ -251,7 +251,7 @@ async fn filter_category(pool: PgPool) {
             ..Default::default()
         };
 
-        let res = repo.list(user.id, Some(opts)).await;
+        let res = repo.list(test_user.id, Some(opts)).await;
         assert!(res.is_ok(), "request failed for {}", name);
         if let Ok(tags) = res {
             check(&tags);
@@ -265,10 +265,10 @@ async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, full_tag).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, test_user.id, full_tag).await;
 
-    let res = repo.list(user.id, None).await;
+    let res = repo.list(test_user.id, None).await;
     assert!(res.is_ok());
     if let Ok(tags) = res {
         for tag in tags {
@@ -284,9 +284,9 @@ async fn works(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, user.id, default_tag).await;
+    let test_user = create_test_user(&user_repo).await;
+    seed_tags(&repo, 25, test_user.id, default_tag).await;
 
-    let res = repo.list(user.id, None).await;
+    let res = repo.list(test_user.id, None).await;
     assert!(res.is_ok());
 }

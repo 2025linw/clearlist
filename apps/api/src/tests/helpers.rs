@@ -7,15 +7,13 @@ use chrono::{DateTime, SubsecRound, Utc};
 use crate::{
     tag::types::Model as TagModel,
     task::{
-        repo::{
-            PgTaskRepository, TaskRepository, UpdateModel as TaskUpdateModel, types::TaskState,
-        },
-        types::{Model as TaskModel, TaskID},
+        repo::{PgTaskRepository, TaskRepository, types::TaskState},
+        types::{Model as TaskModel, TaskID, repo::UpdateModel as TaskUpdateModel},
     },
     types::order::SortOrder,
     user::{
-        repo::{CreateModel as UserCreateModel, PgUserRepository, UserRepository},
-        types::{Model as UserModel, UserID},
+        repo::{PgUserRepository, UserRepository},
+        types::{Model as UserModel, UserID, repo::CreateModel as UserCreateModel},
     },
 };
 

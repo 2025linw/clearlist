@@ -1,10 +1,9 @@
-use crate::{
-    tests::helpers::get_today_date_pg,
-    user::{
-        repo::{CreateModel, UpdateModel},
-        types::UserID,
-    },
+use crate::user::types::{
+    UserID,
+    repo::{CreateModel, UpdateModel},
 };
+
+use super::get_today_date_pg;
 
 impl Default for CreateModel {
     fn default() -> Self {

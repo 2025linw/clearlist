@@ -16,10 +16,13 @@ async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_tag = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
-    let res = repo.delete(test_tag.id, user.id).await;
+    let res = repo.delete(test_tag.id, test_user.id).await;
     assert!(res.is_ok());
 }
 
@@ -28,14 +31,14 @@ async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_tag = repo
         .create(other_user.id, CreateModel::default())
         .await
         .unwrap();
 
-    let res = repo.delete(other_tag.id, user.id).await;
+    let res = repo.delete(other_tag.id, test_user.id).await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(
@@ -50,9 +53,9 @@ async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
-    let res = repo.delete(TagID::new_v4(), user.id).await;
+    let res = repo.delete(TagID::new_v4(), test_user.id).await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(

@@ -58,12 +58,13 @@ async fn verify_output(pool: PgPool) {
         }),
         created_at: get_today_date_pg(),
     };
-    let user = repo.create(create_user.clone()).await.unwrap();
-    assert_eq!(user.id, create_user.id);
-    assert_eq!(user.display_name, create_user.display_name);
+    let test_user = repo.create(create_user.clone()).await.unwrap();
+    assert_eq!(test_user.id, create_user.id);
+    assert_eq!(test_user.display_name, create_user.display_name);
     assert_eq!(
-        user.completed_task_retention,
+        test_user.completed_task_retention,
         create_user.completed_task_retention
     );
-    assert_eq!(user.created_at, create_user.created_at);
+    assert_eq!(test_user.updated_at, create_user.created_at);
+    assert_eq!(test_user.created_at, create_user.created_at);
 }

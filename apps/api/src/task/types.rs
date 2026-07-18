@@ -1,10 +1,11 @@
+pub mod repo;
+
 use serde::Deserialize;
 use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
 use crate::{
     tag::types::{Model as TagModel, TagID},
-    types::{date_query::DateQueryFilter, order::SortOrder},
     user::types::UserID,
 };
 
@@ -47,24 +48,6 @@ impl std::fmt::Display for SortBy {
     }
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct URLQueryOpts {
-    pub page: Option<u32>,
-    pub limit: Option<u32>,
-
-    pub sort_by: Option<SortBy>,
-    pub sort_order: Option<SortOrder>,
-
-    pub start: Option<DateQueryFilter<chrono::DateTime<chrono::Utc>>>,
-    pub deadline: Option<DateQueryFilter<chrono::NaiveDate>>,
-
-    pub completed: Option<bool>,
-    pub deleted: Option<bool>,
-
-    pub tags: Option<Vec<TagID>>,
-}
-
 #[derive(Debug, PartialEq, Eq, FromRow)]
 #[cfg_attr(test, derive(Clone))]
 pub struct Model {
@@ -86,12 +69,4 @@ pub struct Model {
     pub updated_at: chrono::DateTime<chrono::Utc>,
 
     pub created_by: UserID,
-}
-
-#[derive(FromRow)]
-pub struct TaskTag {
-    pub task_id: TaskID,
-
-    #[sqlx(flatten)]
-    pub tag: TagModel,
 }

@@ -4,8 +4,8 @@ use sqlx::{PgPool, test};
 
 use crate::{
     tag::{
-        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
-        types::TagID,
+        repo::{PgTagRepository, TagRepository},
+        types::{TagID, repo::CreateModel as TagCreateModel},
     },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
@@ -22,10 +22,13 @@ async fn exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
 
-    let res = repo.get(test_task.id, user.id).await;
+    let res = repo.get(test_task.id, test_user.id).await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         assert!(task_state.exists());
@@ -37,11 +40,14 @@ async fn soft_deleted(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let test_task = repo.create(user.id, CreateModel::default()).await.unwrap();
-    soft_delete_task(&repo, test_task.id, user.id).await;
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+    soft_delete_task(&repo, test_task.id, test_user.id).await;
 
-    let res = repo.get(test_task.id, user.id).await;
+    let res = repo.get(test_task.id, test_user.id).await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         assert!(task_state.deleted());
@@ -53,14 +59,14 @@ async fn not_owned(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_task = repo
         .create(other_user.id, CreateModel::default())
         .await
         .unwrap();
 
-    let res = repo.get(other_task.id, user.id).await;
+    let res = repo.get(other_task.id, test_user.id).await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         assert!(task_state.missing());
@@ -72,9 +78,9 @@ async fn not_exists(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
-    let res = repo.get(TaskID::new_v4(), user.id).await;
+    let res = repo.get(TaskID::new_v4(), test_user.id).await;
     assert!(res.is_ok());
     if let Ok(task_state) = res {
         assert!(task_state.missing());
@@ -88,9 +94,9 @@ async fn verify_output(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
 
@@ -100,12 +106,15 @@ async fn verify_output(pool: PgPool) {
         start: Some(get_today_date_pg()),
         start_precision: StartPrecision::DateTime,
         deadline: Some(get_today_date_pg().date_naive()),
-        tags: vec![tag.id],
+        tags: vec![test_tag.id],
         position_key: generate_a_z(0).to_string(),
     };
-    let test_task = repo.create(user.id, create_task.clone()).await.unwrap();
+    let test_task = repo
+        .create(test_user.id, create_task.clone())
+        .await
+        .unwrap();
 
-    let task = repo.get(test_task.id, user.id).await.unwrap().unwrap();
+    let task = repo.get(test_task.id, test_user.id).await.unwrap().unwrap();
     assert_eq!(task.title, create_task.title);
     assert_eq!(task.notes, create_task.notes);
     assert_eq!(task.start_dt, create_task.start);

@@ -6,8 +6,8 @@ use sqlx::{PgPool, test};
 use crate::{
     error::repo::{ConstraintViolation, Error, Resource},
     tag::{
-        repo::{CreateModel as TagCreateModel, PgTagRepository, TagRepository},
-        types::TagID,
+        repo::{PgTagRepository, TagRepository},
+        types::{TagID, repo::CreateModel as TagCreateModel},
     },
     task::repo::{CreateModel, PgTaskRepository, TaskRepository},
     tests::helpers::{create_test_user, generate_a_z, get_today_date_pg},
@@ -36,9 +36,9 @@ async fn required_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
-    let res = repo.create(user.id, CreateModel::default()).await;
+    let res = repo.create(test_user.id, CreateModel::default()).await;
     assert!(res.is_ok());
 }
 
@@ -48,15 +48,15 @@ async fn full_input(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
-    let tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = tag_repo
+        .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
 
     let res = repo
         .create(
-            user.id,
+            test_user.id,
             CreateModel {
                 title: "Test Task".to_string(),
                 notes: Some("Note for 'Test Task'".to_string()),
@@ -67,7 +67,7 @@ async fn full_input(pool: PgPool) {
                 ),
                 start_precision: StartPrecision::DateTime,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
-                tags: vec![tag.id],
+                tags: vec![test_tag.id],
                 position_key: generate_a_z(0).to_string(),
             },
         )
@@ -81,7 +81,7 @@ async fn with_other_user_tag_input(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let other_tag = tag_repo
         .create(other_user.id, TagCreateModel::default())
@@ -90,7 +90,7 @@ async fn with_other_user_tag_input(pool: PgPool) {
 
     let res = repo
         .create(
-            user.id,
+            test_user.id,
             CreateModel {
                 tags: vec![other_tag.id],
                 ..Default::default()
@@ -111,11 +111,11 @@ async fn with_tag_not_exist_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
 
     let res = repo
         .create(
-            user.id,
+            test_user.id,
             CreateModel {
                 title: "Test Task with Nonexistent Tag".to_string(),
                 tags: vec![TagID::new_v4()],
@@ -139,9 +139,9 @@ async fn verify_output(pool: PgPool) {
     let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
-    let user = create_test_user(&user_repo).await;
+    let test_user = create_test_user(&user_repo).await;
     let test_tag = tag_repo
-        .create(user.id, TagCreateModel::default())
+        .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
 
@@ -154,7 +154,10 @@ async fn verify_output(pool: PgPool) {
         tags: vec![test_tag.id],
         position_key: generate_a_z(0).to_string(),
     };
-    let task = repo.create(user.id, create_task.clone()).await.unwrap();
+    let task = repo
+        .create(test_user.id, create_task.clone())
+        .await
+        .unwrap();
     assert_eq!(task.title, create_task.title);
     assert_eq!(task.notes, create_task.notes);
     assert_eq!(task.start_dt, create_task.start);
