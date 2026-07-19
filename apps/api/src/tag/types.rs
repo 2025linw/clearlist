@@ -52,8 +52,8 @@ pub struct Model {
 
     pub position_key: String,
 
-    pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
 
     pub created_by: UserID,
 }

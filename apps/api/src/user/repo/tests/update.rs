@@ -1,7 +1,10 @@
 use sqlx::{PgPool, postgres::types::PgInterval, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     user::{
         repo::{CreateModel, PgUserRepository, UpdateModel, UserRepository},
         types::UserID,

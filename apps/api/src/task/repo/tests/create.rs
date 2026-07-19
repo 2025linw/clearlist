@@ -4,7 +4,10 @@ use chrono::{DateTime, NaiveDate};
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     tag::{
         repo::{PgTagRepository, TagRepository},
         types::{TagID, repo::CreateModel as TagCreateModel},

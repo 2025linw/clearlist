@@ -7,7 +7,10 @@ use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource, Result},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error, Result},
+    },
     utils::repo::query_as,
 };
 

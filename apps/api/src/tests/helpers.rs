@@ -82,9 +82,7 @@ pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: User
         .await
         .unwrap();
 
-    if let TaskState::Existing(task) | TaskState::Deleted(task) = state {
-        task
-    } else {
-        panic!("task should have not been deleted");
+    match state {
+        TaskState::Existing(task) | TaskState::Deleted(task) => task,
     }
 }

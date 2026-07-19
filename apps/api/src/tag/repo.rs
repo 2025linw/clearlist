@@ -6,7 +6,10 @@ use sqlx::{PgConnection, PgPool, QueryBuilder};
 use uuid::Uuid;
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource, Result},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error, Result},
+    },
     user::types::UserID,
     utils::repo::query_as,
 };

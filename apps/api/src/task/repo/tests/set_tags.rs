@@ -1,7 +1,10 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     tag::{
         repo::{PgTagRepository, TagRepository},
         types::{TagID, repo::CreateModel as TagCreateModel},
@@ -129,9 +132,12 @@ async fn task_not_owned(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }
 
@@ -159,9 +165,12 @@ async fn task_not_exist(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }
 

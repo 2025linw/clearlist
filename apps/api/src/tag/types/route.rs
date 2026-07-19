@@ -6,6 +6,9 @@ use super::SortBy;
 
 #[derive(Debug, Deserialize)]
 pub struct URLQueryOpts {
+    pub page: Option<u32>,
+    pub limit: Option<u32>,
+
     pub sort_by: Option<SortBy>,
     pub sort_order: Option<SortOrder>,
 

@@ -1,7 +1,10 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     tag::{
         repo::{CreateModel, PgTagRepository, TagRepository},
         types::TagID,

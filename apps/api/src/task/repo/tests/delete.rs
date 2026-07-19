@@ -1,6 +1,10 @@
 use sqlx::{PgPool, test};
 
 use crate::{
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
         types::TaskID,
@@ -23,9 +27,6 @@ async fn exists(pool: PgPool) {
 
     let res = repo.delete(test_task.id, test_user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.exists());
-    }
 }
 
 #[test]
@@ -42,9 +43,6 @@ async fn soft_deleted(pool: PgPool) {
 
     let res = repo.delete(test_task.id, test_user.id).await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.deleted());
-    }
 }
 
 #[test]
@@ -60,9 +58,12 @@ async fn not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo.delete(other_task.id, test_user.id).await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }
 
@@ -74,8 +75,11 @@ async fn not_exists(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
 
     let res = repo.delete(TaskID::new_v4(), test_user.id).await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }

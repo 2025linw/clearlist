@@ -8,7 +8,10 @@ use sqlx::{PgConnection, PgPool, QueryBuilder, query, query_scalar};
 use uuid::Uuid;
 
 use crate::{
-    error::repo::{ConstraintViolation, Error, Resource, Result},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error, Result},
+    },
     tag::types::{Model as TagModel, TagID},
     types::date::StartPrecision,
     user::types::UserID,
@@ -31,7 +34,7 @@ pub trait TaskRepository: Send + Sync + Clone {
         user_id: UserID,
         update_task: UpdateModel,
     ) -> Result<TaskState<Model>>;
-    async fn delete(&self, id: TaskID, user_id: UserID) -> Result<TaskState<()>>;
+    async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Vec<TagModel>>>;
     async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<TaskState<()>>;
@@ -158,7 +161,9 @@ impl PgTaskRepository {
                     Ok(TaskState::Existing(task))
                 }
             }
-            None => Ok(TaskState::Missing),
+            None => Err(Error::Constraint(ConstraintViolation::NotFound(
+                Resource::Task,
+            ))),
         }
     }
 
@@ -187,15 +192,8 @@ impl PgTaskRepository {
         }
     }
 
-    async fn delete_task(
-        conn: &mut PgConnection,
-        id: TaskID,
-        user_id: UserID,
-    ) -> Result<TaskState<()>> {
-        let state = Self::fetch_task(conn, id, user_id).await?;
-        if matches!(state, TaskState::Deleted(_) | TaskState::Missing) {
-            return Ok(state.map(|_| ()));
-        }
+    async fn delete_task(conn: &mut PgConnection, id: TaskID, user_id: UserID) -> Result<()> {
+        Self::fetch_task(conn, id, user_id).await?;
 
         query_as::<Model>(
             "DELETE FROM app.tasks
@@ -207,7 +205,7 @@ impl PgTaskRepository {
         .fetch_one(conn.as_mut())
         .await?;
 
-        Ok(TaskState::Existing(()))
+        Ok(())
     }
 
     async fn fetch_task_tags(
@@ -388,11 +386,10 @@ impl TaskRepository for PgTaskRepository {
         let mut state = Self::fetch_task(&mut conn, id, user_id).await?;
 
         // Get tags, if needed
-        match state {
-            TaskState::Existing(ref mut task) | TaskState::Deleted(ref mut task) => {
+        match &mut state {
+            TaskState::Existing(task) | TaskState::Deleted(task) => {
                 task.tags = Self::fetch_task_tags(&mut conn, id, user_id).await?;
             }
-            _ => (),
         }
 
         conn.close().await?;
@@ -408,7 +405,6 @@ impl TaskRepository for PgTaskRepository {
         let mut tx = self.db.begin().await?;
 
         match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Missing => return Ok(TaskState::Missing),
             TaskState::Deleted(task) => return Ok(TaskState::Deleted(task)),
             _ => (),
         }
@@ -433,20 +429,19 @@ impl TaskRepository for PgTaskRepository {
         Ok(state)
     }
 
-    async fn delete(&self, id: TaskID, user_id: UserID) -> Result<TaskState<()>> {
+    async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
-        let state = Self::delete_task(&mut tx, id, user_id).await?;
+        Self::delete_task(&mut tx, id, user_id).await?;
 
         tx.commit().await?;
-        Ok(state)
+        Ok(())
     }
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Vec<TagModel>>> {
         let mut conn = self.db.acquire().await?;
 
         match Self::fetch_task(&mut conn, id, user_id).await? {
-            TaskState::Missing => return Ok(TaskState::Missing),
             TaskState::Deleted(task) => return Ok(TaskState::Deleted(task.tags)),
             _ => (),
         }
@@ -460,7 +455,6 @@ impl TaskRepository for PgTaskRepository {
         let mut tx = self.db.begin().await?;
 
         match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Missing => return Ok(TaskState::Missing),
             TaskState::Deleted(_) => return Ok(TaskState::Deleted(())),
             _ => (),
         }
@@ -479,7 +473,6 @@ impl TaskRepository for PgTaskRepository {
         let mut tx = self.db.begin().await?;
 
         match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Missing => return Ok(TaskState::Missing),
             TaskState::Deleted(_) => return Ok(TaskState::Deleted(())),
             _ => (),
         }
@@ -497,10 +490,8 @@ impl TaskRepository for PgTaskRepository {
     ) -> Result<TaskState<Vec<TagModel>>> {
         let mut tx = self.db.begin().await?;
 
-        match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Missing => return Ok(TaskState::Missing),
-            TaskState::Deleted(task) => return Ok(TaskState::Deleted(task.tags)),
-            _ => (),
+        if let TaskState::Deleted(task) = Self::fetch_task(&mut tx, id, user_id).await? {
+            return Ok(TaskState::Deleted(task.tags));
         }
         let state = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
 

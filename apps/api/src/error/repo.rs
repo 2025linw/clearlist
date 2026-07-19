@@ -1,8 +1,9 @@
-use sqlx::postgres::PgDatabaseError;
+use super::Resource;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(Clone))]
 pub enum Error {
     Backend(String),
 
@@ -38,19 +39,6 @@ impl From<sqlx::Error> for Error {
             | sqlx::Error::InvalidSavePointStatement
             | sqlx::Error::BeginFailed => Self::Backend(value.to_string()),
 
-            // Database
-            sqlx::Error::Database(err) => {
-                let mut error = Self::Programming(err.to_string());
-
-                if let Some(pg_err) = err.try_downcast_ref::<PgDatabaseError>()
-                    && let Some(integrity) = Integrity::try_from_code(pg_err.code())
-                {
-                    error = Self::Constraint(ConstraintViolation::Integrity(integrity));
-                }
-
-                error
-            }
-
             // Programming
             err => Self::Programming(err.to_string()),
         }
@@ -58,13 +46,10 @@ impl From<sqlx::Error> for Error {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(Clone))]
 pub enum ConstraintViolation {
     NotFound(Resource),
     MissingUser,
-
-    Integrity(Integrity),
-
-    Unknown(String),
 }
 
 impl ConstraintViolation {}
@@ -74,56 +59,6 @@ impl std::fmt::Display for ConstraintViolation {
         match self {
             Self::NotFound(resource) => write!(f, "{resource} not found"),
             Self::MissingUser => write!(f, "user is missing"),
-            Self::Integrity(msg) => write!(f, "{msg}"),
-            Self::Unknown(msg) => write!(f, "unknown - {msg}"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Integrity {
-    NotNull,    // 23502
-    ForeignKey, // 23503
-    Unique,     // 23505
-    Check,      // 23514
-}
-
-impl Integrity {
-    pub fn try_from_code(code: &str) -> Option<Self> {
-        match code {
-            "23502" => Some(Self::NotNull),
-            "23503" => Some(Self::ForeignKey),
-            "23505" => Some(Self::Unique),
-            "23514" => Some(Self::Check),
-            _ => None,
-        }
-    }
-}
-
-impl std::fmt::Display for Integrity {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Integrity::NotNull => write!(f, "not null"),
-            Integrity::ForeignKey => write!(f, "foreign key"),
-            Integrity::Unique => write!(f, "unique"),
-            Integrity::Check => write!(f, "check"),
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum Resource {
-    User,
-    Task,
-    Tag,
-}
-
-impl std::fmt::Display for Resource {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Resource::User => write!(f, "user"),
-            Resource::Task => write!(f, "task"),
-            Resource::Tag => write!(f, "tag"),
         }
     }
 }
