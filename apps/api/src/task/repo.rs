@@ -404,9 +404,8 @@ impl TaskRepository for PgTaskRepository {
     ) -> Result<TaskState<Model>> {
         let mut tx = self.db.begin().await?;
 
-        match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Deleted(task) => return Ok(TaskState::Deleted(task)),
-            _ => (),
+        if let TaskState::Deleted(task) = Self::fetch_task(&mut tx, id, user_id).await? {
+            return Ok(TaskState::Deleted(task));
         }
         let tags = update_task.tags.clone();
         let mut state = Self::update_task(&mut tx, id, user_id, update_task).await?;
@@ -441,9 +440,8 @@ impl TaskRepository for PgTaskRepository {
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Vec<TagModel>>> {
         let mut conn = self.db.acquire().await?;
 
-        match Self::fetch_task(&mut conn, id, user_id).await? {
-            TaskState::Deleted(task) => return Ok(TaskState::Deleted(task.tags)),
-            _ => (),
+        if let TaskState::Deleted(task) = Self::fetch_task(&mut conn, id, user_id).await? {
+            return Ok(TaskState::Deleted(task.tags));
         }
         let state = Self::fetch_task_tags(&mut conn, id, user_id).await?;
 
@@ -454,9 +452,8 @@ impl TaskRepository for PgTaskRepository {
     async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<TaskState<()>> {
         let mut tx = self.db.begin().await?;
 
-        match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Deleted(_) => return Ok(TaskState::Deleted(())),
-            _ => (),
+        if let TaskState::Deleted(_) = Self::fetch_task(&mut tx, id, user_id).await? {
+            return Ok(TaskState::Deleted(()));
         }
         let state = Self::add_tag_to_task(&mut tx, id, user_id, tag_id).await?;
 
@@ -472,9 +469,8 @@ impl TaskRepository for PgTaskRepository {
     ) -> Result<TaskState<()>> {
         let mut tx = self.db.begin().await?;
 
-        match Self::fetch_task(&mut tx, id, user_id).await? {
-            TaskState::Deleted(_) => return Ok(TaskState::Deleted(())),
-            _ => (),
+        if let TaskState::Deleted(_) = Self::fetch_task(&mut tx, id, user_id).await? {
+            return Ok(TaskState::Deleted(()));
         }
         let state = Self::remove_tag_from_task(&mut tx, id, user_id, tag_id).await?;
 
