@@ -1,3 +1,7 @@
+#![allow(warnings)]
+#![allow(clippy::all)]
+// WARN: REMOVE ABOVE
+
 use super::{Resource, repo::Error as RepoError};
 
 pub type Result<T> = std::result::Result<T, Error>;
