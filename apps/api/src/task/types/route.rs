@@ -7,7 +7,7 @@ use crate::{
 
 use super::SortBy;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct URLQueryOpts {
     pub page: Option<u32>,
@@ -26,7 +26,6 @@ pub struct URLQueryOpts {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Default))]
 pub struct CreateRequest {
     pub title: String,
     pub notes: Option<String>,

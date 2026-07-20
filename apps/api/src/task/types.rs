@@ -1,5 +1,6 @@
 pub mod repo;
 pub mod route;
+pub mod service;
 
 use serde::Deserialize;
 use sqlx::{FromRow, Type};

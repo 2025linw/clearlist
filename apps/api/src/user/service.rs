@@ -17,7 +17,7 @@ use super::{
 #[async_trait]
 pub trait UserServiceTrait {
     async fn create(&self, create_user: CreateRequest) -> Result<Model>;
-    async fn get(&self, id: UserID) -> Result<Option<Model>>;
+    async fn get(&self, id: UserID) -> Result<Model>;
     async fn update(&self, id: UserID, update_user: UpdateRequest) -> Result<Model>;
 }
 
@@ -38,7 +38,7 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
         todo!()
     }
 
-    async fn get(&self, id: UserID) -> Result<Option<Model>> {
+    async fn get(&self, id: UserID) -> Result<Model> {
         todo!()
     }
 

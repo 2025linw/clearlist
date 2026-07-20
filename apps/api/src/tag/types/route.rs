@@ -1,22 +1,14 @@
 use serde::Deserialize;
 
-use crate::types::order::SortOrder;
-
-use super::SortBy;
-
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct URLQueryOpts {
     pub page: Option<u32>,
     pub limit: Option<u32>,
-
-    pub sort_by: Option<SortBy>,
-    pub sort_order: Option<SortOrder>,
 
     pub category: Option<String>,
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Default))]
 pub struct CreateRequest {
     pub label: String,
     pub category: Option<String>,
