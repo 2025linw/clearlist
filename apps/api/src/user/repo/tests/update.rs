@@ -1,3 +1,4 @@
+use chrono_tz::Tz;
 use sqlx::{PgPool, postgres::types::PgInterval, test};
 
 use crate::{
@@ -48,6 +49,7 @@ async fn full_input(pool: PgPool) {
             test_user.id,
             UpdateModel {
                 display_name: Some("Updated User".to_string()),
+                preferred_timezone: Some(Some("America/Chicago".to_string())),
                 completed_task_retention: Some(Some(PgInterval {
                     months: 0,
                     days: 1,
@@ -70,6 +72,7 @@ async fn null_input(pool: PgPool) {
     };
     let test_user = repo
         .create(CreateModel {
+            preferred_timezone: Some("America/Chicago".to_string()),
             completed_task_retention: Some(retention_interval),
             ..Default::default()
         })
@@ -80,6 +83,7 @@ async fn null_input(pool: PgPool) {
         .update(
             test_user.id,
             UpdateModel {
+                preferred_timezone: Some(None),
                 completed_task_retention: Some(None),
                 ..Default::default()
             },
@@ -87,6 +91,7 @@ async fn null_input(pool: PgPool) {
         .await;
     assert!(res.is_ok());
     if let Ok(user) = res {
+        assert!(user.preferred_timezone.is_none());
         assert!(user.completed_task_retention.is_none());
     }
 }
@@ -100,6 +105,7 @@ async fn verify_output(pool: PgPool) {
 
     let update_user = UpdateModel {
         display_name: Some("Updated User".to_string()),
+        preferred_timezone: Some(Some("America/Chicago".to_string())),
         completed_task_retention: Some(Some(PgInterval {
             months: 0,
             days: 1,
@@ -111,6 +117,10 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(user.display_name, update_user.display_name.unwrap());
+    assert_eq!(
+        user.preferred_timezone,
+        Some(Tz::America__Chicago.to_string())
+    );
     assert_eq!(
         user.completed_task_retention,
         update_user.completed_task_retention.unwrap()

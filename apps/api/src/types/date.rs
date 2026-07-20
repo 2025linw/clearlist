@@ -20,13 +20,13 @@ impl StartPrecision {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DateBound<T> {
     Exclusive(T),
     Inclusive(T),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DateFilter<T> {
     Exists(bool),
     On(T),

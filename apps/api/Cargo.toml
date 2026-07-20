@@ -8,6 +8,7 @@ async-trait = "0.1.89"
 axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = ["cookie"] }
 chrono = { version = "0.4.44", features = ["serde"] }
+chrono-tz = { version = "0.10.4", features = ["case-insensitive", "serde"] }
 dotenvy = "0.15.7"
 governor = "^0.8.1"
 reqwest = { version = "0.13.4", features = ["json", "rustls"] }

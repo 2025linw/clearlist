@@ -5,13 +5,9 @@ pub mod user;
 use chrono::{DateTime, SubsecRound, Utc};
 
 use crate::{
-    tag::types::Model as TagModel,
     task::{
         repo::{PgTaskRepository, TaskRepository},
-        types::{
-            Model as TaskModel, TaskID,
-            repo::{TaskState, UpdateModel as TaskUpdateModel},
-        },
+        types::{TaskID, TaskModel, repo::UpdateModel as TaskUpdateModel},
     },
     types::order::SortOrder,
     user::{
@@ -27,17 +23,6 @@ where
     K: Ord,
 {
     tasks.is_sorted_by(|a, b| match sort {
-        SortOrder::Ascending => f(a) <= f(b),
-        SortOrder::Descending => f(a) >= f(b),
-    })
-}
-
-pub fn is_tag_ordered<F, K>(tags: &[TagModel], mut f: F, sort: SortOrder) -> bool
-where
-    F: FnMut(&TagModel) -> K,
-    K: PartialOrd,
-{
-    tags.is_sorted_by(|a, b| match sort {
         SortOrder::Ascending => f(a) <= f(b),
         SortOrder::Descending => f(a) >= f(b),
     })
@@ -82,7 +67,9 @@ pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: User
         .await
         .unwrap();
 
-    match state {
-        TaskState::Existing(task) | TaskState::Deleted(task) => task,
+    if let Some(task) = state.into_inner() {
+        task
+    } else {
+        panic!()
     }
 }

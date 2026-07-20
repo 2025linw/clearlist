@@ -45,10 +45,11 @@ impl From<sqlx::Error> for Error {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone)]
 pub enum ConstraintViolation {
     NotFound(Resource),
+    Deleted(Resource),
+
     MissingUser,
 }
 
@@ -58,6 +59,7 @@ impl std::fmt::Display for ConstraintViolation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::NotFound(resource) => write!(f, "{resource} not found"),
+            Self::Deleted(resource) => write!(f, "{resource} is deleted"),
             Self::MissingUser => write!(f, "user is missing"),
         }
     }

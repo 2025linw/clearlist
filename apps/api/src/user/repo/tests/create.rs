@@ -32,6 +32,7 @@ async fn full_input(pool: PgPool) {
         .create(CreateModel {
             id: UserID::new_v4(),
             display_name: "Test User".to_string(),
+            preferred_timezone: Some("America/Chicago".to_string()),
             completed_task_retention: Some(PgInterval {
                 months: 0,
                 days: 1,
@@ -51,6 +52,7 @@ async fn verify_output(pool: PgPool) {
     let create_user = CreateModel {
         id: UserID::new_v4(),
         display_name: "Test User".to_string(),
+        preferred_timezone: Some("America/Chicago".to_string()),
         completed_task_retention: Some(PgInterval {
             months: 0,
             days: 1,

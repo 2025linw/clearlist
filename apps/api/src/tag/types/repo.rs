@@ -1,30 +1,24 @@
 use sqlx::QueryBuilder;
 
-use crate::types::order::SortOrder;
-
-use super::SortBy;
+use crate::tag::types::TagCategoryID;
 
 #[derive(Debug, Default)]
+#[cfg_attr(test, derive(Clone))]
 pub struct QueryOpts {
     pub filter: Filter,
-    pub sort: Sort,
     pub pagination: Pagination,
 }
 
 impl QueryOpts {
     pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
         // Filter
-        if let Some(filter) = self.filter.category {
-            builder.push(" AND category = ");
-            builder.push_bind(filter);
+        if let Some(category_id) = self.filter.category {
+            builder.push(" AND category_id = ");
+            builder.push_bind(category_id);
         }
 
-        // Sort
-        if let Some((by, order)) = self.sort.sort {
-            builder.push(format!(" ORDER BY {} {}", by, order));
-        } else {
-            builder.push(" ORDER BY id ASC");
-        }
+        // Sort (forced)
+        builder.push(" ORDER BY tc.position_key NULLS FIRST, t.position_key");
 
         // Pagination
         if let Some(limit) = self.pagination.limit {
@@ -40,7 +34,7 @@ impl QueryOpts {
 #[cfg_attr(test, derive(Clone))]
 pub struct CreateModel {
     pub label: String,
-    pub category: Option<String>,
+    pub category_id: Option<TagCategoryID>,
 
     pub position_key: String,
 }
@@ -49,7 +43,7 @@ pub struct CreateModel {
 #[cfg_attr(test, derive(Clone))]
 pub struct UpdateModel {
     pub label: Option<String>,
-    pub category: Option<Option<String>>,
+    pub category_id: Option<Option<TagCategoryID>>,
 
     pub position_key: Option<String>,
 }
@@ -61,9 +55,9 @@ impl UpdateModel {
             separated.push("label = ");
             separated.push_bind_unseparated(label);
         }
-        if let Some(category) = self.category {
-            separated.push("category = ");
-            separated.push_bind_unseparated(category);
+        if let Some(category_id) = self.category_id {
+            separated.push("category_id = ");
+            separated.push_bind_unseparated(category_id);
         }
 
         if let Some(position_key) = self.position_key {
@@ -74,8 +68,9 @@ impl UpdateModel {
 }
 
 #[derive(Debug, Default)]
+#[cfg_attr(test, derive(Clone))]
 pub struct Filter {
-    pub category: Option<String>,
+    pub category: Option<TagCategoryID>,
 }
 
 impl Filter {
@@ -83,7 +78,7 @@ impl Filter {
         Self::default()
     }
 
-    pub fn category(mut self, category: String) -> Self {
+    pub fn category(mut self, category: TagCategoryID) -> Self {
         self.category = Some(category);
 
         self
@@ -91,25 +86,7 @@ impl Filter {
 }
 
 #[derive(Debug, Default)]
-pub struct Sort {
-    pub sort: Option<(SortBy, SortOrder)>,
-}
-
-impl Sort {
-    pub fn new(by: Option<SortBy>, order: SortOrder) -> Self {
-        if let Some(by) = by {
-            Self {
-                sort: Some((by, order)),
-            }
-        } else {
-            Self {
-                sort: Some((SortBy::ID, order)),
-            }
-        }
-    }
-}
-
-#[derive(Debug, Default)]
+#[cfg_attr(test, derive(Clone))]
 pub struct Pagination {
     pub limit: Option<usize>,
     pub offset: Option<usize>,

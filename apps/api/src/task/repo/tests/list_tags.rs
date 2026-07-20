@@ -25,25 +25,22 @@ async fn task_exists(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let test_tag = tag_repo
         .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
-    let test_task = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                tags: vec![test_tag.id],
-                ..Default::default()
-            },
-        )
+    repo.add_tag(test_task.id, test_user.id, test_tag.id)
         .await
         .unwrap();
 
     let res = repo.list_tags(test_task.id, test_user.id).await;
     assert!(res.is_ok());
-    if let Ok(state) = res {
-        assert!(state.exists());
+    if let Ok(tags) = res {
+        assert_eq!(tags[0], test_tag);
     }
 }
 
@@ -54,26 +51,26 @@ async fn task_soft_deleted(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let test_tag = tag_repo
         .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
-    let test_task = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                tags: vec![test_tag.id],
-                ..Default::default()
-            },
-        )
+    repo.add_tag(test_task.id, test_user.id, test_tag.id)
         .await
         .unwrap();
     soft_delete_task(&repo, test_task.id, test_user.id).await;
 
     let res = repo.list_tags(test_task.id, test_user.id).await;
-    assert!(res.is_ok());
-    if let Ok(state) = res {
-        assert!(state.deleted());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Deleted(Resource::Task))
+        ));
     }
 }
 
@@ -85,28 +82,28 @@ async fn task_not_owned(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
+    let other_task = repo
+        .create(other_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let other_tag = tag_repo
         .create(other_user.id, TagCreateModel::default())
         .await
         .unwrap();
-    let other_task = repo
-        .create(
-            other_user.id,
-            CreateModel {
-                tags: vec![other_tag.id],
-                ..Default::default()
-            },
-        )
+    repo.add_tag(other_task.id, other_user.id, other_tag.id)
         .await
         .unwrap();
 
     let res = repo.list_tags(other_task.id, test_user.id).await;
     assert!(res.is_err());
     if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ));
+        assert!(
+            matches!(
+                err,
+                Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+            ),
+            "{err:?}"
+        );
     }
 }
 
@@ -135,26 +132,19 @@ async fn verify_output(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let test_tag = tag_repo
         .create(test_user.id, TagCreateModel::default())
         .await
         .unwrap();
-    let test_task = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                tags: vec![test_tag.id],
-                ..Default::default()
-            },
-        )
+    repo.add_tag(test_task.id, test_user.id, test_tag.id)
         .await
         .unwrap();
 
-    let tags = repo
-        .list_tags(test_task.id, test_user.id)
-        .await
-        .unwrap()
-        .unwrap();
+    let tags = repo.list_tags(test_task.id, test_user.id).await.unwrap();
     assert_eq!(tags.len(), 1);
     assert!(tags.contains(&test_tag));
 }

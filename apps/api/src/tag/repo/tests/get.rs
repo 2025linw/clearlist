@@ -68,16 +68,25 @@ async fn verify_output(pool: PgPool) {
     let repo = PgTagRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
 
     let create_tag = CreateModel {
         label: "Test Tag".to_string(),
-        category: Some("Test Category".to_string()),
+        category_id: Some(test_category_id),
         position_key: generate_a_z(0).to_string(),
     };
     let test_tag = repo.create(test_user.id, create_tag.clone()).await.unwrap();
 
     let tag = repo.get(test_tag.id, test_user.id).await.unwrap().unwrap();
     assert_eq!(tag.label, create_tag.label);
-    assert_eq!(tag.category, create_tag.category);
+    assert_eq!(tag.category_id, Some(test_category_id));
+    assert_eq!(tag.category_name.as_deref(), Some("Testing"));
     assert_eq!(tag.position_key, create_tag.position_key);
 }

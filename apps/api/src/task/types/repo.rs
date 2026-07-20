@@ -2,7 +2,7 @@ use chrono::{DateTime, NaiveDate, Utc};
 use sqlx::{QueryBuilder, prelude::FromRow};
 
 use crate::{
-    tag::types::{Model as TagModel, TagID},
+    tag::types::{TagID, TagModel},
     task::types::TaskID,
     types::{
         date::{DateFilter, StartPrecision},
@@ -13,6 +13,7 @@ use crate::{
 use super::SortBy;
 
 #[derive(Debug, Default)]
+#[cfg_attr(test, derive(Clone))]
 pub struct QueryOpts {
     pub pagination: Pagination,
     pub sort: Sort,
@@ -84,7 +85,6 @@ pub struct CreateModel {
     pub start: Option<chrono::DateTime<chrono::Utc>>,
     pub start_precision: StartPrecision,
     pub deadline: Option<chrono::NaiveDate>,
-    pub tags: Vec<TagID>,
 
     pub position_key: String,
 }
@@ -97,7 +97,6 @@ pub struct UpdateModel {
     pub start: Option<Option<chrono::DateTime<chrono::Utc>>>,
     pub start_precision: Option<StartPrecision>,
     pub deadline: Option<Option<chrono::NaiveDate>>,
-    pub tags: Option<Vec<TagID>>,
 
     pub completed: Option<bool>,
     pub deleted: Option<bool>,
@@ -159,7 +158,7 @@ pub struct TaskTag {
     pub tag: TagModel,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Filter {
     pub start: Option<DateFilter<DateTime<Utc>>>,
     pub deadline: Option<DateFilter<NaiveDate>>,
@@ -206,7 +205,7 @@ impl Filter {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Sort {
     pub sort: Option<(SortBy, SortOrder)>,
 }
@@ -225,7 +224,7 @@ impl Sort {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Pagination {
     pub limit: Option<usize>,
     pub offset: Option<usize>,
@@ -241,6 +240,7 @@ impl Pagination {
 pub enum TaskState<T> {
     Existing(T),
     Deleted(T),
+    None,
 }
 
 impl<T> TaskState<T> {
@@ -252,11 +252,18 @@ impl<T> TaskState<T> {
         matches!(self, Self::Deleted(_))
     }
 
+    pub fn missing(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
     pub fn expect(self, msg: &str) -> T {
         match self {
             Self::Existing(var) => var,
             Self::Deleted(_) => {
                 panic!("{msg}: Deleted")
+            }
+            Self::None => {
+                panic!("{msg}: Not Found")
             }
         }
     }
@@ -267,6 +274,23 @@ impl<T> TaskState<T> {
             Self::Deleted(_) => {
                 panic!("called `TaskState::unwrap()` on a soft-deleted value")
             }
+            Self::None => {
+                panic!("called `TaskState::unwrap()` on a nonexistent value")
+            }
+        }
+    }
+
+    pub fn as_ref(&self) -> Option<&T> {
+        match self {
+            TaskState::Existing(e) | TaskState::Deleted(e) => Some(e),
+            TaskState::None => None,
+        }
+    }
+
+    pub fn into_inner(self) -> Option<T> {
+        match self {
+            TaskState::Existing(e) | TaskState::Deleted(e) => Some(e),
+            TaskState::None => None,
         }
     }
 
@@ -277,6 +301,7 @@ impl<T> TaskState<T> {
         match self {
             Self::Existing(x) => TaskState::Existing(f(x)),
             Self::Deleted(x) => TaskState::Deleted(f(x)),
+            Self::None => TaskState::None,
         }
     }
 }
@@ -286,6 +311,7 @@ impl<T> std::fmt::Display for TaskState<T> {
         match self {
             Self::Existing(_) => write!(f, "operation succeeded"),
             Self::Deleted(_) => write!(f, "operation performed with soft-deleted task"),
+            Self::None => write!(f, "operation performed with nonexistent task"),
         }
     }
 }

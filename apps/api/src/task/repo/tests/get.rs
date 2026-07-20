@@ -1,16 +1,6 @@
-use std::collections::HashSet;
-
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::{
-        Resource,
-        repo::{ConstraintViolation, Error},
-    },
-    tag::{
-        repo::{PgTagRepository, TagRepository},
-        types::{TagID, repo::CreateModel as TagCreateModel},
-    },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository},
         types::TaskID,
@@ -71,12 +61,9 @@ async fn not_owned(pool: PgPool) {
         .unwrap();
 
     let res = repo.get(other_task.id, test_user.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ));
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -88,12 +75,9 @@ async fn not_exists(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
 
     let res = repo.get(TaskID::new_v4(), test_user.id).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
-        ));
+    assert!(res.is_ok());
+    if let Ok(task_state) = res {
+        assert!(task_state.missing());
     }
 }
 
@@ -101,14 +85,9 @@ async fn not_exists(pool: PgPool) {
 #[test]
 async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    let test_tag = tag_repo
-        .create(test_user.id, TagCreateModel::default())
-        .await
-        .unwrap();
 
     let create_task = CreateModel {
         title: "Test Task".to_string(),
@@ -116,7 +95,6 @@ async fn verify_output(pool: PgPool) {
         start: Some(get_today_date_pg()),
         start_precision: StartPrecision::DateTime,
         deadline: Some(get_today_date_pg().date_naive()),
-        tags: vec![test_tag.id],
         position_key: generate_a_z(0).to_string(),
     };
     let test_task = repo
@@ -125,17 +103,21 @@ async fn verify_output(pool: PgPool) {
         .unwrap();
 
     let task = repo.get(test_task.id, test_user.id).await.unwrap().unwrap();
-    assert_eq!(task.title, create_task.title);
-    assert_eq!(task.notes, create_task.notes);
-    assert_eq!(task.start_dt, create_task.start);
-    assert!(task.has_time == create_task.start_precision.has_time());
-    assert_eq!(task.deadline, create_task.deadline);
-    assert_eq!(
-        task.tags
-            .iter()
-            .map(|tag| tag.id)
-            .collect::<HashSet<TagID>>(),
-        create_task.tags.into_iter().collect::<HashSet<TagID>>(),
-    );
-    assert_eq!(task.position_key, create_task.position_key);
+    {
+        let CreateModel {
+            title,
+            notes,
+            start,
+            start_precision,
+            deadline,
+            position_key,
+        } = create_task;
+
+        assert_eq!(task.title, title);
+        assert_eq!(task.notes, notes);
+        assert_eq!(task.start_dt, start);
+        assert!(task.has_time && start_precision.has_time());
+        assert_eq!(task.deadline, deadline);
+        assert_eq!(task.position_key, position_key);
+    }
 }

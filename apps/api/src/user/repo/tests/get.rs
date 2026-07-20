@@ -1,3 +1,4 @@
+use chrono_tz::Tz;
 use sqlx::{PgPool, postgres::types::PgInterval, test};
 
 use crate::{
@@ -41,6 +42,7 @@ async fn verify_output(pool: PgPool) {
     let create_user = CreateModel {
         id: UserID::new_v4(),
         display_name: "Test User".to_string(),
+        preferred_timezone: Some("America/Chicago".to_string()),
         completed_task_retention: Some(PgInterval {
             months: 0,
             days: 1,
@@ -53,6 +55,10 @@ async fn verify_output(pool: PgPool) {
     let user = repo.get(test_user.id).await.unwrap().unwrap();
     assert_eq!(user.id, create_user.id);
     assert_eq!(user.display_name, create_user.display_name);
+    assert_eq!(
+        user.preferred_timezone,
+        Some(Tz::America__Chicago.to_string())
+    );
     assert_eq!(
         user.completed_task_retention,
         create_user.completed_task_retention

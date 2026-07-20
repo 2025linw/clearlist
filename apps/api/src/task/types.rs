@@ -5,7 +5,7 @@ use serde::Deserialize;
 use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
-use crate::{tag::types::Model as TagModel, user::types::UserID};
+use crate::user::types::UserID;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Type)]
 #[sqlx(transparent)]
@@ -23,7 +23,7 @@ impl Default for TaskID {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
 pub enum SortBy {
     ID,
     Created,
@@ -48,7 +48,7 @@ impl std::fmt::Display for SortBy {
 
 #[derive(Debug, PartialEq, Eq, FromRow)]
 #[cfg_attr(test, derive(Clone))]
-pub struct Model {
+pub struct TaskModel {
     pub id: TaskID,
 
     pub title: String,
@@ -56,8 +56,6 @@ pub struct Model {
     pub start_dt: Option<chrono::DateTime<chrono::Utc>>,
     pub has_time: bool,
     pub deadline: Option<chrono::NaiveDate>,
-    #[sqlx(skip)]
-    pub tags: Vec<TagModel>,
 
     pub position_key: String,
     pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
@@ -65,6 +63,5 @@ pub struct Model {
 
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub created_at: chrono::DateTime<chrono::Utc>,
-
     pub created_by: UserID,
 }

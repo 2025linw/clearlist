@@ -4,6 +4,7 @@ CREATE TABLE app.users (
 
     display_name text NOT NULL,
 
+    preferred_timezone text,
     completed_task_retention interval,
 
     updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,

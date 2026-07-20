@@ -47,23 +47,19 @@ async fn task_exists(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.exists());
-
-        let tags = task_state.unwrap();
+    if let Ok(tags) = res {
         assert_eq!(tags.len(), test_tags.len());
         for tag in tags {
             assert!(test_tags.contains(&tag));
         }
     }
 
-    let task = repo
-        .get(test_task.id, test_user.id)
+    let tags = repo
+        .list_tags(test_task.id, test_user.id)
         .await
-        .unwrap()
-        .expect("task was just created for the test");
-    assert_eq!(task.tags.len(), test_tags.len());
-    for tag in task.tags {
+        .expect("task was just created for this test");
+    assert_eq!(tags.len(), test_tags.len());
+    for tag in tags {
         assert!(test_tags.contains(&tag));
     }
 }
@@ -97,9 +93,12 @@ async fn task_soft_deleted(pool: PgPool) {
             test_tags.iter().map(|tag| tag.id).collect(),
         )
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.deleted());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Deleted(Resource::Task))
+        ));
     }
 }
 
@@ -269,7 +268,7 @@ async fn updates_updated_at(pool: PgPool) {
         .get(test_task.id, test_user.id)
         .await
         .unwrap()
-        .expect("task was just created for the test");
+        .expect("task was just created for this test");
     assert!(task.updated_at > test_task.updated_at);
 }
 
@@ -280,6 +279,10 @@ async fn full_replacement(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
     let mut test_tags = Vec::with_capacity(5);
     for _ in 0..5 {
         let tag = tag_repo
@@ -289,16 +292,13 @@ async fn full_replacement(pool: PgPool) {
 
         test_tags.push(tag);
     }
-    let test_task = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                tags: test_tags[0..2].iter().map(|tag| tag.id).collect(),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
+    repo.set_tags(
+        test_task.id,
+        test_user.id,
+        test_tags[0..2].iter().map(|tag| tag.id).collect(),
+    )
+    .await
+    .unwrap();
 
     let res = repo
         .set_tags(
@@ -308,19 +308,18 @@ async fn full_replacement(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.exists());
-        let tags = task_state.unwrap();
+    if let Ok(tags) = res {
         for tag in tags {
             assert!(test_tags.contains(&tag));
         }
     }
-    let task = repo
-        .get(test_task.id, test_user.id)
+
+    let tags = repo
+        .list_tags(test_task.id, test_user.id)
         .await
-        .unwrap()
-        .expect("task was just created for the test");
-    for tag in task.tags {
+        .expect("task was just created for this test");
+    assert_eq!(tags.len(), test_tags.len());
+    for tag in tags {
         assert!(test_tags.contains(&tag));
     }
 }

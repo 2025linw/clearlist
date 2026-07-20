@@ -1,17 +1,8 @@
-use std::collections::HashSet;
-
 use chrono::{DateTime, NaiveDate};
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::{
-        Resource,
-        repo::{ConstraintViolation, Error},
-    },
-    tag::{
-        repo::{PgTagRepository, TagRepository},
-        types::{TagID, repo::CreateModel as TagCreateModel},
-    },
+    error::repo::{ConstraintViolation, Error},
     task::repo::{CreateModel, PgTaskRepository, TaskRepository},
     tests::helpers::{create_test_user, generate_a_z, get_today_date_pg},
     types::date::StartPrecision,
@@ -48,14 +39,9 @@ async fn required_input(pool: PgPool) {
 #[test]
 async fn full_input(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    let test_tag = tag_repo
-        .create(test_user.id, TagCreateModel::default())
-        .await
-        .unwrap();
 
     let res = repo
         .create(
@@ -70,7 +56,6 @@ async fn full_input(pool: PgPool) {
                 ),
                 start_precision: StartPrecision::DateTime,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
-                tags: vec![test_tag.id],
                 position_key: generate_a_z(0).to_string(),
             },
         )
@@ -78,75 +63,13 @@ async fn full_input(pool: PgPool) {
     assert!(res.is_ok());
 }
 
-#[test]
-async fn with_other_user_tag_input(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    let other_user = create_test_user(&user_repo).await;
-    let other_tag = tag_repo
-        .create(other_user.id, TagCreateModel::default())
-        .await
-        .unwrap();
-
-    let res = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                tags: vec![other_tag.id],
-                ..Default::default()
-            },
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
-        ))
-    }
-}
-
-#[test]
-async fn with_tag_not_exist_input(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-
-    let res = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                title: "Test Task with Nonexistent Tag".to_string(),
-                tags: vec![TagID::new_v4()],
-                ..Default::default()
-            },
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
-        ))
-    }
-}
-
 // Output Tests
 #[test]
 async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    let test_tag = tag_repo
-        .create(test_user.id, TagCreateModel::default())
-        .await
-        .unwrap();
 
     let create_task = CreateModel {
         title: "Test Task".to_string(),
@@ -154,24 +77,27 @@ async fn verify_output(pool: PgPool) {
         start: Some(get_today_date_pg()),
         start_precision: StartPrecision::DateTime,
         deadline: Some(get_today_date_pg().date_naive()),
-        tags: vec![test_tag.id],
         position_key: generate_a_z(0).to_string(),
     };
     let task = repo
         .create(test_user.id, create_task.clone())
         .await
         .unwrap();
-    assert_eq!(task.title, create_task.title);
-    assert_eq!(task.notes, create_task.notes);
-    assert_eq!(task.start_dt, create_task.start);
-    assert!(task.has_time == create_task.start_precision.has_time());
-    assert_eq!(task.deadline, create_task.deadline);
-    assert_eq!(
-        task.tags
-            .iter()
-            .map(|tag| tag.id)
-            .collect::<HashSet<TagID>>(),
-        create_task.tags.into_iter().collect::<HashSet<TagID>>(),
-    );
-    assert_eq!(task.position_key, create_task.position_key);
+    {
+        let CreateModel {
+            title,
+            notes,
+            start,
+            start_precision,
+            deadline,
+            position_key,
+        } = create_task;
+
+        assert_eq!(task.title, title);
+        assert_eq!(task.notes, notes);
+        assert_eq!(task.start_dt, start);
+        assert!(task.has_time && start_precision.has_time());
+        assert_eq!(task.deadline, deadline);
+        assert_eq!(task.position_key, position_key);
+    }
 }

@@ -81,6 +81,14 @@ async fn full_input(pool: PgPool) {
     let repo = PgTagRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
     let test_tag = repo
         .create(test_user.id, CreateModel::default())
         .await
@@ -92,7 +100,7 @@ async fn full_input(pool: PgPool) {
             test_user.id,
             UpdateModel {
                 label: Some("Updated Tag".to_string()),
-                category: Some(Some("Category".to_string())),
+                category_id: Some(Some(test_category_id)),
                 position_key: Some(generate_a_z(1).to_string()),
             },
         )
@@ -106,11 +114,19 @@ async fn null_input(pool: PgPool) {
     let repo = PgTagRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
     let test_tag = repo
         .create(
             test_user.id,
             CreateModel {
-                category: Some("Testing".to_string()),
+                category_id: Some(test_category_id),
                 ..Default::default()
             },
         )
@@ -122,14 +138,14 @@ async fn null_input(pool: PgPool) {
             test_tag.id,
             test_user.id,
             UpdateModel {
-                category: Some(None),
+                category_id: Some(None),
                 ..Default::default()
             },
         )
         .await;
     assert!(res.is_ok());
     if let Ok(tag) = res {
-        assert!(tag.category.is_none());
+        assert!(tag.category_id.is_none());
     }
 }
 
@@ -140,6 +156,14 @@ async fn verify_output(pool: PgPool) {
     let repo = PgTagRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
     let test_tag = repo
         .create(test_user.id, CreateModel::default())
         .await
@@ -147,7 +171,7 @@ async fn verify_output(pool: PgPool) {
 
     let update_tag = UpdateModel {
         label: Some("Updated Tag".to_string()),
-        category: Some(Some("Category".to_string())),
+        category_id: Some(Some(test_category_id)),
         position_key: Some(generate_a_z(1).to_string()),
     };
     let tag = repo
@@ -155,7 +179,7 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(tag.label, update_tag.label.unwrap());
-    assert_eq!(tag.category, update_tag.category.unwrap());
+    assert_eq!(tag.category_name.as_deref(), Some("Testing"));
     assert_eq!(tag.position_key, update_tag.position_key.unwrap());
 }
 

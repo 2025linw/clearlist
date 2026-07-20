@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::{HashMap, HashSet, hash_map::Entry};
+use std::collections::HashSet;
 
 use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder, query, query_scalar};
@@ -12,40 +12,41 @@ use crate::{
         Resource,
         repo::{ConstraintViolation, Error, Result},
     },
-    tag::types::{Model as TagModel, TagID},
+    tag::types::{TagID, TagModel},
     types::date::StartPrecision,
     user::types::UserID,
     utils::repo::{query_as, set_updated_timestamp},
 };
 
 use super::types::{
-    Model, TaskID,
-    repo::{CreateModel, QueryOpts, TaskState, TaskTag, UpdateModel},
+    TaskID, TaskModel,
+    repo::{CreateModel, QueryOpts, TaskState, UpdateModel},
 };
 
 #[async_trait]
 pub trait TaskRepository: Send + Sync + Clone {
-    async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<Model>>;
-    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<Model>;
-    async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Model>>;
+    async fn task_exists(&self, id: TaskID, user_id: UserID) -> Result<bool>;
+
+    async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TaskModel>>;
+    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<TaskModel>;
+    async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskState<TaskModel>>;
     async fn update(
         &self,
         id: TaskID,
         user_id: UserID,
         update_task: UpdateModel,
-    ) -> Result<TaskState<Model>>;
+    ) -> Result<TaskState<TaskModel>>;
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
 
-    async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Vec<TagModel>>>;
-    async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<TaskState<()>>;
-    async fn remove_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID)
-    -> Result<TaskState<()>>;
+    async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>>;
+    async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()>;
+    async fn remove_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()>;
     async fn set_tags(
         &self,
         id: TaskID,
         user_id: UserID,
         tag_ids: Vec<TagID>,
-    ) -> Result<TaskState<Vec<TagModel>>>;
+    ) -> Result<Vec<TagModel>>;
 }
 
 #[derive(Clone)]
@@ -58,13 +59,15 @@ impl PgTaskRepository {
         Self { db }
     }
 
-    async fn fetch_all_tasks_with_tags(
+    async fn fetch_all_task_rows(
         conn: &mut PgConnection,
         user_id: UserID,
         query: Option<QueryOpts>,
-    ) -> Result<Vec<Model>> {
+    ) -> Result<Vec<TaskModel>> {
         let mut builder = QueryBuilder::new(
-            "SELECT t.* FROM app.tasks t LEFT JOIN app.task_tags tt ON t.id = tt.task_id WHERE created_by = ",
+            "SELECT t.* FROM app.tasks t
+            LEFT JOIN app.task_tags tt ON t.id = tt.task_id
+            WHERE created_by = ",
         );
         builder.push_bind(user_id);
         if let Some(opts) = query {
@@ -73,48 +76,20 @@ impl PgTaskRepository {
             builder.push(" GROUP BY t.id");
         }
 
-        let query = builder.build_query_as::<Model>();
+        let query = builder.build_query_as::<TaskModel>();
 
-        let mut tasks = query.fetch_all(conn.as_mut()).await?;
-
-        // Get tags
-        let task_ids: Vec<TaskID> = tasks.iter().map(|task| task.id).collect();
-        let tags = query_as::<TaskTag>(
-            "SELECT tt.task_id, tg.*
-            FROM app.task_tags tt
-            LEFT JOIN app.tags tg ON tt.tag_id = tg.id
-            WHERE tt.task_id = ANY($1)",
-        )
-        .bind(task_ids)
-        .fetch_all(conn.as_mut())
-        .await?;
-
-        let mut task_tag_map: HashMap<TaskID, Vec<TagModel>> = HashMap::new();
-        for TaskTag { task_id, tag } in tags {
-            if let Entry::Vacant(e) = task_tag_map.entry(task_id) {
-                e.insert(vec![tag]);
-            } else {
-                task_tag_map.get_mut(&task_id).unwrap().push(tag);
-            }
-        }
-        for task in tasks.iter_mut() {
-            if let Some(tags) = task_tag_map.remove(&task.id) {
-                task.tags = tags;
-            }
-        }
-
-        Ok(tasks)
+        Ok(query.fetch_all(conn.as_mut()).await?)
     }
 
     async fn create_task(
         conn: &mut PgConnection,
         user_id: UserID,
         create_task: CreateModel,
-    ) -> Result<Model> {
-        let task = query_as::<Model>(
+    ) -> Result<TaskModel> {
+        let id = query_scalar(
             "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, position_key, created_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *",
+            RETURNING id",
         )
         .bind(Uuid::new_v4())
         .bind(create_task.title)
@@ -136,15 +111,17 @@ impl PgTaskRepository {
             err.into()
         })?;
 
-        Ok(task)
+        Ok(Self::fetch_task_row(conn, id, user_id)
+            .await?
+            .expect("task was just created"))
     }
 
-    async fn fetch_task(
+    async fn fetch_task_row(
         conn: &mut PgConnection,
         id: TaskID,
         user_id: UserID,
-    ) -> Result<TaskState<Model>> {
-        let task_opt = query_as::<Model>(
+    ) -> Result<TaskState<TaskModel>> {
+        let task_opt = query_as::<TaskModel>(
             "SELECT * FROM app.tasks
             WHERE id = $1 AND created_by = $2",
         )
@@ -161,49 +138,56 @@ impl PgTaskRepository {
                     Ok(TaskState::Existing(task))
                 }
             }
-            None => Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Task,
-            ))),
+            None => Ok(TaskState::None),
         }
     }
 
-    async fn update_task(
+    async fn update_task_row(
         conn: &mut PgConnection,
         id: TaskID,
         user_id: UserID,
         update_task: UpdateModel,
-    ) -> Result<TaskState<Model>> {
+    ) -> Result<TaskModel> {
         let mut builder = QueryBuilder::new("UPDATE app.tasks SET ");
         update_task.add_to_builder(&mut builder);
         builder.push(" WHERE id = ");
         builder.push_bind(id);
         builder.push(" AND created_by = ");
         builder.push_bind(user_id);
-        builder.push(" RETURNING *");
 
-        let query = builder.build_query_as::<Model>();
+        let res = builder.build().execute(conn.as_mut()).await?;
+        if res.rows_affected() == 0 {
+            return Err(Error::Constraint(ConstraintViolation::NotFound(
+                Resource::Task,
+            )));
+        }
 
-        let task = query.fetch_one(conn.as_mut()).await?;
-
-        if task.deleted_at.is_some() {
-            Ok(TaskState::Deleted(task))
+        if let Some(task) = Self::fetch_task_row(conn, id, user_id)
+            .await
+            .expect("task was just updated")
+            .into_inner()
+        {
+            Ok(task)
         } else {
-            Ok(TaskState::Existing(task))
+            unreachable!()
         }
     }
 
-    async fn delete_task(conn: &mut PgConnection, id: TaskID, user_id: UserID) -> Result<()> {
-        Self::fetch_task(conn, id, user_id).await?;
-
-        query_as::<Model>(
+    async fn delete_task_row(conn: &mut PgConnection, id: TaskID, user_id: UserID) -> Result<()> {
+        let res = query(
             "DELETE FROM app.tasks
-            WHERE id = $1 AND created_by = $2
-            RETURNING *",
+            WHERE id = $1 AND created_by = $2",
         )
         .bind(id)
         .bind(user_id)
-        .fetch_one(conn.as_mut())
+        .execute(conn.as_mut())
         .await?;
+
+        if res.rows_affected() == 0 {
+            return Err(Error::Constraint(ConstraintViolation::NotFound(
+                Resource::Task,
+            )));
+        }
 
         Ok(())
     }
@@ -214,12 +198,13 @@ impl PgTaskRepository {
         user_id: UserID,
     ) -> Result<Vec<TagModel>> {
         Ok(query_as::<TagModel>(
-            "SELECT tg.*
+            "SELECT tg.*, tc.category_name
             FROM app.tags tg
+            LEFT JOIN app.categories tc ON tg.category_id = tc.id
             JOIN app.task_tags tt ON tg.id = tt.tag_id
             JOIN app.tasks t ON tt.task_id = t.id
             WHERE tt.task_id = $1 AND t.created_by = $2
-            ORDER BY tg.category ASC NULLS FIRST, tg.label ASC, tg.updated_at DESC, tg.id ASC",
+            ORDER BY tg.position_key ASC NULLS FIRST, tg.label ASC, tg.updated_at DESC, tg.id ASC",
         )
         .bind(id)
         .bind(user_id)
@@ -232,10 +217,10 @@ impl PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         tag_id: TagID,
-    ) -> Result<TaskState<()>> {
+    ) -> Result<()> {
         let res = query(
             "INSERT INTO app.task_tags (task_id, tag_id)
-            VALUES ($1, $2) RETURNING *",
+            VALUES ($1, $2)",
         )
         .bind(id)
         .bind(tag_id)
@@ -245,7 +230,7 @@ impl PgTaskRepository {
             let mut error = None;
             if let Some(pg_err) = err.as_database_error() {
                 if pg_err.is_unique_violation() {
-                    return Ok(TaskState::Existing(()));
+                    return Ok(());
                 }
 
                 let message = pg_err.message();
@@ -259,11 +244,12 @@ impl PgTaskRepository {
             return Err(error.unwrap_or(err.into()));
         }
 
-        if res.unwrap().rows_affected() != 0 {
+        let res = res.unwrap();
+        if res.rows_affected() != 0 {
             set_updated_timestamp(conn, id, user_id).await?;
         }
 
-        Ok(TaskState::Existing(()))
+        Ok(())
     }
 
     async fn remove_tag_from_task(
@@ -271,7 +257,7 @@ impl PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         tag_id: TagID,
-    ) -> Result<TaskState<()>> {
+    ) -> Result<()> {
         let res = query(
             "DELETE FROM app.task_tags
             WHERE task_id = $1 AND tag_id = $2
@@ -286,7 +272,7 @@ impl PgTaskRepository {
             set_updated_timestamp(conn, id, user_id).await?;
         }
 
-        Ok(TaskState::Existing(()))
+        Ok(())
     }
 
     async fn replace_tags_on_task(
@@ -294,7 +280,7 @@ impl PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         tag_ids: Vec<TagID>,
-    ) -> Result<TaskState<Vec<TagModel>>> {
+    ) -> Result<Vec<TagModel>> {
         let existing_tags: Vec<TagID> =
             query_scalar("SELECT tag_id FROM app.task_tags WHERE task_id = $1")
                 .bind(id)
@@ -304,9 +290,7 @@ impl PgTaskRepository {
         let current: HashSet<TagID> = existing_tags.into_iter().collect();
         let desired: HashSet<TagID> = tag_ids.iter().copied().collect();
         if current == desired {
-            return Ok(TaskState::Existing(
-                Self::fetch_task_tags(conn, id, user_id).await?,
-            ));
+            return Self::fetch_task_tags(conn, id, user_id).await;
         }
 
         let to_remove: Vec<&TagID> = current.difference(&desired).collect();
@@ -344,53 +328,49 @@ impl PgTaskRepository {
 
         set_updated_timestamp(conn, id, user_id).await?;
 
-        Ok(TaskState::Existing(
-            Self::fetch_task_tags(conn, id, user_id).await?,
-        ))
+        Self::fetch_task_tags(conn, id, user_id).await
     }
 }
 
 #[async_trait]
 impl TaskRepository for PgTaskRepository {
-    async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<Model>> {
+    async fn task_exists(&self, id: TaskID, user_id: UserID) -> Result<bool> {
         let mut conn = self.db.acquire().await?;
 
-        let tasks = Self::fetch_all_tasks_with_tags(&mut conn, user_id, query).await?;
+        let exists = query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM app.tasks WHERE id = $1 AND created_by = $2)",
+        )
+        .bind(id)
+        .bind(user_id)
+        .fetch_one(conn.as_mut())
+        .await?;
+
+        conn.close().await?;
+        Ok(exists)
+    }
+
+    async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TaskModel>> {
+        let mut conn = self.db.acquire().await?;
+
+        let tasks = Self::fetch_all_task_rows(&mut conn, user_id, query).await?;
 
         conn.close().await?;
         Ok(tasks)
     }
 
-    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<Model> {
+    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<TaskModel> {
         let mut tx = self.db.begin().await?;
 
-        let tags = create_task.tags.clone();
-        let mut task = Self::create_task(&mut tx, user_id, create_task).await?;
-
-        // Set tags, if needed
-        if !tags.is_empty() {
-            let res = Self::replace_tags_on_task(&mut tx, task.id, user_id, tags).await?;
-            match res {
-                TaskState::Existing(tags) => task.tags = tags,
-                what => return Err(Error::Programming(what.to_string())),
-            }
-        }
+        let task = Self::create_task(&mut tx, user_id, create_task).await?;
 
         tx.commit().await?;
         Ok(task)
     }
 
-    async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Model>> {
+    async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskState<TaskModel>> {
         let mut conn = self.db.acquire().await?;
 
-        let mut state = Self::fetch_task(&mut conn, id, user_id).await?;
-
-        // Get tags, if needed
-        match &mut state {
-            TaskState::Existing(task) | TaskState::Deleted(task) => {
-                task.tags = Self::fetch_task_tags(&mut conn, id, user_id).await?;
-            }
-        }
+        let state = Self::fetch_task_row(&mut conn, id, user_id).await?;
 
         conn.close().await?;
         Ok(state)
@@ -401,81 +381,96 @@ impl TaskRepository for PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         update_task: UpdateModel,
-    ) -> Result<TaskState<Model>> {
+    ) -> Result<TaskState<TaskModel>> {
         let mut tx = self.db.begin().await?;
 
-        if let TaskState::Deleted(task) = Self::fetch_task(&mut tx, id, user_id).await? {
-            return Ok(TaskState::Deleted(task));
-        }
-        let tags = update_task.tags.clone();
-        let mut state = Self::update_task(&mut tx, id, user_id, update_task).await?;
-
-        // Update tags, if needed
-        if let TaskState::Existing(ref mut task) = state
-            && let Some(tag_ids) = tags
-            && !tag_ids.is_empty()
+        if let Err(err) = Self::update_task_row(&mut tx, id, user_id, update_task).await
+            && let Error::Constraint(ConstraintViolation::NotFound(Resource::Task)) = err
         {
-            let res = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
-            match res {
-                TaskState::Existing(tags) => {
-                    task.tags = tags;
-                }
-                _ => unreachable!(),
-            }
+            return Ok(TaskState::None);
         }
+        let state = Self::fetch_task_row(&mut tx, id, user_id).await?;
 
         tx.commit().await?;
+        if state.as_ref().is_none() {
+            unreachable!();
+        }
         Ok(state)
     }
 
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
-        Self::delete_task(&mut tx, id, user_id).await?;
+        Self::delete_task_row(&mut tx, id, user_id).await?;
 
         tx.commit().await?;
         Ok(())
     }
 
-    async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<TaskState<Vec<TagModel>>> {
+    async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>> {
         let mut conn = self.db.acquire().await?;
 
-        if let TaskState::Deleted(task) = Self::fetch_task(&mut conn, id, user_id).await? {
-            return Ok(TaskState::Deleted(task.tags));
+        match Self::fetch_task_row(&mut conn, id, user_id).await? {
+            TaskState::Deleted(_) => {
+                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                    Resource::Task,
+                )));
+            }
+            TaskState::None => {
+                return Err(Error::Constraint(ConstraintViolation::NotFound(
+                    Resource::Task,
+                )));
+            }
+            _ => (),
         }
-        let state = Self::fetch_task_tags(&mut conn, id, user_id).await?;
+        let tags = Self::fetch_task_tags(&mut conn, id, user_id).await?;
 
         conn.close().await?;
-        Ok(TaskState::Existing(state))
+        Ok(tags)
     }
 
-    async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<TaskState<()>> {
+    async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
-        if let TaskState::Deleted(_) = Self::fetch_task(&mut tx, id, user_id).await? {
-            return Ok(TaskState::Deleted(()));
+        match Self::fetch_task_row(&mut tx, id, user_id).await? {
+            TaskState::Deleted(_) => {
+                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                    Resource::Task,
+                )));
+            }
+            TaskState::None => {
+                return Err(Error::Constraint(ConstraintViolation::NotFound(
+                    Resource::Task,
+                )));
+            }
+            _ => (),
         }
-        let state = Self::add_tag_to_task(&mut tx, id, user_id, tag_id).await?;
+        Self::add_tag_to_task(&mut tx, id, user_id, tag_id).await?;
 
         tx.commit().await?;
-        Ok(state)
+        Ok(())
     }
 
-    async fn remove_tag(
-        &self,
-        id: TaskID,
-        user_id: UserID,
-        tag_id: TagID,
-    ) -> Result<TaskState<()>> {
+    async fn remove_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
-        if let TaskState::Deleted(_) = Self::fetch_task(&mut tx, id, user_id).await? {
-            return Ok(TaskState::Deleted(()));
+        match Self::fetch_task_row(&mut tx, id, user_id).await? {
+            TaskState::Deleted(_) => {
+                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                    Resource::Task,
+                )));
+            }
+            TaskState::None => {
+                return Err(Error::Constraint(ConstraintViolation::NotFound(
+                    Resource::Task,
+                )));
+            }
+            _ => (),
         }
-        let state = Self::remove_tag_from_task(&mut tx, id, user_id, tag_id).await?;
+        Self::remove_tag_from_task(&mut tx, id, user_id, tag_id).await?;
 
         tx.commit().await?;
-        Ok(state)
+        Ok(())
     }
 
     async fn set_tags(
@@ -483,15 +478,25 @@ impl TaskRepository for PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         tag_ids: Vec<TagID>,
-    ) -> Result<TaskState<Vec<TagModel>>> {
+    ) -> Result<Vec<TagModel>> {
         let mut tx = self.db.begin().await?;
 
-        if let TaskState::Deleted(task) = Self::fetch_task(&mut tx, id, user_id).await? {
-            return Ok(TaskState::Deleted(task.tags));
+        match Self::fetch_task_row(&mut tx, id, user_id).await? {
+            TaskState::Deleted(_) => {
+                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                    Resource::Task,
+                )));
+            }
+            TaskState::None => {
+                return Err(Error::Constraint(ConstraintViolation::NotFound(
+                    Resource::Task,
+                )));
+            }
+            _ => (),
         }
-        let state = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
+        let tags = Self::replace_tags_on_task(&mut tx, id, user_id, tag_ids).await?;
 
         tx.commit().await?;
-        Ok(state)
+        Ok(tags)
     }
 }

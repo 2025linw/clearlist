@@ -1,12 +1,12 @@
 pub mod repo;
 pub mod service;
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone)]
 pub enum Resource {
     User,
     Task,
     Tag,
+    Category,
 }
 
 impl std::fmt::Display for Resource {
@@ -15,6 +15,7 @@ impl std::fmt::Display for Resource {
             Resource::User => write!(f, "user"),
             Resource::Task => write!(f, "task"),
             Resource::Tag => write!(f, "tag"),
+            Resource::Category => write!(f, "category"),
         }
     }
 }

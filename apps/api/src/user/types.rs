@@ -28,6 +28,7 @@ pub struct Model {
 
     pub display_name: String,
 
+    pub preferred_timezone: Option<String>,
     pub completed_task_retention: Option<PgInterval>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,

@@ -11,6 +11,7 @@ impl Default for CreateRequest {
         Self {
             id: UserID::new_v4(),
             display_name: "Test User".to_string(),
+            preferred_timezone: None,
             completed_task_retention: None,
             created_at: get_today_date_pg(),
         }
@@ -21,6 +22,7 @@ impl Default for UpdateRequest {
     fn default() -> Self {
         Self {
             display_name: Some("Updated User".to_string()),
+            preferred_timezone: None,
             completed_task_retention: None,
         }
     }
@@ -31,6 +33,7 @@ impl Default for CreateModel {
         Self {
             id: UserID::new_v4(),
             display_name: "Test User".to_string(),
+            preferred_timezone: None,
             completed_task_retention: None,
             created_at: get_today_date_pg(),
         }
@@ -41,6 +44,7 @@ impl Default for UpdateModel {
     fn default() -> Self {
         Self {
             display_name: Some("Updated User".to_string()),
+            preferred_timezone: None,
             completed_task_retention: None,
         }
     }

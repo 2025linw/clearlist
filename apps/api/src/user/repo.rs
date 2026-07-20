@@ -1,5 +1,3 @@
-// mod types;
-
 #[cfg(test)]
 mod tests;
 
@@ -38,14 +36,15 @@ impl PgUserRepository {
 
     async fn create_user(conn: &mut PgConnection, create_user: CreateModel) -> Result<Model> {
         Ok(query_as::<Model>(
-            "INSERT INTO app.users (id, display_name, updated_at, created_at, completed_task_retention)
-            VALUES ($1, $2, $3, $3, $4)
+            "INSERT INTO app.users (id, display_name, preferred_timezone, completed_task_retention, updated_at, created_at)
+            VALUES ($1, $2, $3, $4, $5, $5)
             RETURNING *",
         )
         .bind(create_user.id)
         .bind(create_user.display_name)
-        .bind(create_user.created_at)
+        .bind(create_user.preferred_timezone)
         .bind(create_user.completed_task_retention)
+        .bind(create_user.created_at)
         .fetch_one(conn.as_mut())
         .await?)
     }

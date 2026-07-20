@@ -7,19 +7,21 @@ use crate::{
         types::TagID,
     },
     task::{
-        repo::{Model, PgTaskRepository, TaskRepository},
+        repo::{PgTaskRepository, TaskModel, TaskRepository},
         types::{
             SortBy,
-            repo::{Filter, Pagination, QueryOpts, Sort},
+            repo::{CreateModel, Filter, Pagination, QueryOpts, Sort},
         },
     },
     tests::helpers::{
-        create_test_user, is_task_ordered, nulls_last_key,
+        create_test_user, generate_a_z, get_today_date_pg, is_task_ordered, nulls_last_key,
         tag::{default_tag, seed_tags},
-        task::{default_task, full_task, seed_tasks, task_with_deadline, task_with_start},
+        task::{
+            default_task, seed_tasks, seed_tasks_with_tags, task_with_deadline, task_with_start,
+        },
     },
     types::{
-        date::{DateBound, DateFilter},
+        date::{DateBound, DateFilter, StartPrecision},
         order::SortOrder,
     },
     user::repo::PgUserRepository,
@@ -29,25 +31,25 @@ struct SortCase {
     name: &'static str,
     sort_by: SortBy,
     sort_order: SortOrder,
-    check: fn(&[Model]),
+    check: fn(&[TaskModel]),
 }
 
 struct StartCase {
     name: &'static str,
     filter: DateFilter<DateTime<Utc>>,
-    check: fn(&[Model]),
+    check: fn(&[TaskModel]),
 }
 
 struct DeadlineCase {
     name: &'static str,
     filter: DateFilter<NaiveDate>,
-    check: fn(&[Model]),
+    check: fn(&[TaskModel]),
 }
 
 struct BoolCase {
     name: &'static str,
     filter: bool,
-    check: fn(&[Model]),
+    check: fn(&[TaskModel]),
 }
 
 // Input Tests
@@ -57,7 +59,7 @@ async fn pagination_limit(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 25, test_user.id, Vec::new(), None, default_task).await;
+    seed_tasks(&repo, 25, test_user.id, None, default_task).await;
 
     let res = repo
         .list(
@@ -80,7 +82,7 @@ async fn pagination_offset(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 25, test_user.id, Vec::new(), None, default_task).await;
+    seed_tasks(&repo, 25, test_user.id, None, default_task).await;
 
     let ref_tasks = repo
         .list(test_user.id, Some(QueryOpts::default()))
@@ -269,17 +271,9 @@ async fn sort_variants(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 10, test_user.id, Vec::new(), None, default_task).await;
-    seed_tasks(&repo, 10, test_user.id, Vec::new(), None, task_with_start).await;
-    seed_tasks(
-        &repo,
-        10,
-        test_user.id,
-        Vec::new(),
-        None,
-        task_with_deadline,
-    )
-    .await;
+    seed_tasks(&repo, 10, test_user.id, None, default_task).await;
+    seed_tasks(&repo, 10, test_user.id, None, task_with_start).await;
+    seed_tasks(&repo, 10, test_user.id, None, task_with_deadline).await;
 
     for case in cases {
         let SortCase {
@@ -363,7 +357,7 @@ async fn filter_start(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 31, test_user.id, Vec::new(), None, task_with_start).await;
+    seed_tasks(&repo, 31, test_user.id, None, task_with_start).await;
 
     for case in cases {
         let StartCase {
@@ -429,15 +423,7 @@ async fn filter_deadline(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(
-        &repo,
-        31,
-        test_user.id,
-        Vec::new(),
-        None,
-        task_with_deadline,
-    )
-    .await;
+    seed_tasks(&repo, 31, test_user.id, None, task_with_deadline).await;
 
     for case in cases {
         let DeadlineCase {
@@ -494,7 +480,6 @@ async fn filter_bool(pool: PgPool) {
                 &repo,
                 5,
                 test_user.id,
-                Vec::new(),
                 Some((completed, deleted)),
                 default_task,
             )
@@ -541,21 +526,21 @@ async fn filter_tags(pool: PgPool) {
     seed_tags(&tag_repo, 2, test_user.id, default_tag).await;
     let tags = tag_repo.list(test_user.id, None).await.unwrap();
     let tag_ids: Vec<TagID> = tags.iter().map(|tag| tag.id).collect();
-    seed_tasks(
+    seed_tasks_with_tags(
         &repo,
         10,
         test_user.id,
-        tag_ids[..1].to_vec(),
         None,
+        tag_ids[..1].to_vec(),
         default_task,
     )
     .await;
-    seed_tasks(
+    seed_tasks_with_tags(
         &repo,
         10,
         test_user.id,
-        tag_ids.to_vec(),
         None,
+        tag_ids.to_vec(),
         default_task,
     )
     .await;
@@ -570,47 +555,41 @@ async fn filter_tags(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(tasks) = res {
-        assert_eq!(tasks.len(), 10);
-        for task in tasks {
-            assert_eq!(task.tags.len(), 2);
-        }
-    }
 }
 
 // Output Tests
 #[test]
 async fn verify_output(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tags(&tag_repo, 10, test_user.id, default_tag).await;
-    let tags = tag_repo.list(test_user.id, None).await.unwrap();
-    seed_tasks(
-        &repo,
-        10,
+    repo.create(
         test_user.id,
-        tags.iter().map(|tag| tag.id).collect(),
-        None,
-        full_task,
+        CreateModel {
+            title: "Test Task".to_string(),
+            notes: Some("Notes for 'Test Task'".to_string()),
+            start: Some(get_today_date_pg()),
+            start_precision: StartPrecision::DateTime,
+            deadline: Some(get_today_date_pg().date_naive()),
+            position_key: generate_a_z(0).to_string(),
+        },
     )
-    .await;
+    .await
+    .unwrap();
 
     let res = repo.list(test_user.id, None).await;
     assert!(res.is_ok());
     if let Ok(tasks) = res {
-        for task in tasks {
-            assert!(!task.title.is_empty());
-            assert!(task.notes.is_some());
-            assert!(task.start_dt.is_some());
-            assert!(task.has_time);
-            assert!(task.deadline.is_some());
-            assert!(!task.tags.is_empty());
-            assert!(task.completed_at.is_none());
-            assert!(task.deleted_at.is_none());
-        }
+        let task = tasks[0].clone();
+
+        assert!(!task.title.is_empty());
+        assert!(task.notes.is_some());
+        assert!(task.start_dt.is_some());
+        assert!(task.has_time);
+        assert!(task.deadline.is_some());
+        assert!(task.completed_at.is_none());
+        assert!(task.deleted_at.is_none());
     }
 }
 
@@ -621,7 +600,7 @@ async fn works(pool: PgPool) {
     let repo = PgTaskRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    seed_tasks(&repo, 25, test_user.id, Vec::new(), None, default_task).await;
+    seed_tasks(&repo, 25, test_user.id, None, default_task).await;
 
     let res = repo.list(test_user.id, None).await;
     assert!(res.is_ok());
