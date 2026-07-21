@@ -5,7 +5,7 @@ use crate::{
         repo::{PgTagRepository, QueryOpts, TagModel, TagRepository},
         types::{
             TagCategoryID,
-            repo::{CreateModel, Filter, Pagination},
+            repo::{CreateModel, Filter},
         },
     },
     tests::helpers::{
@@ -15,12 +15,13 @@ use crate::{
             tag_with_workflow_priority,
         },
     },
+    types::pagination::SQLPagination,
     user::repo::PgUserRepository,
 };
 
 struct CategoryCase {
     name: &'static str,
-    filter: TagCategoryID,
+    category_id: TagCategoryID,
     check: fn(&[TagModel]),
 }
 
@@ -33,11 +34,14 @@ async fn pagination_limit(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
     seed_tags(&repo, 25, test_user.id, default_tag).await;
 
+    let mut pagination = SQLPagination::new();
+    pagination.limit(5);
+
     let res = repo
         .list(
             test_user.id,
             Some(QueryOpts {
-                pagination: Pagination::new(Some(5), None),
+                pagination,
                 ..Default::default()
             }),
         )
@@ -62,17 +66,21 @@ async fn pagination_offset(pool: PgPool) {
         .unwrap();
 
     for offset in 1..=10 {
+        let mut pagination = SQLPagination::new();
+        pagination.offset(offset);
+
         let res = repo
             .list(
                 test_user.id,
                 Some(QueryOpts {
-                    pagination: Pagination::new(None, Some(offset)),
+                    pagination,
                     ..Default::default()
                 }),
             )
             .await;
         assert!(res.is_ok());
         if let Ok(tags) = res {
+            let offset = offset as usize;
             assert_eq!(&tags[0..5], &ref_tags[offset..(5 + offset)])
         }
     }
@@ -121,7 +129,7 @@ async fn filter_category(pool: PgPool) {
     let cases = vec![
         CategoryCase {
             name: "Workflow category",
-            filter: workflow_category_id,
+            category_id: workflow_category_id,
             check: |tags| {
                 assert!(
                     tags.iter()
@@ -131,7 +139,7 @@ async fn filter_category(pool: PgPool) {
         },
         CategoryCase {
             name: "Priority category",
-            filter: priority_category_id,
+            category_id: priority_category_id,
             check: |tags| {
                 assert!(
                     tags.iter()
@@ -143,12 +151,15 @@ async fn filter_category(pool: PgPool) {
     for case in cases {
         let CategoryCase {
             name,
-            filter,
+            category_id,
             check,
         } = case;
 
+        let mut filter = Filter::new();
+        filter.category(category_id);
+
         let opts = QueryOpts {
-            filter: Filter::new().category(filter),
+            filter,
             ..Default::default()
         };
 

@@ -23,7 +23,7 @@ impl Default for UserID {
 
 #[derive(Debug, PartialEq, Eq, FromRow)]
 #[cfg_attr(test, derive(Clone))]
-pub struct Model {
+pub struct UserModel {
     pub id: UserID,
 
     pub display_name: String,

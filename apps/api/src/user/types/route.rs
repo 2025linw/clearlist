@@ -22,7 +22,7 @@ pub struct CreateRequest {
 pub struct UpdateRequest {
     pub display_name: Option<String>,
 
-    pub preferred_timezone: Option<Tz>,
+    pub preferred_timezone: Option<Option<Tz>>,
     pub completed_task_retention: Option<Option<CompletedTaskRetention>>,
 }
 

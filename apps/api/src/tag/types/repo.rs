@@ -1,12 +1,12 @@
 use sqlx::QueryBuilder;
 
-use crate::tag::types::TagCategoryID;
+use crate::{tag::types::TagCategoryID, types::pagination::SQLPagination};
 
 #[derive(Debug, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct QueryOpts {
     pub filter: Filter,
-    pub pagination: Pagination,
+    pub pagination: SQLPagination,
 }
 
 impl QueryOpts {
@@ -78,22 +78,7 @@ impl Filter {
         Self::default()
     }
 
-    pub fn category(mut self, category: TagCategoryID) -> Self {
+    pub fn category(&mut self, category: TagCategoryID) {
         self.category = Some(category);
-
-        self
-    }
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
-pub struct Pagination {
-    pub limit: Option<usize>,
-    pub offset: Option<usize>,
-}
-
-impl Pagination {
-    pub fn new(limit: Option<usize>, offset: Option<usize>) -> Self {
-        Self { limit, offset }
     }
 }

@@ -2,7 +2,10 @@
 #![allow(clippy::all)]
 // WARN: REMOVE ABOVE
 
-use super::{Resource, repo::Error as RepoError};
+use super::{
+    Resource,
+    repo::{ConstraintViolation, Error as RepoError},
+};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -15,9 +18,7 @@ pub enum Error {
     Validation(ValidationError),
 
     Forbidden,
-
     Conflict,
-
     Unauthorized,
 
     Internal(RepoError),
@@ -34,9 +35,14 @@ impl std::fmt::Display for Error {
 
 impl From<RepoError> for Error {
     fn from(value: RepoError) -> Self {
-        match value {
+        match &value {
             RepoError::Backend(_) => Self::Internal(value),
-            RepoError::Programming(_) | RepoError::Constraint(_) => Self::Unhandled(value),
+            RepoError::Programming(_) => Self::Unhandled(value),
+            RepoError::Constraint(constraint) => match constraint {
+                ConstraintViolation::NotFound(resource) => Self::NotFound(resource.clone()),
+                ConstraintViolation::Deleted(resource) => Self::Deleted(resource.clone()),
+                ConstraintViolation::MissingUser => Self::Internal(value),
+            },
         }
     }
 }
@@ -51,9 +57,9 @@ pub enum ValidationError {
 }
 
 // Pagination Error Reasons
-const ZERO_LIMIT_REASON: &str = "limit must be greater than 0";
-const ZERO_PAGE_REASON: &str = "page must be greater than 0";
+pub const ZERO_LIMIT_REASON: &str = "limit must be greater than 0";
+pub const ZERO_PAGE_REASON: &str = "page must be greater than 0";
 
 // Text Error Reasons
-const NO_WHITESPACE_REASON: &str = "contains whitespace characters: [\\t, \\n]";
-const NO_EMPTY_CATEGORY_REASON: &str = "category must not be empty string";
+pub const NO_WHITESPACE_REASON: &str = "must not contain non-space whitespace characters";
+pub const NO_EMPTY_CATEGORY_REASON: &str = "category must not be empty string";

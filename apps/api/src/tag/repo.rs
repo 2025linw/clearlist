@@ -21,10 +21,14 @@ use super::types::{
 #[async_trait]
 pub trait TagRepository: Send + Sync + Clone {
     async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TagModel>>;
-    async fn create(&self, user_id: UserID, create_tag: CreateModel) -> Result<TagModel>;
+    async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TagModel>;
     async fn get(&self, id: TagID, user_id: UserID) -> Result<Option<TagModel>>;
-    async fn update(&self, id: TagID, user_id: UserID, update_tag: UpdateModel)
-    -> Result<TagModel>;
+    async fn update(
+        &self,
+        id: TagID,
+        user_id: UserID,
+        update_model: UpdateModel,
+    ) -> Result<TagModel>;
     async fn delete(&self, id: TagID, user_id: UserID) -> Result<()>;
 
     async fn get_category_id(&self, user_id: UserID, name: String) -> Result<TagCategoryID>;
@@ -67,10 +71,10 @@ impl PgTagRepository {
         Ok(query.fetch_all(conn.as_mut()).await?)
     }
 
-    async fn create_tag(
+    async fn create_model(
         conn: &mut PgConnection,
         user_id: UserID,
-        create_tag: CreateModel,
+        create_model: CreateModel,
     ) -> Result<TagModel> {
         let id = query_scalar(
             "INSERT INTO app.tags (id, label, category_id, position_key, created_by)
@@ -78,9 +82,9 @@ impl PgTagRepository {
             RETURNING id",
         )
         .bind(TagID::new_v4())
-        .bind(create_tag.label)
-        .bind(create_tag.category_id)
-        .bind(create_tag.position_key)
+        .bind(create_model.label)
+        .bind(create_model.category_id)
+        .bind(create_model.position_key)
         .bind(user_id)
         .fetch_one(conn.as_mut())
         .await
@@ -117,14 +121,14 @@ impl PgTagRepository {
         Ok(tag_opt)
     }
 
-    async fn update_tag(
+    async fn update_model(
         conn: &mut PgConnection,
         id: TagID,
         user_id: UserID,
-        update_tag: UpdateModel,
+        update_model: UpdateModel,
     ) -> Result<TagModel> {
         let mut builder = QueryBuilder::new("UPDATE app.tags SET ");
-        update_tag.add_to_builder(&mut builder);
+        update_model.add_to_builder(&mut builder);
         builder.push(" WHERE id = ");
         builder.push_bind(id);
         builder.push(" AND created_by = ");
@@ -174,10 +178,10 @@ impl TagRepository for PgTagRepository {
         Ok(tags)
     }
 
-    async fn create(&self, user_id: UserID, create_tag: CreateModel) -> Result<TagModel> {
+    async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TagModel> {
         let mut tx = self.db.begin().await?;
 
-        let tag = Self::create_tag(&mut tx, user_id, create_tag).await?;
+        let tag = Self::create_model(&mut tx, user_id, create_model).await?;
 
         tx.commit().await?;
         Ok(tag)
@@ -196,11 +200,11 @@ impl TagRepository for PgTagRepository {
         &self,
         id: TagID,
         user_id: UserID,
-        update_tag: UpdateModel,
+        update_model: UpdateModel,
     ) -> Result<TagModel> {
         let mut tx = self.db.begin().await?;
 
-        let tag = Self::update_tag(&mut tx, id, user_id, update_tag).await?;
+        let tag = Self::update_model(&mut tx, id, user_id, update_model).await?;
 
         tx.commit().await?;
         Ok(tag)

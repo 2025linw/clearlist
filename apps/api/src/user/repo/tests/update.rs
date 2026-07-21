@@ -103,7 +103,7 @@ async fn verify_output(pool: PgPool) {
 
     let test_user = repo.create(CreateModel::default()).await.unwrap();
 
-    let update_user = UpdateModel {
+    let update_model = UpdateModel {
         display_name: Some("Updated User".to_string()),
         preferred_timezone: Some(Some("America/Chicago".to_string())),
         completed_task_retention: Some(Some(PgInterval {
@@ -113,17 +113,17 @@ async fn verify_output(pool: PgPool) {
         })),
     };
     let user = repo
-        .update(test_user.id, update_user.clone())
+        .update(test_user.id, update_model.clone())
         .await
         .unwrap();
-    assert_eq!(user.display_name, update_user.display_name.unwrap());
+    assert_eq!(user.display_name, update_model.display_name.unwrap());
     assert_eq!(
         user.preferred_timezone,
         Some(Tz::America__Chicago.to_string())
     );
     assert_eq!(
         user.completed_task_retention,
-        update_user.completed_task_retention.unwrap()
+        update_model.completed_task_retention.unwrap()
     );
 }
 
@@ -147,16 +147,16 @@ async fn is_idempotent(pool: PgPool) {
 
     let test_user = repo.create(CreateModel::default()).await.unwrap();
 
-    let update_user = UpdateModel {
+    let update_model = UpdateModel {
         display_name: Some("Updated User".to_string()),
         ..Default::default()
     };
     let update_1 = repo
-        .update(test_user.id, update_user.clone())
+        .update(test_user.id, update_model.clone())
         .await
         .unwrap();
     let update_2 = repo
-        .update(test_user.id, update_user.clone())
+        .update(test_user.id, update_model.clone())
         .await
         .unwrap();
 

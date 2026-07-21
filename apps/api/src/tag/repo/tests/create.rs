@@ -78,14 +78,17 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
 
-    let create_tag = CreateModel {
+    let create_model = CreateModel {
         label: "Test Tag".to_string(),
         category_id: Some(test_category_id),
         position_key: generate_a_z(0).to_string(),
     };
-    let tag = repo.create(test_user.id, create_tag.clone()).await.unwrap();
-    assert_eq!(tag.label, create_tag.label);
+    let tag = repo
+        .create(test_user.id, create_model.clone())
+        .await
+        .unwrap();
+    assert_eq!(tag.label, create_model.label);
     assert_eq!(tag.category_id, Some(test_category_id));
     assert_eq!(tag.category_name.as_deref(), Some("Testing"));
-    assert_eq!(tag.position_key, create_tag.position_key);
+    assert_eq!(tag.position_key, create_model.position_key);
 }

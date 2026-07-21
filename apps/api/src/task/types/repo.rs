@@ -7,6 +7,7 @@ use crate::{
     types::{
         date::{DateFilter, StartPrecision},
         order::SortOrder,
+        pagination::SQLPagination,
     },
 };
 
@@ -15,9 +16,9 @@ use super::SortBy;
 #[derive(Debug, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct QueryOpts {
-    pub pagination: Pagination,
-    pub sort: Sort,
     pub filter: Filter,
+    pub sort: Sort,
+    pub pagination: SQLPagination,
 }
 
 impl QueryOpts {
@@ -174,34 +175,24 @@ impl Filter {
         Self::default()
     }
 
-    pub fn start(mut self, start: DateFilter<DateTime<Utc>>) -> Self {
+    pub fn start(&mut self, start: DateFilter<DateTime<Utc>>) {
         self.start = Some(start);
-
-        self
     }
 
-    pub fn deadline(mut self, deadline: DateFilter<NaiveDate>) -> Self {
+    pub fn deadline(&mut self, deadline: DateFilter<NaiveDate>) {
         self.deadline = Some(deadline);
-
-        self
     }
 
-    pub fn completed(mut self, completed: bool) -> Self {
+    pub fn completed(&mut self, completed: bool) {
         self.completed = Some(completed);
-
-        self
     }
 
-    pub fn deleted(mut self, deleted: bool) -> Self {
+    pub fn deleted(&mut self, deleted: bool) {
         self.deleted = Some(deleted);
-
-        self
     }
 
-    pub fn tags(mut self, tags: Vec<TagID>) -> Self {
+    pub fn tags(&mut self, tags: Vec<TagID>) {
         self.tags = Some(tags);
-
-        self
     }
 }
 
@@ -221,18 +212,6 @@ impl Sort {
                 sort: Some((SortBy::ID, order)),
             }
         }
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct Pagination {
-    pub limit: Option<usize>,
-    pub offset: Option<usize>,
-}
-
-impl Pagination {
-    pub fn new(limit: Option<usize>, offset: Option<usize>) -> Self {
-        Self { limit, offset }
     }
 }
 

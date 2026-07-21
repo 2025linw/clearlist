@@ -39,7 +39,7 @@ async fn not_exists(pool: PgPool) {
 async fn verify_output(pool: PgPool) {
     let repo = PgUserRepository::init(pool.clone());
 
-    let create_user = CreateModel {
+    let create_model = CreateModel {
         id: UserID::new_v4(),
         display_name: "Test User".to_string(),
         preferred_timezone: Some("America/Chicago".to_string()),
@@ -50,18 +50,18 @@ async fn verify_output(pool: PgPool) {
         }),
         created_at: get_today_date_pg(),
     };
-    let test_user = repo.create(create_user.clone()).await.unwrap();
+    let test_user = repo.create(create_model.clone()).await.unwrap();
 
     let user = repo.get(test_user.id).await.unwrap().unwrap();
-    assert_eq!(user.id, create_user.id);
-    assert_eq!(user.display_name, create_user.display_name);
+    assert_eq!(user.id, create_model.id);
+    assert_eq!(user.display_name, create_model.display_name);
     assert_eq!(
         user.preferred_timezone,
         Some(Tz::America__Chicago.to_string())
     );
     assert_eq!(
         user.completed_task_retention,
-        create_user.completed_task_retention
+        create_model.completed_task_retention
     );
-    assert_eq!(user.created_at, create_user.created_at);
+    assert_eq!(user.created_at, create_model.created_at);
 }

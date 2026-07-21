@@ -28,13 +28,13 @@ pub trait TaskRepository: Send + Sync + Clone {
     async fn task_exists(&self, id: TaskID, user_id: UserID) -> Result<bool>;
 
     async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TaskModel>>;
-    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<TaskModel>;
+    async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TaskModel>;
     async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskState<TaskModel>>;
     async fn update(
         &self,
         id: TaskID,
         user_id: UserID,
-        update_task: UpdateModel,
+        update_model: UpdateModel,
     ) -> Result<TaskState<TaskModel>>;
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
 
@@ -81,10 +81,10 @@ impl PgTaskRepository {
         Ok(query.fetch_all(conn.as_mut()).await?)
     }
 
-    async fn create_task(
+    async fn create_model(
         conn: &mut PgConnection,
         user_id: UserID,
-        create_task: CreateModel,
+        create_model: CreateModel,
     ) -> Result<TaskModel> {
         let id = query_scalar(
             "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, position_key, created_by)
@@ -92,15 +92,15 @@ impl PgTaskRepository {
             RETURNING id",
         )
         .bind(Uuid::new_v4())
-        .bind(create_task.title)
-        .bind(create_task.notes)
-        .bind(create_task.start)
+        .bind(create_model.title)
+        .bind(create_model.notes)
+        .bind(create_model.start)
         .bind(matches!(
-            create_task.start_precision,
+            create_model.start_precision,
             StartPrecision::DateTime
         ))
-        .bind(create_task.deadline)
-        .bind(create_task.position_key)
+        .bind(create_model.deadline)
+        .bind(create_model.position_key)
         .bind(user_id)
         .fetch_one(conn.as_mut())
         .await.map_err(|err| {
@@ -146,10 +146,10 @@ impl PgTaskRepository {
         conn: &mut PgConnection,
         id: TaskID,
         user_id: UserID,
-        update_task: UpdateModel,
+        update_model: UpdateModel,
     ) -> Result<TaskModel> {
         let mut builder = QueryBuilder::new("UPDATE app.tasks SET ");
-        update_task.add_to_builder(&mut builder);
+        update_model.add_to_builder(&mut builder);
         builder.push(" WHERE id = ");
         builder.push_bind(id);
         builder.push(" AND created_by = ");
@@ -358,10 +358,10 @@ impl TaskRepository for PgTaskRepository {
         Ok(tasks)
     }
 
-    async fn create(&self, user_id: UserID, create_task: CreateModel) -> Result<TaskModel> {
+    async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TaskModel> {
         let mut tx = self.db.begin().await?;
 
-        let task = Self::create_task(&mut tx, user_id, create_task).await?;
+        let task = Self::create_model(&mut tx, user_id, create_model).await?;
 
         tx.commit().await?;
         Ok(task)
@@ -380,11 +380,11 @@ impl TaskRepository for PgTaskRepository {
         &self,
         id: TaskID,
         user_id: UserID,
-        update_task: UpdateModel,
+        update_model: UpdateModel,
     ) -> Result<TaskState<TaskModel>> {
         let mut tx = self.db.begin().await?;
 
-        if let Err(err) = Self::update_task_row(&mut tx, id, user_id, update_task).await
+        if let Err(err) = Self::update_task_row(&mut tx, id, user_id, update_model).await
             && let Error::Constraint(ConstraintViolation::NotFound(Resource::Task)) = err
         {
             return Ok(TaskState::None);

@@ -12,7 +12,7 @@ use crate::{
     types::order::SortOrder,
     user::{
         repo::{PgUserRepository, UserRepository},
-        types::{Model as UserModel, UserID, repo::CreateModel as UserCreateModel},
+        types::{UserID, UserModel, repo::CreateModel as UserCreateModel},
     },
 };
 

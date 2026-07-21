@@ -10,7 +10,7 @@ use crate::{
         repo::{PgTaskRepository, TaskModel, TaskRepository},
         types::{
             SortBy,
-            repo::{CreateModel, Filter, Pagination, QueryOpts, Sort},
+            repo::{CreateModel, Filter, QueryOpts, Sort},
         },
     },
     tests::helpers::{
@@ -23,6 +23,7 @@ use crate::{
     types::{
         date::{DateBound, DateFilter, StartPrecision},
         order::SortOrder,
+        pagination::SQLPagination,
     },
     user::repo::PgUserRepository,
 };
@@ -36,19 +37,19 @@ struct SortCase {
 
 struct StartCase {
     name: &'static str,
-    filter: DateFilter<DateTime<Utc>>,
+    date_filter: DateFilter<DateTime<Utc>>,
     check: fn(&[TaskModel]),
 }
 
 struct DeadlineCase {
     name: &'static str,
-    filter: DateFilter<NaiveDate>,
+    date_filter: DateFilter<NaiveDate>,
     check: fn(&[TaskModel]),
 }
 
 struct BoolCase {
     name: &'static str,
-    filter: bool,
+    bool_filter: bool,
     check: fn(&[TaskModel]),
 }
 
@@ -61,11 +62,14 @@ async fn pagination_limit(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
     seed_tasks(&repo, 25, test_user.id, None, default_task).await;
 
+    let mut pagination = SQLPagination::new();
+    pagination.limit(5);
+
     let res = repo
         .list(
             test_user.id,
             Some(QueryOpts {
-                pagination: Pagination::new(Some(5), None),
+                pagination,
                 ..Default::default()
             }),
         )
@@ -90,17 +94,21 @@ async fn pagination_offset(pool: PgPool) {
         .unwrap();
 
     for offset in 1..=10 {
+        let mut pagination = SQLPagination::new();
+        pagination.offset(offset);
+
         let res = repo
             .list(
                 test_user.id,
                 Some(QueryOpts {
-                    pagination: Pagination::new(None, Some(offset)),
+                    pagination,
                     ..Default::default()
                 }),
             )
             .await;
         assert!(res.is_ok());
         if let Ok(tasks) = res {
+            let offset = offset as usize;
             assert_eq!(&tasks[0..5], &ref_tasks[offset..(5 + offset)])
         }
     }
@@ -305,7 +313,7 @@ async fn filter_start(pool: PgPool) {
     let cases = vec![
         StartCase {
             name: "start greater than",
-            filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
+            date_filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
             check: |tasks| {
                 assert!(tasks.iter().all(|task| {
                     task.start_dt.unwrap()
@@ -317,7 +325,7 @@ async fn filter_start(pool: PgPool) {
         },
         StartCase {
             name: "start greater than equal",
-            filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
+            date_filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
             check: |tasks| {
                 assert!(tasks.iter().all(|task| {
                     task.start_dt.unwrap()
@@ -329,7 +337,7 @@ async fn filter_start(pool: PgPool) {
         },
         StartCase {
             name: "start less than",
-            filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
+            date_filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
             check: |tasks| {
                 assert!(tasks.iter().all(|task| {
                     task.start_dt.unwrap()
@@ -341,7 +349,7 @@ async fn filter_start(pool: PgPool) {
         },
         StartCase {
             name: "start less than equal",
-            filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
+            date_filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
             check: |tasks| {
                 assert!(tasks.iter().all(|task| {
                     task.start_dt.unwrap()
@@ -362,12 +370,15 @@ async fn filter_start(pool: PgPool) {
     for case in cases {
         let StartCase {
             name,
-            filter,
+            date_filter,
             check,
         } = case;
 
+        let mut filter = Filter::new();
+        filter.start(date_filter);
+
         let opts = QueryOpts {
-            filter: Filter::new().start(filter),
+            filter,
             ..Default::default()
         };
 
@@ -387,7 +398,7 @@ async fn filter_deadline(pool: PgPool) {
         vec![
             DeadlineCase {
                 name: "deadline greater than",
-                filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
+                date_filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
                         > NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
@@ -395,7 +406,7 @@ async fn filter_deadline(pool: PgPool) {
             },
             DeadlineCase {
                 name: "deadline greater than equal",
-                filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
+                date_filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
                         >= NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
@@ -403,7 +414,7 @@ async fn filter_deadline(pool: PgPool) {
             },
             DeadlineCase {
                 name: "deadline less than",
-                filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
+                date_filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
                         < NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
@@ -411,7 +422,7 @@ async fn filter_deadline(pool: PgPool) {
             },
             DeadlineCase {
                 name: "deadline less than equal",
-                filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
+                date_filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     assert!(tasks.iter().all(|task| task.deadline.unwrap()
                         <= NaiveDate::from_ymd_opt(2026, 1, 15).unwrap()))
@@ -428,12 +439,15 @@ async fn filter_deadline(pool: PgPool) {
     for case in cases {
         let DeadlineCase {
             name,
-            filter,
+            date_filter,
             check,
         } = case;
 
+        let mut filter = Filter::new();
+        filter.deadline(date_filter);
+
         let opts = QueryOpts {
-            filter: Filter::new().deadline(filter),
+            filter,
             ..Default::default()
         };
 
@@ -450,22 +464,22 @@ async fn filter_bool(pool: PgPool) {
     let cases = vec![
         BoolCase {
             name: "completed false",
-            filter: false,
+            bool_filter: false,
             check: |tasks| assert!(tasks.iter().all(|task| task.completed_at.is_none())),
         },
         BoolCase {
             name: "completed true",
-            filter: true,
+            bool_filter: true,
             check: |tasks| assert!(tasks.iter().all(|task| task.completed_at.is_some())),
         },
         BoolCase {
             name: "deleted false",
-            filter: false,
+            bool_filter: false,
             check: |tasks| assert!(tasks.iter().all(|task| task.deleted_at.is_none())),
         },
         BoolCase {
             name: "deleted true",
-            filter: true,
+            bool_filter: true,
             check: |tasks| assert!(tasks.iter().all(|task| task.deleted_at.is_some())),
         },
     ];
@@ -490,18 +504,23 @@ async fn filter_bool(pool: PgPool) {
     for case in cases {
         let BoolCase {
             name,
-            filter,
+            bool_filter,
             check,
         } = case;
 
+        let mut filter = Filter::new();
         let opts = if name.contains("completed") {
+            filter.completed(bool_filter);
+
             QueryOpts {
-                filter: Filter::new().completed(filter),
+                filter,
                 ..Default::default()
             }
         } else if name.contains("deleted") {
+            filter.deleted(bool_filter);
+
             QueryOpts {
-                filter: Filter::new().deleted(filter),
+                filter,
                 ..Default::default()
             }
         } else {
@@ -545,11 +564,14 @@ async fn filter_tags(pool: PgPool) {
     )
     .await;
 
+    let mut filter = Filter::new();
+    filter.tags(tag_ids.to_vec());
+
     let res = repo
         .list(
             test_user.id,
             Some(QueryOpts {
-                filter: Filter::new().tags(tag_ids.to_vec()),
+                filter,
                 ..Default::default()
             }),
         )

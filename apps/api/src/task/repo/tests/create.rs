@@ -71,7 +71,7 @@ async fn verify_output(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
 
-    let create_task = CreateModel {
+    let create_model = CreateModel {
         title: "Test Task".to_string(),
         notes: Some("Notes for 'Test Task'".to_string()),
         start: Some(get_today_date_pg()),
@@ -80,7 +80,7 @@ async fn verify_output(pool: PgPool) {
         position_key: generate_a_z(0).to_string(),
     };
     let task = repo
-        .create(test_user.id, create_task.clone())
+        .create(test_user.id, create_model.clone())
         .await
         .unwrap();
     {
@@ -91,7 +91,7 @@ async fn verify_output(pool: PgPool) {
             start_precision,
             deadline,
             position_key,
-        } = create_task;
+        } = create_model;
 
         assert_eq!(task.title, title);
         assert_eq!(task.notes, notes);

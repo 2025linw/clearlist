@@ -169,18 +169,18 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
 
-    let update_tag = UpdateModel {
+    let update_model = UpdateModel {
         label: Some("Updated Tag".to_string()),
         category_id: Some(Some(test_category_id)),
         position_key: Some(generate_a_z(1).to_string()),
     };
     let tag = repo
-        .update(test_tag.id, test_user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_model.clone())
         .await
         .unwrap();
-    assert_eq!(tag.label, update_tag.label.unwrap());
+    assert_eq!(tag.label, update_model.label.unwrap());
     assert_eq!(tag.category_name.as_deref(), Some("Testing"));
-    assert_eq!(tag.position_key, update_tag.position_key.unwrap());
+    assert_eq!(tag.position_key, update_model.position_key.unwrap());
 }
 
 // Behavior Tests
@@ -213,16 +213,16 @@ async fn is_idempotent(pool: PgPool) {
         .await
         .unwrap();
 
-    let update_tag = UpdateModel {
+    let update_model = UpdateModel {
         label: Some("Updated Tag".to_string()),
         ..Default::default()
     };
     let update_1 = repo
-        .update(test_tag.id, test_user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_model.clone())
         .await
         .unwrap();
     let update_2 = repo
-        .update(test_tag.id, test_user.id, update_tag.clone())
+        .update(test_tag.id, test_user.id, update_model.clone())
         .await
         .unwrap();
 

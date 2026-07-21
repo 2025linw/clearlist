@@ -207,7 +207,7 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
 
-    let update_task = UpdateModel {
+    let update_model = UpdateModel {
         title: Some("Updated Task".to_string()),
         notes: Some(Some("Updated notes for 'Updated Task'".to_string())),
         start: Some(Some(get_today_date_pg())),
@@ -218,7 +218,7 @@ async fn verify_output(pool: PgPool) {
         position_key: Some(generate_a_z(1).to_string()),
     };
     let task = repo
-        .update(test_task.id, test_user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_model.clone())
         .await
         .unwrap()
         .unwrap();
@@ -232,7 +232,7 @@ async fn verify_output(pool: PgPool) {
             completed,
             deleted,
             position_key,
-        } = update_task;
+        } = update_model;
 
         assert_eq!(task.title, title.unwrap());
         assert_eq!(task.notes, notes.unwrap());
@@ -276,16 +276,16 @@ async fn is_idempotent(pool: PgPool) {
         .await
         .unwrap();
 
-    let update_task = UpdateModel {
+    let update_model = UpdateModel {
         title: Some("Updated Task".to_string()),
         ..Default::default()
     };
     let update_1 = repo
-        .update(test_task.id, test_user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_model.clone())
         .await
         .unwrap();
     let update_2 = repo
-        .update(test_task.id, test_user.id, update_task.clone())
+        .update(test_task.id, test_user.id, update_model.clone())
         .await
         .unwrap();
 

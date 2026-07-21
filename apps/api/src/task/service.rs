@@ -25,14 +25,14 @@ pub trait TaskServiceTrait {
     async fn create(
         &self,
         user_context: UserContext,
-        create_task: CreateRequest,
+        create_request: CreateRequest,
     ) -> Result<TaskModel>;
     async fn get(&self, id: TaskID, user_id: UserID) -> Result<TaskModel>;
     async fn update(
         &self,
         id: TaskID,
         user_context: UserContext,
-        update_task: UpdateRequest,
+        update_request: UpdateRequest,
     ) -> Result<TaskModel>;
 
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
@@ -72,7 +72,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
     async fn create(
         &self,
         user_context: UserContext,
-        create_task: CreateRequest,
+        create_request: CreateRequest,
     ) -> Result<TaskModel> {
         todo!()
     }
@@ -85,7 +85,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
         &self,
         id: TaskID,
         user_context: UserContext,
-        update_task: UpdateRequest,
+        update_request: UpdateRequest,
     ) -> Result<TaskModel> {
         todo!()
     }
