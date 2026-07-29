@@ -4,7 +4,10 @@ mod tests;
 use std::collections::HashSet;
 
 use async_trait::async_trait;
-use sqlx::{PgConnection, PgPool, QueryBuilder, query, query_scalar};
+use sqlx::{
+    PgConnection, PgPool, QueryBuilder, error::DatabaseError, postgres::PgDatabaseError, query,
+    query_scalar,
+};
 use uuid::Uuid;
 
 use crate::{
@@ -81,7 +84,7 @@ impl PgTaskRepository {
         Ok(query.fetch_all(conn.as_mut()).await?)
     }
 
-    async fn create_model(
+    async fn create_task_row(
         conn: &mut PgConnection,
         user_id: UserID,
         create_model: CreateModel,
@@ -104,8 +107,12 @@ impl PgTaskRepository {
         .bind(user_id)
         .fetch_one(conn.as_mut())
         .await.map_err(|err| {
-            if let Some(pg_err) = err.as_database_error() && pg_err.is_foreign_key_violation() {
-                return Error::Constraint(ConstraintViolation::MissingUser);
+            if let sqlx::Error::Database(db_err) = &err {
+                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
+                if pg_err.is_foreign_key_violation() {
+                    return Error::Constraint(ConstraintViolation::MissingUser);
+
+                }
             }
 
             err.into()
@@ -198,7 +205,7 @@ impl PgTaskRepository {
         user_id: UserID,
     ) -> Result<Vec<TagModel>> {
         Ok(query_as::<TagModel>(
-            "SELECT tg.*, tc.category_name
+            "SELECT tg.*, tc.category_name, tc.position_key as cat_position_key
             FROM app.tags tg
             LEFT JOIN app.categories tc ON tg.category_id = tc.id
             JOIN app.task_tags tt ON tg.id = tt.tag_id
@@ -228,7 +235,8 @@ impl PgTaskRepository {
         .await;
         if let Err(err) = res {
             let mut error = None;
-            if let Some(pg_err) = err.as_database_error() {
+            if let sqlx::Error::Database(db_err) = &err {
+                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
                 if pg_err.is_unique_violation() {
                     return Ok(());
                 }
@@ -314,7 +322,9 @@ impl PgTaskRepository {
         .execute(conn.as_mut())
         .await
         .map_err(|err| {
-            if let Some(pg_err) = err.as_database_error() {
+            if let sqlx::Error::Database(db_err) = &err {
+                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
+
                 let message = pg_err.message();
                 if message == "resource_not_found" || message == "ownership_mismatch" {
                     return Error::Constraint(ConstraintViolation::NotFound(Resource::Tag));
@@ -361,7 +371,7 @@ impl TaskRepository for PgTaskRepository {
     async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TaskModel> {
         let mut tx = self.db.begin().await?;
 
-        let task = Self::create_model(&mut tx, user_id, create_model).await?;
+        let task = Self::create_task_row(&mut tx, user_id, create_model).await?;
 
         tx.commit().await?;
         Ok(task)

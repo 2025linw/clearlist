@@ -11,8 +11,8 @@ use crate::{
     tests::helpers::{
         create_test_user, generate_a_z,
         tag::{
-            default_tag, full_tag, seed_tags, seed_tags_with_category, tag_with_workflow_category,
-            tag_with_workflow_priority,
+            default_tag, full_tag, seed_tags, seed_tags_with_category, tag_with_priority_category,
+            tag_with_workflow_category,
         },
     },
     types::pagination::SQLPagination,
@@ -122,7 +122,7 @@ async fn filter_category(pool: PgPool) {
         5,
         test_user.id,
         priority_category_id,
-        tag_with_workflow_priority,
+        tag_with_priority_category,
     )
     .await;
 
@@ -192,7 +192,7 @@ async fn verify_output(pool: PgPool) {
     assert!(res.is_ok());
     if let Ok(tags) = res {
         for tag in tags {
-            assert_eq!(tag.label, "Test Tag");
+            assert!(tag.label.starts_with("Full Tag"));
             assert_eq!(tag.category_id, Some(test_category));
             assert_eq!(tag.category_name.as_deref(), Some("Testing"));
         }
@@ -238,6 +238,7 @@ async fn sorts_by_category_pos_then_tag_pos(pool: PgPool) {
         repo.create(
             test_user.id,
             CreateModel {
+                label: format!("Test Tag {}", i),
                 position_key: generate_a_z(i).to_string(),
                 ..Default::default()
             },

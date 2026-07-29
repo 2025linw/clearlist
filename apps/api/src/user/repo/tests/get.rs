@@ -11,7 +11,7 @@ use crate::{
 
 // Existence Tests
 #[test]
-async fn exists(pool: PgPool) {
+async fn success(pool: PgPool) {
     let repo = PgUserRepository::init(pool.clone());
 
     let test_user = repo.create(CreateModel::default()).await.unwrap();

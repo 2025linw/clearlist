@@ -577,6 +577,9 @@ async fn filter_tags(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
+    if let Ok(task) = res {
+        assert_eq!(task.len(), 10);
+    }
 }
 
 // Output Tests

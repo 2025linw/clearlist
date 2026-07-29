@@ -49,6 +49,7 @@ impl From<sqlx::Error> for Error {
 pub enum ConstraintViolation {
     NotFound(Resource),
     Deleted(Resource),
+    Unique(Resource),
 
     MissingUser,
 }
@@ -60,6 +61,7 @@ impl std::fmt::Display for ConstraintViolation {
         match self {
             Self::NotFound(resource) => write!(f, "{resource} not found"),
             Self::Deleted(resource) => write!(f, "{resource} is deleted"),
+            Self::Unique(resource) => write!(f, "{resource} must be unique"),
             Self::MissingUser => write!(f, "user is missing"),
         }
     }

@@ -41,6 +41,7 @@ impl From<RepoError> for Error {
             RepoError::Constraint(constraint) => match constraint {
                 ConstraintViolation::NotFound(resource) => Self::NotFound(resource.clone()),
                 ConstraintViolation::Deleted(resource) => Self::Deleted(resource.clone()),
+                ConstraintViolation::Unique(resource) => Self::Validation(ValidationError::Unique),
                 ConstraintViolation::MissingUser => Self::Internal(value),
             },
         }
@@ -54,6 +55,7 @@ pub enum ValidationError {
         field: &'static str,
         reason: &'static str,
     },
+    Unique,
 }
 
 // Pagination Error Reasons
@@ -62,4 +64,4 @@ pub const ZERO_PAGE_REASON: &str = "page must be greater than 0";
 
 // Text Error Reasons
 pub const NO_WHITESPACE_REASON: &str = "must not contain non-space whitespace characters";
-pub const NO_EMPTY_CATEGORY_REASON: &str = "category must not be empty string";
+pub const NO_EMPTY_STRING: &str = "must not be empty string";

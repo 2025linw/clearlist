@@ -6,10 +6,10 @@ use crate::{
         repo::{ConstraintViolation, Error},
     },
     tag::{
-        repo::{CreateModel, PgTagRepository, TagRepository},
-        types::TagID,
+        repo::{PgTagRepository, TagRepository},
+        types::TagCategoryID,
     },
-    tests::helpers::create_test_user,
+    tests::helpers::{create_test_user, generate_a_z},
     user::repo::PgUserRepository,
 };
 
@@ -20,12 +20,16 @@ async fn success(pool: PgPool) {
     let repo = PgTagRepository::init(pool.clone());
 
     let test_user = create_test_user(&user_repo).await;
-    let test_tag = repo
-        .create(test_user.id, CreateModel::default())
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Test Category".to_string(),
+            generate_a_z(0).to_string(),
+        )
         .await
         .unwrap();
 
-    let res = repo.delete(test_tag.id, test_user.id).await;
+    let res = repo.remove_category(test_category_id, test_user.id).await;
     assert!(res.is_ok());
 }
 
@@ -36,17 +40,21 @@ async fn not_owned(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
-    let other_tag = repo
-        .create(other_user.id, CreateModel::default())
+    let test_category_id = repo
+        .add_category(
+            other_user.id,
+            "Test Category".to_string(),
+            generate_a_z(0).to_string(),
+        )
         .await
         .unwrap();
 
-    let res = repo.delete(other_tag.id, test_user.id).await;
+    let res = repo.remove_category(test_category_id, test_user.id).await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(
             err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
         ))
     }
 }
@@ -58,12 +66,14 @@ async fn not_exists(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
 
-    let res = repo.delete(TagID::new_v4(), test_user.id).await;
+    let res = repo
+        .remove_category(TagCategoryID::new_v4(), test_user.id)
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(
             err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Tag))
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
         ))
     }
 }

@@ -26,10 +26,16 @@ async fn task_exists(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         test_tags.push(
             tag_repo
-                .create(test_user.id, TagCreateModel::default())
+                .create(
+                    test_user.id,
+                    TagCreateModel {
+                        label: format!("Test Tag {}", i),
+                        ..Default::default()
+                    },
+                )
                 .await
                 .unwrap(),
         );
@@ -72,9 +78,15 @@ async fn task_soft_deleted(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(test_user.id, TagCreateModel::default())
+            .create(
+                test_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 
@@ -111,9 +123,15 @@ async fn task_not_owned(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(test_user.id, TagCreateModel::default())
+            .create(
+                test_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 
@@ -148,9 +166,15 @@ async fn task_not_exist(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(test_user.id, TagCreateModel::default())
+            .create(
+                test_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 
@@ -182,9 +206,15 @@ async fn tags_not_owned(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
     let other_user = create_test_user(&user_repo).await;
     let mut other_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(other_user.id, TagCreateModel::default())
+            .create(
+                other_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 
@@ -243,9 +273,15 @@ async fn updates_updated_at(pool: PgPool) {
 
     let test_user = create_test_user(&user_repo).await;
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(test_user.id, TagCreateModel::default())
+            .create(
+                test_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 
@@ -284,9 +320,15 @@ async fn full_replacement(pool: PgPool) {
         .await
         .unwrap();
     let mut test_tags = Vec::with_capacity(5);
-    for _ in 0..5 {
+    for i in 0..5 {
         let tag = tag_repo
-            .create(test_user.id, TagCreateModel::default())
+            .create(
+                test_user.id,
+                TagCreateModel {
+                    label: format!("Test Tag {}", i),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
 

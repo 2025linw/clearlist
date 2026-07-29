@@ -49,6 +49,7 @@ pub struct TagModel {
     pub category_name: Option<String>,
 
     pub position_key: String,
+    pub cat_position_key: Option<String>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub created_at: chrono::DateTime<chrono::Utc>,

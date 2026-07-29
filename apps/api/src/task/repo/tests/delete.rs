@@ -15,7 +15,7 @@ use crate::{
 
 // Existence Tests
 #[test]
-async fn exists(pool: PgPool) {
+async fn success(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTaskRepository::init(pool.clone());
 

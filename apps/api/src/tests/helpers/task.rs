@@ -126,8 +126,6 @@ impl Default for UpdateRequest {
             start_precision: None,
             deadline: None,
             tags: None,
-            completed: None,
-            deleted: None,
             position_key: None,
         }
     }

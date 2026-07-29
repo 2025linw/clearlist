@@ -15,7 +15,7 @@ use crate::{
 
 // Existence Tests
 #[test]
-async fn exists(pool: PgPool) {
+async fn success(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
@@ -227,4 +227,100 @@ async fn is_idempotent(pool: PgPool) {
         .unwrap();
 
     assert_eq!(update_1, update_2);
+}
+
+#[test]
+async fn errors_on_duplicate_uncategorized_tag(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
+    let test_tag = repo
+        .create(
+            test_user.id,
+            CreateModel {
+                category_id: Some(test_category_id),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    repo.create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    let res = repo
+        .update(
+            test_tag.id,
+            test_user.id,
+            UpdateModel {
+                label: None,
+                category_id: Some(None),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Unique(Resource::Tag))
+        ))
+    }
+}
+
+#[test]
+async fn errors_on_duplicate_categorized_tag(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+    repo.create(
+        test_user.id,
+        CreateModel {
+            category_id: Some(test_category_id),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+
+    let res = repo
+        .update(
+            test_tag.id,
+            test_user.id,
+            UpdateModel {
+                label: None,
+                category_id: Some(Some(test_category_id)),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Unique(Resource::Tag))
+        ))
+    }
 }

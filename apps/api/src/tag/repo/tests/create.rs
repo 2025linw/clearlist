@@ -1,7 +1,10 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::repo::{ConstraintViolation, Error},
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     tag::repo::{CreateModel, PgTagRepository, TagRepository},
     tests::helpers::{create_test_user, generate_a_z},
     user::{repo::PgUserRepository, types::UserID},
@@ -91,4 +94,67 @@ async fn verify_output(pool: PgPool) {
     assert_eq!(tag.category_id, Some(test_category_id));
     assert_eq!(tag.category_name.as_deref(), Some("Testing"));
     assert_eq!(tag.position_key, create_model.position_key);
+}
+
+// Behavior Tests
+#[test]
+async fn errors_on_duplicate_uncategorized_tag(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    repo.create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    let res = repo.create(test_user.id, CreateModel::default()).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Unique(Resource::Tag))
+        ))
+    }
+}
+
+#[test]
+async fn errors_on_duplicate_categorized_tag(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_category_id = repo
+        .add_category(
+            test_user.id,
+            "Testing".to_string(),
+            generate_a_z(0).to_string(),
+        )
+        .await
+        .unwrap();
+    repo.create(
+        test_user.id,
+        CreateModel {
+            category_id: Some(test_category_id),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+
+    let res = repo
+        .create(
+            test_user.id,
+            CreateModel {
+                category_id: Some(test_category_id),
+                ..Default::default()
+            },
+        )
+        .await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Unique(Resource::Tag))
+        ))
+    }
 }

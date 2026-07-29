@@ -26,7 +26,9 @@ CREATE TABLE app.tags (
     created_by uuid NOT NULL,
 
     FOREIGN KEY (category_id) REFERENCES app.categories (id) ON DELETE SET NULL,
-    FOREIGN KEY (created_by) REFERENCES app.users (id)
+    FOREIGN KEY (created_by) REFERENCES app.users (id),
+
+    UNIQUE NULLS NOT DISTINCT (label, category_id, created_by)
 );
 
 -- Create index for owner ids
