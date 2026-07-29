@@ -4,13 +4,9 @@ use crate::{
     error::{
         Resource,
         repo::{ConstraintViolation, Error},
-    },
-    task::{
-        repo::{CreateModel, PgTaskRepository, TaskRepository},
-        types::TaskID,
-    },
-    tests::helpers::{create_test_user, soft_delete_task},
-    user::repo::PgUserRepository,
+    }, task::{
+        repo::{CreateModel, PgTaskRepository, TaskRepository}, types::{TaskID, repo::TaskState},
+    }, tests::helpers::{create_test_user, soft_delete_task}, user::repo::PgUserRepository,
 };
 
 // Existence Tests
@@ -82,4 +78,21 @@ async fn not_exists(pool: PgPool) {
             Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
         ));
     }
+}
+
+// Behavior Tests
+#[test]
+async fn works(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTaskRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_task = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    repo.delete(test_task.id, test_user.id).await.unwrap();
+    let task_state = repo.get(test_task.id, test_user.id).await.unwrap();
+    assert_eq!(task_state, TaskState::None);
 }

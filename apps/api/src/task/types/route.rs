@@ -47,8 +47,5 @@ pub struct UpdateRequest {
     pub deadline: Option<Option<chrono::NaiveDate>>,
     pub tags: Option<Vec<TagID>>,
 
-    pub completed: Option<bool>,
-    pub deleted: Option<bool>,
-
     pub position_key: Option<String>,
 }

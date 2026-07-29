@@ -67,3 +67,20 @@ async fn not_exists(pool: PgPool) {
         ))
     }
 }
+
+// Behavior Tests
+#[test]
+async fn works(pool: PgPool) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let repo = PgTagRepository::init(pool.clone());
+
+    let test_user = create_test_user(&user_repo).await;
+    let test_tag = repo
+        .create(test_user.id, CreateModel::default())
+        .await
+        .unwrap();
+
+    repo.delete(test_tag.id, test_user.id).await.unwrap();
+    let tag_opt = repo.get(test_tag.id, test_user.id).await.unwrap();
+    assert_eq!(tag_opt, None);
+}

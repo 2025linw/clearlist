@@ -88,7 +88,7 @@ async fn not_exists(pool: PgPool) {
 
 // Behavior Tests
 #[test]
-async fn position_key_update_works(pool: PgPool) {
+async fn works(pool: PgPool) {
     let user_repo = PgUserRepository::init(pool.clone());
     let repo = PgTagRepository::init(pool.clone());
 
