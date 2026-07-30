@@ -34,7 +34,11 @@ pub trait TagRepository: Send + Sync + Clone {
     ) -> Result<TagModel>;
     async fn delete(&self, id: TagID, user_id: UserID) -> Result<()>;
 
-    async fn get_category_id(&self, user_id: UserID, category: String) -> Result<TagCategoryID>;
+    async fn get_category_id(
+        &self,
+        user_id: UserID,
+        category: String,
+    ) -> Result<Option<TagCategoryID>>;
     async fn add_category(
         &self,
         user_id: UserID,
@@ -245,27 +249,24 @@ impl TagRepository for PgTagRepository {
         Ok(())
     }
 
-    async fn get_category_id(&self, user_id: UserID, category: String) -> Result<TagCategoryID> {
+    async fn get_category_id(
+        &self,
+        user_id: UserID,
+        category: String,
+    ) -> Result<Option<TagCategoryID>> {
         let mut conn = self.db.acquire().await?;
 
-        let id = query_scalar(
+        let id_opt = query_scalar(
             "SELECT id FROM app.categories
             WHERE category_name = $1 AND created_by = $2",
         )
         .bind(category)
         .bind(user_id)
-        .fetch_one(conn.as_mut())
-        .await
-        .map_err(|err| {
-            if let sqlx::Error::RowNotFound = err {
-                Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
-            } else {
-                err.into()
-            }
-        })?;
+        .fetch_optional(conn.as_mut())
+        .await?;
 
         conn.close().await?;
-        Ok(id)
+        Ok(id_opt)
     }
 
     async fn add_category(

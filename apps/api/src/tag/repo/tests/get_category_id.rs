@@ -1,10 +1,6 @@
 use sqlx::{PgPool, test};
 
 use crate::{
-    error::{
-        Resource,
-        repo::{ConstraintViolation, Error},
-    },
     tag::repo::{PgTagRepository, TagRepository},
     tests::helpers::{create_test_user, generate_a_z},
     user::repo::PgUserRepository,
@@ -49,12 +45,9 @@ async fn not_owned(pool: PgPool) {
     let res = repo
         .get_category_id(test_user.id, "Test Category".to_string())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
-        ))
+    assert!(res.is_ok());
+    if let Ok(id_opt) = res {
+        assert!(id_opt.is_none())
     }
 }
 
@@ -68,12 +61,9 @@ async fn not_exists(pool: PgPool) {
     let res = repo
         .get_category_id(test_user.id, "Test Category".to_string())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
-        ))
+    assert!(res.is_ok());
+    if let Ok(id_opt) = res {
+        assert!(id_opt.is_none())
     }
 }
 
@@ -93,11 +83,10 @@ async fn verify_output(pool: PgPool) {
         .await
         .unwrap();
 
-    let res = repo
+    let category_id = repo
         .get_category_id(test_user.id, "Test Category".to_string())
-        .await;
-    assert!(res.is_ok());
-    if let Ok(category_id) = res {
-        assert_eq!(category_id, test_category_id);
-    }
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(category_id, test_category_id);
 }
