@@ -55,21 +55,14 @@ pub async fn create_test_user(repo: &PgUserRepository) -> UserModel {
 }
 
 pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: UserID) -> TaskModel {
-    let state = repo
-        .update(
-            id,
-            user_id,
-            TaskUpdateModel {
-                deleted: Some(true),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
-
-    if let Some(task) = state.into_inner() {
-        task
-    } else {
-        panic!()
-    }
+    repo.update(
+        id,
+        user_id,
+        TaskUpdateModel {
+            deleted: Some(true),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap()
 }

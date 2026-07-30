@@ -2,6 +2,10 @@ use chrono::{DateTime, NaiveDate};
 use sqlx::{PgPool, test};
 
 use crate::{
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error},
+    },
     task::{
         repo::{CreateModel, PgTaskRepository, TaskRepository, UpdateModel},
         types::TaskID,
@@ -27,9 +31,6 @@ async fn success(pool: PgPool) {
         .update(test_task.id, test_user.id, UpdateModel::default())
         .await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.exists());
-    }
 }
 
 #[test]
@@ -47,9 +48,12 @@ async fn soft_deleted(pool: PgPool) {
     let res = repo
         .update(test_task.id, test_user.id, UpdateModel::default())
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.deleted());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::Deleted(Resource::Task))
+        ));
     }
 }
 
@@ -68,9 +72,12 @@ async fn not_owned(pool: PgPool) {
     let res = repo
         .update(other_task.id, test_user.id, UpdateModel::default())
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }
 
@@ -84,9 +91,11 @@ async fn not_exists(pool: PgPool) {
     let res = repo
         .update(TaskID::new_v4(), test_user.id, UpdateModel::default())
         .await;
-    assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.missing());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Constraint(ConstraintViolation::NotFound(Resource::Task))
+        ));
     }
 }
 
@@ -159,8 +168,7 @@ async fn null_input(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        let task = task_state.unwrap();
+    if let Ok(task) = res {
         assert!(task.notes.is_none());
         assert!(task.start_dt.is_none());
         assert!(!task.has_time);
@@ -190,8 +198,8 @@ async fn delete_input(pool: PgPool) {
         )
         .await;
     assert!(res.is_ok());
-    if let Ok(task_state) = res {
-        assert!(task_state.deleted());
+    if let Ok(task) = res {
+        assert!(task.deleted_at.is_some());
     }
 }
 
@@ -220,7 +228,6 @@ async fn verify_output(pool: PgPool) {
     let task = repo
         .update(test_task.id, test_user.id, update_model.clone())
         .await
-        .unwrap()
         .unwrap();
     {
         let UpdateModel {
@@ -260,7 +267,6 @@ async fn updates_updated_at(pool: PgPool) {
     let task = repo
         .update(test_task.id, test_user.id, UpdateModel::default())
         .await
-        .unwrap()
         .unwrap();
     assert!(task.updated_at > test_task.updated_at);
 }

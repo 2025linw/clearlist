@@ -178,9 +178,18 @@ async fn verify_output(pool: PgPool) {
         .update(test_tag.id, test_user.id, update_model.clone())
         .await
         .unwrap();
-    assert_eq!(tag.label, update_model.label.unwrap());
-    assert_eq!(tag.category_name.as_deref(), Some("Testing"));
-    assert_eq!(tag.position_key, update_model.position_key.unwrap());
+    {
+        let UpdateModel {
+            label,
+            category_id,
+            position_key,
+        } = update_model;
+
+        assert_eq!(tag.label, label.unwrap());
+        assert_eq!(tag.category_id, category_id.unwrap());
+        assert_eq!(tag.category_name.as_deref(), Some("Testing"));
+        assert_eq!(tag.position_key, position_key.unwrap());
+    }
 }
 
 // Behavior Tests

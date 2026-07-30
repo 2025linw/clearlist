@@ -90,10 +90,18 @@ async fn verify_output(pool: PgPool) {
         .create(test_user.id, create_model.clone())
         .await
         .unwrap();
-    assert_eq!(tag.label, create_model.label);
-    assert_eq!(tag.category_id, Some(test_category_id));
-    assert_eq!(tag.category_name.as_deref(), Some("Testing"));
-    assert_eq!(tag.position_key, create_model.position_key);
+    {
+        let CreateModel {
+            label,
+            category_id,
+            position_key,
+        } = create_model;
+
+        assert_eq!(tag.label, label);
+        assert_eq!(tag.category_id, category_id);
+        assert_eq!(tag.category_name.as_deref(), Some("Testing"));
+        assert_eq!(tag.position_key, position_key);
+    }
 }
 
 // Behavior Tests

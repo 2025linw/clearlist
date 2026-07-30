@@ -42,7 +42,6 @@ pub fn default_tag(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateMo
         label: format!("Default Tag {}", i),
         category_id: tag_category_id,
         position_key: format!("def{}", generate_a_z(i)),
-        ..Default::default()
     }
 }
 
@@ -51,7 +50,6 @@ pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<TagCategoryI
         label: format!("Workflow Tag {}", i),
         category_id: tag_category_id,
         position_key: format!("workflow{}", generate_a_z(i)),
-        ..Default::default()
     }
 }
 
@@ -60,7 +58,6 @@ pub fn tag_with_priority_category(i: usize, tag_category_id: Option<TagCategoryI
         label: format!("Priority Tag {}", i),
         category_id: tag_category_id,
         position_key: format!("priority{}", generate_a_z(i)),
-        ..Default::default()
     }
 }
 

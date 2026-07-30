@@ -38,7 +38,7 @@ pub trait TaskRepository: Send + Sync + Clone {
         id: TaskID,
         user_id: UserID,
         update_model: UpdateModel,
-    ) -> Result<TaskState<TaskModel>>;
+    ) -> Result<TaskModel>;
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>>;
@@ -155,6 +155,7 @@ impl PgTaskRepository {
         user_id: UserID,
         update_model: UpdateModel,
     ) -> Result<TaskModel> {
+        let is_soft_delete_op = update_model.deleted.is_some_and(|state| state);
         let mut builder = QueryBuilder::new("UPDATE app.tasks SET ");
         update_model.add_to_builder(&mut builder);
         builder.push(" WHERE id = ");
@@ -169,14 +170,21 @@ impl PgTaskRepository {
             )));
         }
 
-        if let Some(task) = Self::fetch_task_row(conn, id, user_id)
+        match Self::fetch_task_row(conn, id, user_id)
             .await
             .expect("task was just updated")
-            .into_inner()
         {
-            Ok(task)
-        } else {
-            unreachable!()
+            TaskState::Existing(task) => Ok(task),
+            TaskState::Deleted(task) => {
+                if is_soft_delete_op {
+                    Ok(task)
+                } else {
+                    Err(Error::Constraint(ConstraintViolation::Deleted(
+                        Resource::Task,
+                    )))
+                }
+            }
+            TaskState::None => unreachable!(),
         }
     }
 
@@ -391,21 +399,13 @@ impl TaskRepository for PgTaskRepository {
         id: TaskID,
         user_id: UserID,
         update_model: UpdateModel,
-    ) -> Result<TaskState<TaskModel>> {
+    ) -> Result<TaskModel> {
         let mut tx = self.db.begin().await?;
 
-        if let Err(err) = Self::update_task_row(&mut tx, id, user_id, update_model).await
-            && let Error::Constraint(ConstraintViolation::NotFound(Resource::Task)) = err
-        {
-            return Ok(TaskState::None);
-        }
-        let state = Self::fetch_task_row(&mut tx, id, user_id).await?;
+        let task = Self::update_task_row(&mut tx, id, user_id, update_model).await?;
 
         tx.commit().await?;
-        if state.as_ref().is_none() {
-            unreachable!();
-        }
-        Ok(state)
+        Ok(task)
     }
 
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()> {

@@ -1,4 +1,3 @@
-use chrono_tz::Tz;
 use sqlx::{PgPool, postgres::types::PgInterval, test};
 
 use crate::{
@@ -116,15 +115,20 @@ async fn verify_output(pool: PgPool) {
         .update(test_user.id, update_model.clone())
         .await
         .unwrap();
-    assert_eq!(user.display_name, update_model.display_name.unwrap());
-    assert_eq!(
-        user.preferred_timezone,
-        Some(Tz::America__Chicago.to_string())
-    );
-    assert_eq!(
-        user.completed_task_retention,
-        update_model.completed_task_retention.unwrap()
-    );
+    {
+        let UpdateModel {
+            display_name,
+            preferred_timezone,
+            completed_task_retention,
+        } = update_model;
+
+        assert_eq!(user.display_name, display_name.unwrap());
+        assert_eq!(user.preferred_timezone, preferred_timezone.unwrap());
+        assert_eq!(
+            user.completed_task_retention,
+            completed_task_retention.unwrap()
+        );
+    }
 }
 
 // Behavior Tests
