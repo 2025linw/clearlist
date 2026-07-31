@@ -16,7 +16,6 @@ use crate::{
         repo::{ConstraintViolation, Error, Result},
     },
     tag::types::{TagID, TagModel},
-    types::date::StartPrecision,
     user::types::UserID,
     utils::repo::{query_as, set_updated_timestamp},
 };
@@ -98,10 +97,7 @@ impl PgTaskRepository {
         .bind(create_model.title)
         .bind(create_model.notes)
         .bind(create_model.start)
-        .bind(matches!(
-            create_model.start_precision,
-            StartPrecision::DateTime
-        ))
+        .bind(create_model.has_time)
         .bind(create_model.deadline)
         .bind(create_model.position_key)
         .bind(user_id)

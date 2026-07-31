@@ -4,11 +4,7 @@ use sqlx::{QueryBuilder, prelude::FromRow};
 use crate::{
     tag::types::{TagID, TagModel},
     task::types::TaskID,
-    types::{
-        date::{DateFilter, StartPrecision},
-        order::SortOrder,
-        pagination::SQLPagination,
-    },
+    types::{date::DateFilter, order::SortOrder, pagination::SQLPagination},
 };
 
 use super::SortBy;
@@ -84,7 +80,7 @@ pub struct CreateModel {
     pub title: String,
     pub notes: Option<String>,
     pub start: Option<chrono::DateTime<chrono::Utc>>,
-    pub start_precision: StartPrecision,
+    pub has_time: bool,
     pub deadline: Option<chrono::NaiveDate>,
 
     pub position_key: String,
@@ -96,7 +92,7 @@ pub struct UpdateModel {
     pub title: Option<String>,
     pub notes: Option<Option<String>>,
     pub start: Option<Option<chrono::DateTime<chrono::Utc>>>,
-    pub start_precision: Option<StartPrecision>,
+    pub has_time: Option<bool>,
     pub deadline: Option<Option<chrono::NaiveDate>>,
 
     pub completed: Option<bool>,
@@ -120,9 +116,9 @@ impl UpdateModel {
             separated.push("start_dt = ");
             separated.push_bind_unseparated(start);
         }
-        if let Some(start_precision) = self.start_precision {
+        if let Some(has_time) = self.has_time {
             separated.push("has_time = ");
-            separated.push_bind_unseparated(matches!(start_precision, StartPrecision::DateTime));
+            separated.push_bind_unseparated(has_time);
         }
         if let Some(deadline) = self.deadline {
             separated.push("deadline = ");
