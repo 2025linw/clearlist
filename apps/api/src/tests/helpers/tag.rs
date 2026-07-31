@@ -2,7 +2,7 @@ use crate::{
     tag::{
         repo::{PgTagRepository, TagRepository},
         types::{
-            TagCategoryID,
+            CategoryID,
             repo::{CreateModel, UpdateModel},
             route::{CreateRequest, UpdateRequest},
         },
@@ -16,7 +16,7 @@ pub async fn seed_tags(
     repo: &PgTagRepository,
     n: usize,
     user_id: UserID,
-    builder: impl Fn(usize, Option<TagCategoryID>) -> CreateModel,
+    builder: impl Fn(usize, Option<CategoryID>) -> CreateModel,
 ) {
     for i in 0..n {
         repo.create(user_id, builder(i, None)).await.unwrap();
@@ -27,8 +27,8 @@ pub async fn seed_tags_with_category(
     repo: &PgTagRepository,
     n: usize,
     user_id: UserID,
-    tag_category_id: TagCategoryID,
-    builder: impl Fn(usize, Option<TagCategoryID>) -> CreateModel,
+    tag_category_id: CategoryID,
+    builder: impl Fn(usize, Option<CategoryID>) -> CreateModel,
 ) {
     for i in 0..n {
         repo.create(user_id, builder(i, Some(tag_category_id)))
@@ -37,7 +37,7 @@ pub async fn seed_tags_with_category(
     }
 }
 
-pub fn default_tag(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateModel {
+pub fn default_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
         label: format!("Default Tag {}", i),
         category_id: tag_category_id,
@@ -45,7 +45,7 @@ pub fn default_tag(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateMo
     }
 }
 
-pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateModel {
+pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
         label: format!("Workflow Tag {}", i),
         category_id: tag_category_id,
@@ -53,7 +53,7 @@ pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<TagCategoryI
     }
 }
 
-pub fn tag_with_priority_category(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateModel {
+pub fn tag_with_priority_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
         label: format!("Priority Tag {}", i),
         category_id: tag_category_id,
@@ -61,7 +61,7 @@ pub fn tag_with_priority_category(i: usize, tag_category_id: Option<TagCategoryI
     }
 }
 
-pub fn full_tag(i: usize, tag_category_id: Option<TagCategoryID>) -> CreateModel {
+pub fn full_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
         label: format!("Full Tag {}", i),
         category_id: tag_category_id,

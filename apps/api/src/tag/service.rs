@@ -1,6 +1,7 @@
-#![allow(warnings)]
-#![allow(clippy::all)]
-// WARN: REMOVE ABOVE
+mod helpers;
+
+#[cfg(test)]
+mod tests;
 
 use async_trait::async_trait;
 
@@ -8,7 +9,7 @@ use crate::{
     error::{
         Resource,
         repo::{ConstraintViolation, Error as RepoError},
-        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE_REASON, Result, ValidationError},
+        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, Result, ValidationError},
     },
     types::pagination::SQLPagination,
     user::types::UserID,
@@ -70,10 +71,10 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
 
             let mut filter = Filter::new();
             if let Some(category) = category {
-                if let Some(id) = self.repo.get_category_id(user_id, category).await? {
+                if let Some(id) = self.repo.get_category_id(user_context.id, category).await? {
                     filter.category(id);
                 } else {
-                    return Err(Error::NotFound(Resource::Category));
+                    return Ok(vec![]);
                 }
             }
 
@@ -112,18 +113,6 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
 
         // Get id for category name, if exists
         let category_id = if let Some(category) = category {
-            if category.is_empty() {
-                return Err(Error::Validation(ValidationError::InvalidValue {
-                    field: "category",
-                    reason: NO_EMPTY_STRING,
-                }));
-            } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
-                return Err(Error::Validation(ValidationError::InvalidValue {
-                    field: "category",
-                    reason: NO_WHITESPACE_REASON,
-                }));
-            }
-
             if let Some(id) = self.repo.get_category_id(user_id, category.clone()).await? {
                 Some(id)
             } else {
@@ -170,7 +159,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             label,
             category,
             position_key,
-        } = validate_update_request(update_request);
+        } = validate_update_request(update_request)?;
 
         // Get id for category name, if exists
         let category_id = if let Some(category_opt) = category {
@@ -183,7 +172,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
                 } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
                     return Err(Error::Validation(ValidationError::InvalidValue {
                         field: "category",
-                        reason: NO_WHITESPACE_REASON,
+                        reason: NO_WHITESPACE,
                     }));
                 }
 
@@ -221,6 +210,18 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
     }
 
     async fn delete(&self, id: TagID, user_id: UserID) -> Result<()> {
-        self.repo.delete(id, user_id).await.map_err(Error::from)
+        let res = self.repo.delete(id, user_id).await;
+        if let Err(err) = res {
+            if matches!(
+                err,
+                RepoError::Constraint(ConstraintViolation::NotFound(Resource::Tag))
+            ) {
+                return Ok(());
+            }
+
+            return Err(err.into());
+        }
+
+        Ok(())
     }
 }

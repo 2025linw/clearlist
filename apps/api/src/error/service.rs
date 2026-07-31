@@ -48,6 +48,12 @@ impl From<RepoError> for Error {
     }
 }
 
+impl From<ValidationError> for Error {
+    fn from(value: ValidationError) -> Self {
+        Self::Validation(value)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum ValidationError {
     NoChanges,
@@ -59,9 +65,10 @@ pub enum ValidationError {
 }
 
 // Pagination Error Reasons
-pub const ZERO_LIMIT_REASON: &str = "limit must be greater than 0";
-pub const ZERO_PAGE_REASON: &str = "page must be greater than 0";
+pub const NO_ZERO_LIMIT: &str = "limit must be greater than 0";
+pub const NO_ZERO_PAGE: &str = "page must be greater than 0";
 
 // Text Error Reasons
-pub const NO_WHITESPACE_REASON: &str = "must not contain non-space whitespace characters";
+pub const NO_WHITESPACE: &str = "must not contain non-space whitespace characters";
 pub const NO_EMPTY_STRING: &str = "must not be empty string";
+pub const TOO_LONG: &str = "must not exceed max length";

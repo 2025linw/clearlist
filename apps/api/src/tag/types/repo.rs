@@ -1,6 +1,6 @@
 use sqlx::QueryBuilder;
 
-use crate::{tag::types::TagCategoryID, types::pagination::SQLPagination};
+use crate::{tag::types::CategoryID, types::pagination::SQLPagination};
 
 #[derive(Debug, Default)]
 #[cfg_attr(test, derive(Clone))]
@@ -34,7 +34,7 @@ impl QueryOpts {
 #[cfg_attr(test, derive(Clone))]
 pub struct CreateModel {
     pub label: String,
-    pub category_id: Option<TagCategoryID>,
+    pub category_id: Option<CategoryID>,
 
     pub position_key: String,
 }
@@ -43,7 +43,7 @@ pub struct CreateModel {
 #[cfg_attr(test, derive(Clone))]
 pub struct UpdateModel {
     pub label: Option<String>,
-    pub category_id: Option<Option<TagCategoryID>>,
+    pub category_id: Option<Option<CategoryID>>,
 
     pub position_key: Option<String>,
 }
@@ -70,7 +70,7 @@ impl UpdateModel {
 #[derive(Debug, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct Filter {
-    pub category: Option<TagCategoryID>,
+    pub category: Option<CategoryID>,
 }
 
 impl Filter {
@@ -78,7 +78,7 @@ impl Filter {
         Self::default()
     }
 
-    pub fn category(&mut self, category: TagCategoryID) {
+    pub fn category(&mut self, category: CategoryID) {
         self.category = Some(category);
     }
 }

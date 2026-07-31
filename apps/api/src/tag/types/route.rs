@@ -9,6 +9,7 @@ pub struct URLQueryOpts {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(Clone))]
 pub struct CreateRequest {
     pub label: String,
     pub category: Option<String>,
@@ -23,4 +24,16 @@ pub struct UpdateRequest {
     pub category: Option<Option<String>>,
 
     pub position_key: Option<String>,
+}
+
+impl UpdateRequest {
+    pub fn is_noop(&self) -> bool {
+        let Self {
+            label,
+            category,
+            position_key,
+        } = self;
+
+        label.is_none() && category.is_none() && position_key.is_none()
+    }
 }

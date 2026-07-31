@@ -5,20 +5,20 @@ use serde_with::{DisplayFromStr, serde_as};
 #[serde_as]
 #[derive(Debug, Deserialize)]
 #[serde(default)]
-pub struct URLPagination {
+pub struct QueryPagination {
     #[serde_as(as = "DisplayFromStr")]
     pub page: usize,
     #[serde_as(as = "DisplayFromStr")]
     pub limit: usize,
 }
 
-impl URLPagination {
+impl QueryPagination {
     pub fn offset(&self) -> usize {
         (self.page - 1) * self.limit
     }
 }
 
-impl Default for URLPagination {
+impl Default for QueryPagination {
     fn default() -> Self {
         Self { page: 1, limit: 20 }
     }

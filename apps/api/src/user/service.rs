@@ -1,6 +1,7 @@
-#![allow(warnings)]
-#![allow(clippy::all)]
-// WARN: REMOVE ABOVE
+mod helpers;
+
+#[cfg(test)]
+mod tests;
 
 use async_trait::async_trait;
 use sqlx::postgres::types::PgInterval;
@@ -9,15 +10,16 @@ use crate::{
     error::{
         Resource,
         repo::{ConstraintViolation, Error as RepoError},
-        service::{Error, NO_WHITESPACE_REASON, Result, ValidationError},
+        service::{Error, Result},
     },
-    user::types::repo::{CreateModel, UpdateModel},
+    user::service::helpers::{validate_create_request, validate_update_request},
 };
 
 use super::{
     repo::UserRepository,
     types::{
         UserID, UserModel,
+        repo::{CreateModel, UpdateModel},
         route::{CreateRequest, UpdateRequest},
     },
 };
@@ -49,18 +51,7 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
             preferred_timezone,
             completed_task_retention,
             created_at,
-        } = create_request;
-
-        // Normalization
-        let display_name = display_name.trim().to_string();
-
-        // Validation
-        if display_name.chars().any(|c| c.is_whitespace() && c != ' ') {
-            return Err(Error::Validation(ValidationError::InvalidValue {
-                field: "display_name",
-                reason: NO_WHITESPACE_REASON,
-            }));
-        }
+        } = validate_create_request(create_request)?;
 
         let create_model = CreateModel {
             id,
@@ -69,13 +60,10 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
             completed_task_retention: completed_task_retention.map(|int| int.into()),
             created_at,
         };
-
         self.repo.create(create_model).await.map_err(Error::from)
     }
 
     async fn get(&self, id: UserID) -> Result<UserModel> {
-        // Validation
-
         self.repo
             .get(id)
             .await
@@ -85,27 +73,14 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
 
     async fn update(&self, id: UserID, update_request: UpdateRequest) -> Result<UserModel> {
         if update_request.is_noop() {
-            return Err(Error::Validation(ValidationError::NoChanges));
+            return self.get(id).await;
         }
 
         let UpdateRequest {
             display_name,
             preferred_timezone,
             completed_task_retention,
-        } = update_request;
-
-        // Normalization
-        let display_name = display_name.map(|name| name.trim().to_string());
-
-        // Validation
-        if let Some(ref name) = display_name
-            && name.chars().any(|c| c.is_whitespace() && c != ' ')
-        {
-            return Err(Error::Validation(ValidationError::InvalidValue {
-                field: "display_name",
-                reason: NO_WHITESPACE_REASON,
-            }));
-        }
+        } = validate_update_request(update_request)?;
 
         let update_model = UpdateModel {
             display_name,

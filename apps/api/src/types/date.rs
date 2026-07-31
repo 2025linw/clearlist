@@ -8,15 +8,16 @@ use ts_rs::TS;
 
 #[derive(Debug, Default, Clone, Deserialize, TS)]
 #[ts(export, rename = "StartPrecision")]
-pub enum StartPrecision {
+pub enum Start {
     #[default]
-    Date,
-    DateTime,
+    None,
+    Date(chrono::NaiveDate),
+    DateTime(chrono::DateTime<chrono::Utc>),
 }
 
-impl StartPrecision {
+impl Start {
     pub fn has_time(&self) -> bool {
-        matches!(self, StartPrecision::DateTime)
+        matches!(self, Start::DateTime(_))
     }
 }
 

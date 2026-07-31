@@ -1,8 +1,11 @@
 use tokio::test;
 
 use crate::{
-    error::service::{Error, ValidationError},
-    tests::mocks::user::MockUserRepository,
+    error::service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, ValidationError},
+    tests::{
+        mocks::user::MockUserRepository,
+        test_data::{CONTAINS_WHITESPACE_TEST_INPUT, NORMALIZATION_TEST_INPUT},
+    },
     user::service::{CreateRequest, UserService, UserServiceTrait},
 };
 
@@ -14,32 +17,14 @@ async fn success() {
     assert!(res.is_ok())
 }
 
+// display_name tests
 #[test]
 async fn normalize_display_name() {
-    let test_cases = vec![
-        (
-            "contains spaces",
-            "  Test User     ".to_string(),
-            "Test User",
-        ),
-        (
-            "contains newlines",
-            "\n\nTest User\n\n".to_string(),
-            "Test User",
-        ),
-        ("contains tabs", "\t\tTest User\t".to_string(), "Test User"),
-        (
-            "combination",
-            "\t   Test User\n   ".to_string(),
-            "Test User",
-        ),
-    ];
-
     let service = UserService::init(MockUserRepository::new());
 
-    for (name, input, expected) in test_cases {
+    for (name, input, expected) in NORMALIZATION_TEST_INPUT {
         let create_request = CreateRequest {
-            display_name: input,
+            display_name: input.to_string(),
             ..Default::default()
         };
         let user = service.create(create_request.clone()).await.unwrap();
@@ -52,18 +37,33 @@ async fn normalize_display_name() {
 }
 
 #[test]
-async fn display_name_containing_whitespaces_errors() {
-    let test_inputs = vec![
-        ("contains newline", "Test\nUser".to_string()),
-        ("contains tab", "Test\tUser".to_string()),
-        ("combination", "Test\n\tUser".to_string()),
-    ];
-
+async fn errors_on_blank_display_name() {
     let service = UserService::init(MockUserRepository::new());
 
-    for (name, input) in test_inputs {
+    let create_request = CreateRequest {
+        display_name: "".to_string(),
+        ..Default::default()
+    };
+    let res = service.create(create_request).await;
+    assert!(res.is_err());
+    if let Err(err) = res {
+        assert!(matches!(
+            err,
+            Error::Validation(ValidationError::InvalidValue {
+                field: "display_name",
+                reason: NO_EMPTY_STRING,
+            })
+        ),)
+    }
+}
+
+#[test]
+async fn errors_with_display_name_containing_whitespaces() {
+    let service = UserService::init(MockUserRepository::new());
+
+    for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
         let create_request = CreateRequest {
-            display_name: input,
+            display_name: input.to_string(),
             ..Default::default()
         };
         let res = service.create(create_request.clone()).await;
@@ -74,16 +74,18 @@ async fn display_name_containing_whitespaces_errors() {
                     err,
                     Error::Validation(ValidationError::InvalidValue {
                         field: "display_name",
-                        reason: _,
+                        reason: NO_WHITESPACE,
                     })
                 ),
-                "case: {}",
-                name
+                "case: {}; got error: {}",
+                name,
+                err
             )
         }
     }
 }
 
+// repo errors
 #[test]
 async fn repo_backend_error() {
     let service = UserService::init(MockUserRepository::new_backend_error());

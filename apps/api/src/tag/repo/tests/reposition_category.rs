@@ -7,7 +7,7 @@ use crate::{
     },
     tag::{
         repo::{PgTagRepository, TagRepository},
-        types::{TagCategoryID, repo::CreateModel},
+        types::{CategoryID, repo::CreateModel},
     },
     tests::helpers::{create_test_user, generate_a_z},
     user::repo::PgUserRepository,
@@ -72,7 +72,7 @@ async fn not_exists(pool: PgPool) {
 
     let res = repo
         .reposition_category(
-            TagCategoryID::new_v4(),
+            CategoryID::new_v4(),
             test_user.id,
             generate_a_z(1).to_string(),
         )

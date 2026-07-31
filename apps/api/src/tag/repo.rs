@@ -17,7 +17,7 @@ use crate::{
 };
 
 use super::types::{
-    TagCategoryID, TagID, TagModel,
+    CategoryID, TagID, TagModel,
     repo::{CreateModel, QueryOpts, UpdateModel},
 };
 
@@ -38,20 +38,20 @@ pub trait TagRepository: Send + Sync + Clone {
         &self,
         user_id: UserID,
         category: String,
-    ) -> Result<Option<TagCategoryID>>;
+    ) -> Result<Option<CategoryID>>;
     async fn add_category(
         &self,
         user_id: UserID,
         category: String,
         position_key: String,
-    ) -> Result<TagCategoryID>;
+    ) -> Result<CategoryID>;
     async fn reposition_category(
         &self,
-        id: TagCategoryID,
+        id: CategoryID,
         user_id: UserID,
         position_key: String,
-    ) -> Result<TagCategoryID>;
-    async fn remove_category(&self, id: TagCategoryID, user_id: UserID) -> Result<()>;
+    ) -> Result<CategoryID>;
+    async fn remove_category(&self, id: CategoryID, user_id: UserID) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -253,7 +253,7 @@ impl TagRepository for PgTagRepository {
         &self,
         user_id: UserID,
         category: String,
-    ) -> Result<Option<TagCategoryID>> {
+    ) -> Result<Option<CategoryID>> {
         let mut conn = self.db.acquire().await?;
 
         let id_opt = query_scalar(
@@ -274,14 +274,14 @@ impl TagRepository for PgTagRepository {
         user_id: UserID,
         category: String,
         position_key: String,
-    ) -> Result<TagCategoryID> {
+    ) -> Result<CategoryID> {
         let mut tx = self.db.begin().await?;
 
         let id = query_scalar(
             "INSERT INTO app.categories (id, category_name, position_key, created_by)
             VALUES ($1, $2, $3, $4) RETURNING id",
         )
-        .bind(TagCategoryID::new_v4())
+        .bind(CategoryID::new_v4())
         .bind(category)
         .bind(position_key)
         .bind(user_id)
@@ -306,10 +306,10 @@ impl TagRepository for PgTagRepository {
 
     async fn reposition_category(
         &self,
-        id: TagCategoryID,
+        id: CategoryID,
         user_id: UserID,
         position_key: String,
-    ) -> Result<TagCategoryID> {
+    ) -> Result<CategoryID> {
         let mut tx = self.db.begin().await?;
 
         let id = query_scalar(
@@ -335,7 +335,7 @@ impl TagRepository for PgTagRepository {
         Ok(id)
     }
 
-    async fn remove_category(&self, id: TagCategoryID, user_id: UserID) -> Result<()> {
+    async fn remove_category(&self, id: CategoryID, user_id: UserID) -> Result<()> {
         let mut tx = self.db.begin().await?;
 
         query(

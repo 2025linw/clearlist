@@ -4,7 +4,7 @@ use crate::{
     tag::{
         repo::{PgTagRepository, QueryOpts, TagModel, TagRepository},
         types::{
-            TagCategoryID,
+            CategoryID,
             repo::{CreateModel, Filter},
         },
     },
@@ -21,7 +21,7 @@ use crate::{
 
 struct CategoryCase {
     name: &'static str,
-    category_id: TagCategoryID,
+    category_id: CategoryID,
     check: fn(&[TagModel]),
 }
 

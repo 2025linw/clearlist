@@ -9,7 +9,6 @@ use crate::{
             route::{CreateRequest, UpdateRequest},
         },
     },
-    types::date::StartPrecision,
     user::types::UserID,
 };
 
@@ -87,7 +86,7 @@ pub fn task_with_start(i: usize) -> CreateModel {
 
     CreateModel {
         start: Some(dt),
-        start_precision: StartPrecision::Date,
+        has_time: true,
         position_key: format!("start{}", generate_a_z(i)),
         ..Default::default()
     }
@@ -109,7 +108,6 @@ impl Default for CreateRequest {
             title: "Test Task".to_string(),
             notes: None,
             start: None,
-            start_precision: StartPrecision::Date,
             deadline: None,
             tags: Vec::new(),
             position_key: generate_a_z(0).to_string(),
@@ -123,7 +121,6 @@ impl Default for UpdateRequest {
             title: Some("Updated Task".to_string()),
             notes: None,
             start: None,
-            start_precision: None,
             deadline: None,
             tags: None,
             position_key: None,
@@ -137,7 +134,7 @@ impl Default for CreateModel {
             title: "Test Task".to_string(),
             notes: None,
             start: None,
-            start_precision: StartPrecision::Date,
+            has_time: true,
             deadline: None,
             position_key: generate_a_z(0).to_string(),
         }
@@ -150,7 +147,7 @@ impl Default for UpdateModel {
             title: Some("Updated Task".to_string()),
             notes: None,
             start: None,
-            start_precision: None,
+            has_time: None,
             deadline: None,
             completed: None,
             deleted: None,

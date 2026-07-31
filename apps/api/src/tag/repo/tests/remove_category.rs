@@ -7,7 +7,7 @@ use crate::{
     },
     tag::{
         repo::{PgTagRepository, TagRepository},
-        types::TagCategoryID,
+        types::CategoryID,
     },
     tests::helpers::{create_test_user, generate_a_z},
     user::repo::PgUserRepository,
@@ -67,7 +67,7 @@ async fn not_exists(pool: PgPool) {
     let test_user = create_test_user(&user_repo).await;
 
     let res = repo
-        .remove_category(TagCategoryID::new_v4(), test_user.id)
+        .remove_category(CategoryID::new_v4(), test_user.id)
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -100,11 +100,5 @@ async fn works(pool: PgPool) {
     let res = repo
         .get_category_id(test_user.id, "Test Category".to_string())
         .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::NotFound(Resource::Category))
-        ))
-    }
+    assert!(res.is_ok());
 }

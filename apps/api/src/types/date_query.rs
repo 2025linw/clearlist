@@ -2,6 +2,7 @@ use std::borrow::Cow;
 
 use serde::{Deserialize, Deserializer, de::Error};
 
+/// Trait to mark a type as a queryable date with DateQueryFilter
 pub trait QueryDate: std::str::FromStr<Err: std::fmt::Display> + Sized {}
 
 impl QueryDate for chrono::NaiveDate {}
@@ -9,7 +10,7 @@ impl QueryDate for chrono::DateTime<chrono::Utc> {}
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum DateQueryFilter<T: QueryDate> {
+pub enum QueryDateFilter<T: QueryDate> {
     /// Existence Filter
     #[serde(deserialize_with = "deserialize_bool")]
     Has(bool),
@@ -59,8 +60,7 @@ where
 fn deserialize_iso8601daterange<'de, D, T>(deserialize: D) -> Result<[T; 2], D::Error>
 where
     D: Deserializer<'de>,
-    T: std::str::FromStr,
-    <T as std::str::FromStr>::Err: std::fmt::Display,
+    T: QueryDate,
 {
     let s: Cow<'_, str> = Deserialize::deserialize(deserialize)?;
 

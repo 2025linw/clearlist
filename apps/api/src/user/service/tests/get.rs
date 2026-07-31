@@ -30,6 +30,7 @@ async fn not_exists() {
     }
 }
 
+// repo errors
 #[test]
 async fn repo_backend_error() {
     let service = UserService::init(MockUserRepository::new_backend_error());
