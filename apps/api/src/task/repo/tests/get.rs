@@ -6,7 +6,6 @@ use crate::{
         types::TaskID,
     },
     tests::helpers::{create_test_user, generate_a_z, get_today_date_pg, soft_delete_task},
-    types::date::StartPrecision,
     user::repo::PgUserRepository,
 };
 
@@ -93,7 +92,7 @@ async fn verify_output(pool: PgPool) {
         title: "Test Task".to_string(),
         notes: Some("Note for 'Test Task'".to_string()),
         start: Some(get_today_date_pg()),
-        start_precision: StartPrecision::DateTime,
+        has_time: true,
         deadline: Some(get_today_date_pg().date_naive()),
         position_key: generate_a_z(0).to_string(),
     };
@@ -108,7 +107,7 @@ async fn verify_output(pool: PgPool) {
             title,
             notes,
             start,
-            start_precision,
+            has_time,
             deadline,
             position_key,
         } = create_model;
@@ -116,7 +115,7 @@ async fn verify_output(pool: PgPool) {
         assert_eq!(task.title, title);
         assert_eq!(task.notes, notes);
         assert_eq!(task.start_dt, start);
-        assert!(task.has_time && start_precision.has_time());
+        assert_eq!(task.has_time, has_time);
         assert_eq!(task.deadline, deadline);
         assert_eq!(task.position_key, position_key);
     }

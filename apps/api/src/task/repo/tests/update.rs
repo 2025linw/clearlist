@@ -11,7 +11,6 @@ use crate::{
         types::TaskID,
     },
     tests::helpers::{create_test_user, generate_a_z, get_today_date_pg, soft_delete_task},
-    types::date::StartPrecision,
     user::repo::PgUserRepository,
 };
 
@@ -119,7 +118,7 @@ async fn full_input(pool: PgPool) {
                 title: Some("Updated Task".to_string()),
                 notes: Some(Some("Notes for 'Updated Task'".to_string())),
                 start: Some(Some(get_today_date_pg())),
-                start_precision: Some(StartPrecision::DateTime),
+                has_time: Some(true),
                 deadline: Some(Some(get_today_date_pg().date_naive())),
                 completed: Some(true),
                 deleted: Some(false),
@@ -146,7 +145,7 @@ async fn null_input(pool: PgPool) {
                         .unwrap()
                         .to_utc(),
                 ),
-                start_precision: StartPrecision::DateTime,
+                has_time: true,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
                 ..Default::default()
             },
@@ -161,7 +160,7 @@ async fn null_input(pool: PgPool) {
             UpdateModel {
                 notes: Some(None),
                 start: Some(None),
-                start_precision: Some(StartPrecision::Date),
+                has_time: Some(false),
                 deadline: Some(None),
                 ..Default::default()
             },
@@ -219,7 +218,7 @@ async fn verify_output(pool: PgPool) {
         title: Some("Updated Task".to_string()),
         notes: Some(Some("Updated notes for 'Updated Task'".to_string())),
         start: Some(Some(get_today_date_pg())),
-        start_precision: Some(StartPrecision::DateTime),
+        has_time: Some(true),
         deadline: Some(Some(get_today_date_pg().date_naive())),
         completed: Some(true),
         deleted: Some(false),
@@ -234,7 +233,7 @@ async fn verify_output(pool: PgPool) {
             title,
             notes,
             start,
-            start_precision,
+            has_time,
             deadline,
             completed,
             deleted,
@@ -244,10 +243,10 @@ async fn verify_output(pool: PgPool) {
         assert_eq!(task.title, title.unwrap());
         assert_eq!(task.notes, notes.unwrap());
         assert_eq!(task.start_dt, start.unwrap());
-        assert!(task.has_time && start_precision.unwrap().has_time());
+        assert_eq!(task.has_time, has_time.unwrap());
         assert_eq!(task.deadline, deadline.unwrap());
-        assert!(task.completed_at.is_some() && completed.unwrap());
-        assert!(task.deleted_at.is_none() && !deleted.unwrap());
+        assert_eq!(task.completed_at.is_some(), completed.unwrap());
+        assert_eq!(task.deleted_at.is_none(), !deleted.unwrap());
         assert_eq!(task.position_key, position_key.unwrap());
     }
 }

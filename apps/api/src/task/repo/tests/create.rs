@@ -5,7 +5,6 @@ use crate::{
     error::repo::{ConstraintViolation, Error},
     task::repo::{CreateModel, PgTaskRepository, TaskRepository},
     tests::helpers::{create_test_user, generate_a_z, get_today_date_pg},
-    types::date::StartPrecision,
     user::{repo::PgUserRepository, types::UserID},
 };
 
@@ -54,7 +53,7 @@ async fn full_input(pool: PgPool) {
                         .unwrap()
                         .to_utc(),
                 ),
-                start_precision: StartPrecision::DateTime,
+                has_time: true,
                 deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
                 position_key: generate_a_z(0).to_string(),
             },
@@ -75,7 +74,7 @@ async fn verify_output(pool: PgPool) {
         title: "Test Task".to_string(),
         notes: Some("Notes for 'Test Task'".to_string()),
         start: Some(get_today_date_pg()),
-        start_precision: StartPrecision::DateTime,
+        has_time: true,
         deadline: Some(get_today_date_pg().date_naive()),
         position_key: generate_a_z(0).to_string(),
     };
@@ -88,7 +87,7 @@ async fn verify_output(pool: PgPool) {
             title,
             notes,
             start,
-            start_precision,
+            has_time,
             deadline,
             position_key,
         } = create_model;
@@ -96,7 +95,7 @@ async fn verify_output(pool: PgPool) {
         assert_eq!(task.title, title);
         assert_eq!(task.notes, notes);
         assert_eq!(task.start_dt, start);
-        assert!(task.has_time && start_precision.has_time());
+        assert_eq!(task.has_time, has_time);
         assert_eq!(task.deadline, deadline);
         assert_eq!(task.position_key, position_key);
     }

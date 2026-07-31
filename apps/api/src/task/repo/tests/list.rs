@@ -21,7 +21,7 @@ use crate::{
         },
     },
     types::{
-        date::{DateBound, DateFilter, StartPrecision},
+        date::{DateBound, DateFilter},
         order::SortOrder,
         pagination::SQLPagination,
     },
@@ -595,7 +595,7 @@ async fn verify_output(pool: PgPool) {
             title: "Test Task".to_string(),
             notes: Some("Notes for 'Test Task'".to_string()),
             start: Some(get_today_date_pg()),
-            start_precision: StartPrecision::DateTime,
+            has_time: true,
             deadline: Some(get_today_date_pg().date_naive()),
             position_key: generate_a_z(0).to_string(),
         },
