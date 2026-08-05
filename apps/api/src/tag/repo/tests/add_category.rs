@@ -1,4 +1,4 @@
-use sqlx::{PgPool, test};
+use sqlx::PgPool;
 
 use crate::{
     error::{
@@ -10,72 +10,105 @@ use crate::{
     user::{repo::PgUserRepository, types::UserID},
 };
 
-// Existence Tests
-#[test]
-async fn user_not_exists(pool: PgPool) {
-    let repo = PgTagRepository::init(pool.clone());
+async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
 
-    let res = repo
-        .add_category(
-            UserID::new_v4(),
-            "Test Category".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::MissingUser)
-        ))
+    let user = create_test_user(&user_repo).await;
+
+    (user.id, tag_repo)
+}
+
+mod success {
+    use sqlx::test;
+
+    use crate::tag::types::repo::CreateModel;
+
+    use super::*;
+
+    #[test]
+    async fn input(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        let res = tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await;
+        assert!(res.is_ok())
+    }
+
+    #[test]
+    async fn verify_output(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        let category_id = tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+
+        tag_repo
+            .create(
+                user_id,
+                CreateModel {
+                    category_id: Some(category_id),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
     }
 }
 
-// Input Tests
-#[test]
-async fn input(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+mod constraint {
+    use sqlx::test;
 
-    let test_user = create_test_user(&user_repo).await;
+    use super::*;
 
-    let res = repo
-        .add_category(
-            test_user.id,
-            "Test Category".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await;
-    assert!(res.is_ok())
-}
+    #[test]
+    async fn user_not_exists(pool: PgPool) {
+        let (_, tag_repo) = init(pool).await;
 
-// Behavior Tests
-#[test]
-async fn errors_on_duplicate_category(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+        let res = tag_repo
+            .add_category(
+                UserID::new_v4(),
+                "Test Category".to_string(),
+                generate_a_z(0).to_string(),
+            )
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
+                err,
+                Error::Constraint(ConstraintViolation::MissingUser)
+            ))
+        }
+    }
 
-    let test_user = create_test_user(&user_repo).await;
-    repo.add_category(
-        test_user.id,
-        "Test Category".to_string(),
-        generate_a_z(0).to_string(),
-    )
-    .await
-    .unwrap();
+    #[test]
+    async fn errors_on_duplicate_category(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
 
-    let res = repo
-        .add_category(
-            test_user.id,
-            "Test Category".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::Unique(Resource::Category))
-        ))
+        tag_repo
+            .add_category(
+                user_id,
+                "Test Category".to_string(),
+                generate_a_z(0).to_string(),
+            )
+            .await
+            .unwrap();
+
+        let res = tag_repo
+            .add_category(
+                user_id,
+                "Test Category".to_string(),
+                generate_a_z(0).to_string(),
+            )
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
+                err,
+                Error::Constraint(ConstraintViolation::Unique(Resource::Category))
+            ))
+        }
     }
 }

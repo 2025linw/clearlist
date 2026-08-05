@@ -61,14 +61,6 @@ pub fn tag_with_priority_category(i: usize, tag_category_id: Option<CategoryID>)
     }
 }
 
-pub fn full_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
-    CreateModel {
-        label: format!("Full Tag {}", i),
-        category_id: tag_category_id,
-        position_key: format!("full{}", generate_a_z(i)),
-    }
-}
-
 impl Default for CreateRequest {
     fn default() -> Self {
         Self {

@@ -1,92 +1,87 @@
-use sqlx::{PgPool, test};
+use sqlx::PgPool;
 
 use crate::{
     tag::repo::{PgTagRepository, TagRepository},
     tests::helpers::{create_test_user, generate_a_z},
-    user::repo::PgUserRepository,
+    user::{repo::PgUserRepository, types::UserID},
 };
 
-// Existence Tests
-#[test]
-async fn success(pool: PgPool) {
+async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
 
-    let test_user = create_test_user(&user_repo).await;
-    repo.add_category(
-        test_user.id,
-        "Test Category".to_string(),
-        generate_a_z(0).to_string(),
-    )
-    .await
-    .unwrap();
+    let user = create_test_user(&user_repo).await;
 
-    let res = repo
-        .get_category_id(test_user.id, "Test Category".to_string())
-        .await;
-    assert!(res.is_ok());
+    (user.id, tag_repo)
 }
 
-#[test]
-async fn not_owned(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+mod success {
+    use sqlx::test;
 
-    let test_user = create_test_user(&user_repo).await;
-    let other_user = create_test_user(&user_repo).await;
-    repo.add_category(
-        other_user.id,
-        "Test Category".to_string(),
-        generate_a_z(0).to_string(),
-    )
-    .await
-    .unwrap();
+    use super::*;
 
-    let res = repo
-        .get_category_id(test_user.id, "Test Category".to_string())
-        .await;
-    assert!(res.is_ok());
-    if let Ok(id_opt) = res {
-        assert!(id_opt.is_none())
+    #[test]
+    async fn success(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+
+        let res = tag_repo
+            .get_category_id(user_id, "Testing".to_string())
+            .await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn verify_output(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        let category_id = tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+
+        let res_category_id = tag_repo
+            .get_category_id(user_id, "Testing".to_string())
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(res_category_id, category_id);
     }
 }
 
-#[test]
-async fn not_exists(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+mod existence {
+    use sqlx::test;
 
-    let test_user = create_test_user(&user_repo).await;
+    use super::*;
 
-    let res = repo
-        .get_category_id(test_user.id, "Test Category".to_string())
-        .await;
-    assert!(res.is_ok());
-    if let Ok(id_opt) = res {
-        assert!(id_opt.is_none())
+    #[test]
+    async fn not_owned(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool.clone()).await;
+        tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+        let (user_id, tag_repo) = init(pool.clone()).await;
+
+        let category_id_opt = tag_repo
+            .get_category_id(user_id, "Testing".to_string())
+            .await
+            .unwrap();
+        assert!(category_id_opt.is_none())
     }
-}
 
-// Output Tests
-#[test]
-async fn verify_output(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+    #[test]
+    async fn not_exists(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
 
-    let test_user = create_test_user(&user_repo).await;
-    let test_category_id = repo
-        .add_category(
-            test_user.id,
-            "Test Category".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await
-        .unwrap();
-
-    let category_id = repo
-        .get_category_id(test_user.id, "Test Category".to_string())
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(category_id, test_category_id);
+        let category_id_opt = tag_repo
+            .get_category_id(user_id, "Random Category".to_string())
+            .await
+            .unwrap();
+        assert!(category_id_opt.is_none())
+    }
 }

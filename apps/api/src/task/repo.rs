@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use async_trait::async_trait;
 use sqlx::{
@@ -16,6 +16,7 @@ use crate::{
         repo::{ConstraintViolation, Error, Result},
     },
     tag::types::{TagID, TagModel},
+    task::types::repo::TaskTag,
     user::types::UserID,
     utils::repo::{query_as, set_updated_timestamp},
 };
@@ -40,6 +41,11 @@ pub trait TaskRepository: Send + Sync + Clone {
     ) -> Result<TaskModel>;
     async fn delete(&self, id: TaskID, user_id: UserID) -> Result<()>;
 
+    async fn list_task_tags(
+        &self,
+        ids: Vec<TaskID>,
+        user_id: UserID,
+    ) -> Result<HashMap<TaskID, Vec<TagModel>>>;
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>>;
     async fn add_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()>;
     async fn remove_tag(&self, id: TaskID, user_id: UserID, tag_id: TagID) -> Result<()>;
@@ -151,37 +157,25 @@ impl PgTaskRepository {
         user_id: UserID,
         update_model: UpdateModel,
     ) -> Result<TaskModel> {
-        let is_soft_delete_op = update_model.deleted.is_some_and(|state| state);
         let mut builder = QueryBuilder::new("UPDATE app.tasks SET ");
         update_model.add_to_builder(&mut builder);
         builder.push(" WHERE id = ");
         builder.push_bind(id);
         builder.push(" AND created_by = ");
         builder.push_bind(user_id);
+        builder.push(" RETURNING *");
 
-        let res = builder.build().execute(conn.as_mut()).await?;
-        if res.rows_affected() == 0 {
-            return Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Task,
-            )));
-        }
-
-        match Self::fetch_task_row(conn, id, user_id)
+        builder
+            .build_query_as::<TaskModel>()
+            .fetch_one(conn.as_mut())
             .await
-            .expect("task was just updated")
-        {
-            TaskState::Existing(task) => Ok(task),
-            TaskState::Deleted(task) => {
-                if is_soft_delete_op {
-                    Ok(task)
-                } else {
-                    Err(Error::Constraint(ConstraintViolation::Deleted(
-                        Resource::Task,
-                    )))
+            .map_err(|err| {
+                if let sqlx::Error::RowNotFound = err {
+                    return Error::Constraint(ConstraintViolation::NotFound(Resource::Task));
                 }
-            }
-            TaskState::None => unreachable!(),
-        }
+
+                err.into()
+            })
     }
 
     async fn delete_task_row(conn: &mut PgConnection, id: TaskID, user_id: UserID) -> Result<()> {
@@ -411,6 +405,36 @@ impl TaskRepository for PgTaskRepository {
 
         tx.commit().await?;
         Ok(())
+    }
+
+    async fn list_task_tags(
+        &self,
+        ids: Vec<TaskID>,
+        user_id: UserID,
+    ) -> Result<HashMap<TaskID, Vec<TagModel>>> {
+        let mut conn = self.db.acquire().await?;
+
+        let tags = query_as::<TaskTag>(
+            "SELECT tt.task_id, tg.*
+            FROM app.task_tags tt
+            LEFT JOIN app.tags tg ON tt.tag_id = tg.id
+            WHERE tg.created_by = $1 AND tt.task_id = ANY($2)",
+        )
+        .bind(user_id)
+        .bind(ids)
+        .fetch_all(conn.as_mut())
+        .await?;
+
+        let mut task_tags_map: HashMap<TaskID, Vec<TagModel>> = HashMap::new();
+        for TaskTag { task_id, tag } in tags {
+            if let Entry::Vacant(e) = task_tags_map.entry(task_id) {
+                e.insert(vec![tag]);
+            } else {
+                task_tags_map.get_mut(&task_id).unwrap().push(tag);
+            }
+        }
+
+        Ok(task_tags_map)
     }
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>> {

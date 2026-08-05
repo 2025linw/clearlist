@@ -1,4 +1,4 @@
-use sqlx::{PgPool, test};
+use sqlx::PgPool;
 
 use crate::{
     tag::{
@@ -11,269 +11,208 @@ use crate::{
     tests::helpers::{
         create_test_user, generate_a_z,
         tag::{
-            default_tag, full_tag, seed_tags, seed_tags_with_category, tag_with_priority_category,
+            default_tag, seed_tags, seed_tags_with_category, tag_with_priority_category,
             tag_with_workflow_category,
         },
     },
     types::pagination::SQLPagination,
-    user::repo::PgUserRepository,
+    user::{repo::PgUserRepository, types::UserID},
 };
 
-struct CategoryCase {
-    name: &'static str,
-    category_id: CategoryID,
-    check: fn(&[TagModel]),
+async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let tag_repo = PgTagRepository::init(pool.clone());
+
+    let user = create_test_user(&user_repo).await;
+
+    (user.id, tag_repo)
 }
 
-// Input Tests
-#[test]
-async fn pagination_limit(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
+mod success {
+    use sqlx::test;
 
-    let test_user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, test_user.id, default_tag).await;
+    use super::*;
 
-    let mut pagination = SQLPagination::new();
-    pagination.limit(5);
+    #[test]
+    async fn success(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
 
-    let res = repo
-        .list(
-            test_user.id,
-            Some(QueryOpts {
-                pagination,
-                ..Default::default()
-            }),
+        seed_tags(&tag_repo, 25, user_id, default_tag).await;
+
+        let res = tag_repo.list(user_id, None).await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn verify_output(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        let category_id = tag_repo
+            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+        tag_repo
+            .create(
+                user_id,
+                CreateModel {
+                    label: "Test Tag".to_string(),
+                    category_id: Some(category_id),
+                    position_key: generate_a_z(0).to_string(),
+                },
+            )
+            .await
+            .unwrap();
+
+        let tag = tag_repo.list(user_id, None).await.unwrap().remove(0);
+        assert!(tag.label.starts_with("Test Tag"));
+        assert_eq!(tag.category_id.unwrap(), category_id);
+        assert_eq!(tag.category_name.unwrap(), "Testing");
+        assert_eq!(tag.position_key, generate_a_z(0).to_string());
+    }
+}
+
+mod filter {
+    use sqlx::test;
+
+    use super::*;
+
+    struct CategoryCase {
+        name: &'static str,
+        category_id: CategoryID,
+        check: fn(&[TagModel]) -> bool,
+    }
+
+    #[test]
+    async fn filter_category(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        let workflow_category_id = tag_repo
+            .add_category(user_id, "Workflow".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+        let priority_category_id = tag_repo
+            .add_category(user_id, "Priority".to_string(), generate_a_z(1).to_string())
+            .await
+            .unwrap();
+
+        seed_tags(&tag_repo, 5, user_id, default_tag).await;
+        seed_tags_with_category(
+            &tag_repo,
+            5,
+            user_id,
+            workflow_category_id,
+            tag_with_workflow_category,
         )
         .await;
-    assert!(res.is_ok());
-    if let Ok(tags) = res {
-        assert_eq!(tags.len(), 5);
-    }
-}
-
-#[test]
-async fn pagination_offset(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, test_user.id, default_tag).await;
-
-    let ref_tags = repo
-        .list(test_user.id, Some(QueryOpts::default()))
-        .await
-        .unwrap();
-
-    for offset in 1..=10 {
-        let mut pagination = SQLPagination::new();
-        pagination.offset(offset);
-
-        let res = repo
-            .list(
-                test_user.id,
-                Some(QueryOpts {
-                    pagination,
-                    ..Default::default()
-                }),
-            )
-            .await;
-        assert!(res.is_ok());
-        if let Ok(tags) = res {
-            let offset = offset as usize;
-            assert_eq!(&tags[0..5], &ref_tags[offset..(5 + offset)])
-        }
-    }
-}
-
-#[test]
-async fn filter_category(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    let workflow_category_id = repo
-        .add_category(
-            test_user.id,
-            "Workflow".to_string(),
-            generate_a_z(0).to_string(),
+        seed_tags_with_category(
+            &tag_repo,
+            5,
+            user_id,
+            priority_category_id,
+            tag_with_priority_category,
         )
-        .await
-        .unwrap();
-    let priority_category_id = repo
-        .add_category(
-            test_user.id,
-            "Priority".to_string(),
-            generate_a_z(1).to_string(),
-        )
-        .await
-        .unwrap();
-    seed_tags(&repo, 5, test_user.id, default_tag).await;
-    seed_tags_with_category(
-        &repo,
-        5,
-        test_user.id,
-        workflow_category_id,
-        tag_with_workflow_category,
-    )
-    .await;
-    seed_tags_with_category(
-        &repo,
-        5,
-        test_user.id,
-        priority_category_id,
-        tag_with_priority_category,
-    )
-    .await;
+        .await;
 
-    let cases = vec![
-        CategoryCase {
-            name: "Workflow category",
-            category_id: workflow_category_id,
-            check: |tags| {
-                assert!(
+        let cases = vec![
+            CategoryCase {
+                name: "Workflow category",
+                category_id: workflow_category_id,
+                check: |tags| {
                     tags.iter()
                         .all(|tag| matches!(tag.category_name.as_deref(), Some("Workflow")))
-                )
+                },
             },
-        },
-        CategoryCase {
-            name: "Priority category",
-            category_id: priority_category_id,
-            check: |tags| {
-                assert!(
+            CategoryCase {
+                name: "Priority category",
+                category_id: priority_category_id,
+                check: |tags| {
                     tags.iter()
                         .all(|tag| matches!(tag.category_name.as_deref(), Some("Priority")))
-                )
+                },
             },
-        },
-    ];
-    for case in cases {
-        let CategoryCase {
-            name,
-            category_id,
-            check,
-        } = case;
+        ];
 
-        let mut filter = Filter::new();
-        filter.category(category_id);
+        for case in cases {
+            let CategoryCase {
+                name,
+                category_id,
+                check,
+            } = case;
 
-        let opts = QueryOpts {
-            filter,
-            ..Default::default()
-        };
+            let mut filter = Filter::new();
+            filter.category(category_id);
 
-        let res = repo.list(test_user.id, Some(opts)).await;
-        assert!(res.is_ok(), "request failed for {}", name);
-        if let Ok(tags) = res {
-            check(&tags);
-        }
-    }
-}
-
-// Output Tests
-#[test]
-async fn verify_output(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    let test_category = repo
-        .add_category(
-            test_user.id,
-            "Testing".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await
-        .unwrap();
-    seed_tags_with_category(&repo, 25, test_user.id, test_category, full_tag).await;
-
-    let res = repo.list(test_user.id, None).await;
-    assert!(res.is_ok());
-    if let Ok(tags) = res {
-        for tag in tags {
-            assert!(tag.label.starts_with("Full Tag"));
-            assert_eq!(tag.category_id, Some(test_category));
-            assert_eq!(tag.category_name.as_deref(), Some("Testing"));
-        }
-    }
-}
-
-// Behavior Tests
-#[test]
-async fn works(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    seed_tags(&repo, 25, test_user.id, default_tag).await;
-
-    let res = repo.list(test_user.id, None).await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn sorts_by_category_pos_then_tag_pos(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTagRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-    let test1_category_id = repo
-        .add_category(
-            test_user.id,
-            "Test1".to_string(),
-            generate_a_z(0).to_string(),
-        )
-        .await
-        .unwrap();
-    let test2_category_id = repo
-        .add_category(
-            test_user.id,
-            "Test2".to_string(),
-            generate_a_z(1).to_string(),
-        )
-        .await
-        .unwrap();
-    for i in 0..5 {
-        repo.create(
-            test_user.id,
-            CreateModel {
-                label: format!("Test Tag {}", i),
-                position_key: generate_a_z(i).to_string(),
+            let opts = QueryOpts {
+                filter,
                 ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
-    }
-    for i in 0..5 {
-        repo.create(
-            test_user.id,
-            CreateModel {
-                label: format!("Testing {}", i),
-                category_id: Some(test1_category_id),
-                position_key: generate_a_z(i).to_string(),
-            },
-        )
-        .await
-        .unwrap();
-    }
-    for i in 0..5 {
-        repo.create(
-            test_user.id,
-            CreateModel {
-                label: format!("Group {}", i),
-                position_key: generate_a_z(i).to_string(),
-                category_id: Some(test2_category_id),
-            },
-        )
-        .await
-        .unwrap();
-    }
+            };
 
-    let res = repo.list(test_user.id, None).await;
-    assert!(res.is_ok());
-    if let Ok(tags) = res {
+            let tags = tag_repo.list(user_id, Some(opts)).await.unwrap();
+            assert!(check(&tags), "failed for {}", name);
+        }
+    }
+}
+
+mod sort {
+    use sqlx::test;
+
+    use super::*;
+
+    #[test]
+    async fn sorts_by_category_pos_then_tag_pos(pool: PgPool) {
+        // Default tag sort is category position first then tag position
+        let (user_id, tag_repo) = init(pool).await;
+
+        let test1_category_id = tag_repo
+            .add_category(user_id, "Test1".to_string(), generate_a_z(0).to_string())
+            .await
+            .unwrap();
+        let test2_category_id = tag_repo
+            .add_category(user_id, "Test2".to_string(), generate_a_z(1).to_string())
+            .await
+            .unwrap();
+
+        for i in 0..5 {
+            tag_repo
+                .create(
+                    user_id,
+                    CreateModel {
+                        label: format!("Uncategorized {}", i),
+                        position_key: generate_a_z(i).to_string(),
+                        ..Default::default()
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        for i in 0..5 {
+            tag_repo
+                .create(
+                    user_id,
+                    CreateModel {
+                        label: format!("Test1 Category {}", i),
+                        category_id: Some(test1_category_id),
+                        position_key: generate_a_z(i).to_string(),
+                    },
+                )
+                .await
+                .unwrap();
+        }
+        for i in 0..5 {
+            tag_repo
+                .create(
+                    user_id,
+                    CreateModel {
+                        label: format!("Test2 Category {}", i),
+                        category_id: Some(test2_category_id),
+                        position_key: generate_a_z(i).to_string(),
+                    },
+                )
+                .await
+                .unwrap();
+        }
+
+        let tags = tag_repo.list(user_id, None).await.unwrap();
         assert!(tags.is_sorted_by(|a, b| {
             let a_key = (
                 a.category_id
@@ -290,5 +229,63 @@ async fn sorts_by_category_pos_then_tag_pos(pool: PgPool) {
 
             a_key <= b_key
         }))
+    }
+}
+
+mod pagination {
+    use sqlx::test;
+
+    use super::*;
+
+    #[test]
+    async fn pagination_limit(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        seed_tags(&tag_repo, 25, user_id, default_tag).await;
+
+        let mut pagination = SQLPagination::new();
+        pagination.limit(5);
+
+        let tags = tag_repo
+            .list(
+                user_id,
+                Some(QueryOpts {
+                    pagination,
+                    ..Default::default()
+                }),
+            )
+            .await
+            .unwrap();
+        assert_eq!(tags.len(), 5);
+    }
+
+    #[test]
+    async fn pagination_offset(pool: PgPool) {
+        let (user_id, tag_repo) = init(pool).await;
+
+        seed_tags(&tag_repo, 25, user_id, default_tag).await;
+
+        let ref_tags = tag_repo
+            .list(user_id, Some(QueryOpts::default()))
+            .await
+            .unwrap();
+
+        for offset in 1..=10 {
+            let mut pagination = SQLPagination::new();
+            pagination.offset(offset);
+
+            let tags = tag_repo
+                .list(
+                    user_id,
+                    Some(QueryOpts {
+                        pagination,
+                        ..Default::default()
+                    }),
+                )
+                .await
+                .unwrap();
+            let offset = offset as usize;
+            assert_eq!(&tags[0..5], &ref_tags[offset..(5 + offset)])
+        }
     }
 }

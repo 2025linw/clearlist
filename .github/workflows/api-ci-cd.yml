@@ -58,7 +58,7 @@ jobs:
         run: cargo check --locked -p clearlist-api
 
       - name: Run clippy
-        run: cargo clippy -p clearlist-api -- -D warnings
+        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented
 
       - name: Run test
         env:

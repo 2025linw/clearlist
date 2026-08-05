@@ -1,5 +1,5 @@
 use chrono::{DateTime, NaiveDate};
-use sqlx::{PgPool, test};
+use sqlx::PgPool;
 
 use crate::{
     error::repo::{ConstraintViolation, Error},
@@ -8,81 +8,45 @@ use crate::{
     user::{repo::PgUserRepository, types::UserID},
 };
 
-// Existence Tests
-#[test]
-async fn user_not_exists(pool: PgPool) {
-    let repo = PgTaskRepository::init(pool.clone());
+async fn init(pool: PgPool) -> (UserID, PgTaskRepository) {
+    let user_repo = PgUserRepository::init(pool.clone());
+    let task_repo = PgTaskRepository::init(pool.clone());
 
-    let res = repo.create(UserID::new_v4(), CreateModel::default()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Constraint(ConstraintViolation::MissingUser)
-        ))
+    let user = create_test_user(&user_repo).await;
+
+    (user.id, task_repo)
+}
+
+mod success {
+    use sqlx::test;
+
+    use super::*;
+
+    #[test]
+    async fn success(pool: PgPool) {
+        let (user_id, task_repo) = init(pool).await;
+
+        let res = task_repo.create(user_id, CreateModel::default()).await;
+        assert!(res.is_ok());
     }
-}
 
-// Input Tests
-#[test]
-async fn required_input(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
+    #[test]
+    async fn verify_output(pool: PgPool) {
+        let (user_id, task_repo) = init(pool).await;
 
-    let test_user = create_test_user(&user_repo).await;
+        let create_model = CreateModel {
+            title: "Test Task".to_string(),
+            notes: Some("Notes for 'Test Task'".to_string()),
+            start: Some(get_today_date_pg()),
+            has_time: true,
+            deadline: Some(get_today_date_pg().date_naive()),
+            position_key: generate_a_z(0).to_string(),
+        };
+        let task = task_repo
+            .create(user_id, create_model.clone())
+            .await
+            .unwrap();
 
-    let res = repo.create(test_user.id, CreateModel::default()).await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn full_input(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-
-    let res = repo
-        .create(
-            test_user.id,
-            CreateModel {
-                title: "Test Task".to_string(),
-                notes: Some("Note for 'Test Task'".to_string()),
-                start: Some(
-                    DateTime::parse_from_rfc3339("2026-01-01T08:45:00-06:00")
-                        .unwrap()
-                        .to_utc(),
-                ),
-                has_time: true,
-                deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
-                position_key: generate_a_z(0).to_string(),
-            },
-        )
-        .await;
-    assert!(res.is_ok());
-}
-
-// Output Tests
-#[test]
-async fn verify_output(pool: PgPool) {
-    let user_repo = PgUserRepository::init(pool.clone());
-    let repo = PgTaskRepository::init(pool.clone());
-
-    let test_user = create_test_user(&user_repo).await;
-
-    let create_model = CreateModel {
-        title: "Test Task".to_string(),
-        notes: Some("Notes for 'Test Task'".to_string()),
-        start: Some(get_today_date_pg()),
-        has_time: true,
-        deadline: Some(get_today_date_pg().date_naive()),
-        position_key: generate_a_z(0).to_string(),
-    };
-    let task = repo
-        .create(test_user.id, create_model.clone())
-        .await
-        .unwrap();
-    {
         let CreateModel {
             title,
             notes,
@@ -91,12 +55,71 @@ async fn verify_output(pool: PgPool) {
             deadline,
             position_key,
         } = create_model;
-
         assert_eq!(task.title, title);
         assert_eq!(task.notes, notes);
         assert_eq!(task.start_dt, start);
         assert_eq!(task.has_time, has_time);
         assert_eq!(task.deadline, deadline);
         assert_eq!(task.position_key, position_key);
+    }
+}
+
+mod input {
+    use sqlx::test;
+
+    use super::*;
+
+    #[test]
+    async fn required_input(pool: PgPool) {
+        let (user_id, task_repo) = init(pool).await;
+
+        let create_model = CreateModel {
+            title: "Test Task".to_string(),
+            ..Default::default()
+        };
+        let res = task_repo.create(user_id, create_model).await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn full_input(pool: PgPool) {
+        let (user_id, task_repo) = init(pool).await;
+
+        let create_model = CreateModel {
+            title: "Test Task".to_string(),
+            notes: Some("Note for 'Test Task'".to_string()),
+            start: Some(
+                DateTime::parse_from_rfc3339("2026-01-01T08:45:00-06:00")
+                    .unwrap()
+                    .to_utc(),
+            ),
+            has_time: true,
+            deadline: Some(NaiveDate::from_ymd_opt(2026, 1, 7).unwrap()),
+            position_key: generate_a_z(0).to_string(),
+        };
+        let res = task_repo.create(user_id, create_model).await;
+        assert!(res.is_ok());
+    }
+}
+
+mod constraint {
+    use sqlx::test;
+
+    use super::*;
+
+    #[test]
+    async fn user_not_exists(pool: PgPool) {
+        let (_, task_repo) = init(pool).await;
+
+        let res = task_repo
+            .create(UserID::new_v4(), CreateModel::default())
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
+                err,
+                Error::Constraint(ConstraintViolation::MissingUser)
+            ))
+        }
     }
 }
