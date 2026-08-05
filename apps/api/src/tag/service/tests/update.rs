@@ -3,13 +3,14 @@ use tokio::test;
 use crate::{
     error::{
         Resource,
-        service::{Error, NO_WHITESPACE, TOO_LONG, ValidationError},
+        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, TOO_LONG, ValidationError},
     },
     tag::{
         service::{TagService, TagServiceTrait},
         types::{
             TagID,
             route::{CreateRequest, UpdateRequest},
+            service::UserContext,
         },
     },
     tests::{
@@ -25,12 +26,16 @@ async fn success() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
     let res = service
-        .update(test_tag.id, test_user_id, UpdateRequest::default())
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            UpdateRequest::default(),
+        )
         .await;
     assert!(res.is_ok());
 }
@@ -41,12 +46,18 @@ async fn not_owned() {
 
     let other_user_id = service.repo.add_user().await;
     let other_tag = service
-        .create(other_user_id, CreateRequest::default())
+        .create(UserContext { id: other_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
     let res = service
-        .update(other_tag.id, UserID::new_v4(), UpdateRequest::default())
+        .update(
+            other_tag.id,
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            UpdateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -61,7 +72,11 @@ async fn not_exists() {
     let test_user_id = UserID::new_v4();
 
     let res = service
-        .update(TagID::new_v4(), test_user_id, UpdateRequest::default())
+        .update(
+            TagID::new_v4(),
+            UserContext { id: test_user_id },
+            UpdateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -70,12 +85,12 @@ async fn not_exists() {
 }
 
 #[test]
-async fn no_ops() {
+async fn no_op() {
     let service = TagService::init(MockTagRepository::new());
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -84,7 +99,11 @@ async fn no_ops() {
         ..Default::default()
     };
     let res = service
-        .update(test_tag.id, test_user_id, update_request)
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request,
+        )
         .await;
     assert!(res.is_ok());
     if let Ok(tag) = res {
@@ -98,17 +117,25 @@ async fn is_idempotent() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
     let update_request = UpdateRequest::default();
     let update_1 = service
-        .update(test_tag.id, test_user_id, update_request.clone())
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request.clone(),
+        )
         .await
         .unwrap();
     let update_2 = service
-        .update(test_tag.id, test_user_id, update_request.clone())
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request.clone(),
+        )
         .await
         .unwrap();
 
@@ -122,7 +149,7 @@ async fn normalize_label() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -132,7 +159,11 @@ async fn normalize_label() {
             ..Default::default()
         };
         let tag = service
-            .update(test_tag.id, test_user_id, update_request)
+            .update(
+                test_tag.id,
+                UserContext { id: test_user_id },
+                update_request,
+            )
             .await
             .unwrap();
         assert_eq!(
@@ -149,7 +180,7 @@ async fn errors_with_label_containing_whitespaces() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -159,7 +190,11 @@ async fn errors_with_label_containing_whitespaces() {
             ..Default::default()
         };
         let res = service
-            .update(test_tag.id, test_user_id, update_request)
+            .update(
+                test_tag.id,
+                UserContext { id: test_user_id },
+                update_request,
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -185,7 +220,7 @@ async fn errors_with_label_more_than_100_chars() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -198,7 +233,11 @@ async fn errors_with_label_more_than_100_chars() {
         ..Default::default()
     };
     let res = service
-        .update(test_tag.id, test_user_id, update_request)
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request,
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -223,7 +262,7 @@ async fn normalize_category() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -233,7 +272,11 @@ async fn normalize_category() {
             ..Default::default()
         };
         let tag = service
-            .update(test_tag.id, test_user_id, update_request)
+            .update(
+                test_tag.id,
+                UserContext { id: test_user_id },
+                update_request,
+            )
             .await
             .unwrap();
         assert_eq!(
@@ -253,7 +296,7 @@ async fn errors_on_blank_category() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -262,7 +305,11 @@ async fn errors_on_blank_category() {
         ..Default::default()
     };
     let res = service
-        .update(test_tag.id, test_user_id, update_request)
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request,
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -270,7 +317,7 @@ async fn errors_on_blank_category() {
             err,
             Error::Validation(ValidationError::InvalidValue {
                 field: "category",
-                reason: _
+                reason: NO_EMPTY_STRING,
             })
         ))
     }
@@ -282,7 +329,7 @@ async fn errors_with_category_containing_whitespaces() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -292,7 +339,11 @@ async fn errors_with_category_containing_whitespaces() {
             ..Default::default()
         };
         let res = service
-            .update(test_tag.id, test_user_id, update_request)
+            .update(
+                test_tag.id,
+                UserContext { id: test_user_id },
+                update_request,
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -318,7 +369,7 @@ async fn errors_with_category_more_than_100_chars() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
@@ -331,7 +382,11 @@ async fn errors_with_category_more_than_100_chars() {
         ..Default::default()
     };
     let res = service
-        .update(test_tag.id, test_user_id, update_request)
+        .update(
+            test_tag.id,
+            UserContext { id: test_user_id },
+            update_request,
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -355,7 +410,13 @@ async fn repo_backend_error() {
     let service = TagService::init(MockTagRepository::new_backend_error());
 
     let res = service
-        .update(TagID::new_v4(), UserID::new_v4(), UpdateRequest::default())
+        .update(
+            TagID::new_v4(),
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            UpdateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -368,7 +429,13 @@ async fn repo_programming_error() {
     let service = TagService::init(MockTagRepository::new_programming_error());
 
     let res = service
-        .update(TagID::new_v4(), UserID::new_v4(), UpdateRequest::default())
+        .update(
+            TagID::new_v4(),
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            UpdateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {

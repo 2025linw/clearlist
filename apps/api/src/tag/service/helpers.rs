@@ -123,7 +123,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
 fn normalize_query_opts(query: &mut URLQueryOpts) {
     query.category = query
         .category
-        .as_ref()
+        .as_mut()
         .map(|category| category.trim().to_string());
 }
 
@@ -132,16 +132,16 @@ fn normalize_create_request(request: &mut CreateRequest) {
 
     request.category = request
         .category
-        .as_ref()
+        .as_mut()
         .map(|category| category.trim().to_string());
 }
 
 fn normalize_update_request(request: &mut UpdateRequest) {
-    request.label = request.label.as_ref().map(|label| label.trim().to_string());
+    request.label = request.label.as_mut().map(|label| label.trim().to_string());
 
-    request.category = request.category.as_ref().map(|update_opt| {
-        update_opt
-            .as_ref()
+    request.category = request.category.as_mut().map(|category_opt| {
+        category_opt
+            .as_mut()
             .map(|category| category.trim().to_string())
-    })
+    });
 }

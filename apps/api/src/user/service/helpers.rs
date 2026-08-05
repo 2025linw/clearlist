@@ -53,6 +53,6 @@ fn normalize_create_request(request: &mut CreateRequest) {
 fn normalize_update_request(request: &mut UpdateRequest) {
     request.display_name = request
         .display_name
-        .as_ref()
+        .as_mut()
         .map(|name| name.trim().to_string());
 }

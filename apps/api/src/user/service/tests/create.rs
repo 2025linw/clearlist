@@ -30,7 +30,7 @@ async fn normalize_display_name() {
         let user = service.create(create_request.clone()).await.unwrap();
         assert_eq!(
             user.display_name, expected,
-            "case: {} - expected: {}; found: {}",
+            "case: {} - expected: {} (found: {})",
             name, expected, user.display_name
         );
     }

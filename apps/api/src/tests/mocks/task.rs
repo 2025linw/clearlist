@@ -30,8 +30,9 @@ use crate::{
 
 #[derive(Clone)]
 pub struct MockTaskRepository {
-    tags: Arc<RwLock<HashSet<TagID>>>,
+    users: Arc<RwLock<HashSet<UserID>>>,
     tasks: MockDB<(TaskID, UserID), TaskModel>,
+    tags: Arc<RwLock<HashSet<TagID>>>,
     task_tags: MockDB<(TaskID, UserID), Vec<TagModel>>,
 
     error: Option<Error>,
@@ -44,8 +45,9 @@ pub struct MockTaskRepository {
 impl MockTaskRepository {
     pub fn new() -> Self {
         Self {
-            tags: Arc::new(RwLock::new(HashSet::new())),
+            users: Arc::new(RwLock::new(HashSet::new())),
             tasks: Arc::new(RwLock::new(HashMap::new())),
+            tags: Arc::new(RwLock::new(HashSet::new())),
             task_tags: Arc::new(RwLock::new(HashMap::new())),
             error: None,
             user_tz: Tz::America__Chicago,
@@ -73,20 +75,49 @@ impl MockTaskRepository {
         self.user_tz
     }
 
-    pub async fn add_tag(&self, tag_id: TagID) {
-        let mut tags = self.tags.write().await;
+    pub async fn add_user(&self) -> UserID {
+        let user_id = UserID::new_v4();
 
-        let success = tags.insert(tag_id);
-        assert!(!success)
+        let mut users = self.users.write().await;
+        assert!(users.insert(user_id));
+
+        user_id
     }
 
-    pub async fn get_last_filter(&self) -> Option<QueryOpts> {
+    pub async fn add_tag(&self) -> TagID {
+        let tag_id = TagID::new_v4();
+
+        let mut tags = self.tags.write().await;
+        assert!(tags.insert(tag_id));
+
+        tag_id
+    }
+
+    pub async fn get_last_filter(&self) -> QueryOpts {
         let mut last_filter = self.last_filter.write().await;
         let res = last_filter.clone();
 
         *last_filter = None;
 
-        res
+        res.unwrap()
+    }
+
+    pub async fn get_last_single_tag(&self) -> TagID {
+        let mut last_single_tag = self.last_single_tag.write().await;
+        let res = last_single_tag.clone();
+
+        *last_single_tag = None;
+
+        res.unwrap()
+    }
+
+    pub async fn get_last_multi_tag(&self) -> Vec<TagID> {
+        let mut last_multi_tag = self.last_multi_tag.write().await;
+        let res = last_multi_tag.clone();
+
+        *last_multi_tag = None;
+
+        res.unwrap()
     }
 }
 
@@ -118,6 +149,11 @@ impl TaskRepository for MockTaskRepository {
             return Err(err.clone());
         }
         let mut repo = self.tasks.write().await;
+        let user_repo = self.users.read().await;
+
+        if !user_repo.contains(&user_id) {
+            return Err(Error::Constraint(ConstraintViolation::MissingUser));
+        }
 
         let created_at = get_today_date_pg();
         let task = TaskModel {
@@ -268,6 +304,14 @@ impl TaskRepository for MockTaskRepository {
         repo.remove(&(id, user_id)).unwrap();
 
         Ok(())
+    }
+
+    async fn list_task_tags(
+        &self,
+        ids: Vec<TaskID>,
+        user_id: UserID,
+    ) -> Result<HashMap<TaskID, Vec<TagModel>>> {
+        todo!()
     }
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>> {

@@ -1,11 +1,13 @@
 use tokio::test;
 
 use crate::{
-    error::service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, ValidationError},
+    error::service::{
+        Error, NO_EMPTY_STRING, NO_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE, ValidationError,
+    },
     tag::{
         repo::TagRepository,
         service::{TagService, TagServiceTrait},
-        types::{route::URLQueryOpts, service::UserContext},
+        types::{repo::QueryOpts, route::URLQueryOpts, service::UserContext},
     },
     tests::{
         helpers::generate_a_z, mocks::tag::MockTagRepository, test_data::NORMALIZATION_TEST_INPUT,
@@ -48,12 +50,14 @@ async fn pagination_mapping() {
         .await;
     assert!(res.is_ok());
 
-    let last_filter_res = service.repo.get_last_filter().await;
-    assert!(last_filter_res.is_some());
-    if let Some(query) = last_filter_res {
-        assert_eq!(query.pagination.limit, Some(25));
-        assert_eq!(query.pagination.offset, Some(100));
-    }
+    let last_query = service.repo.get_last_filter().await;
+    let QueryOpts {
+        filter: _,
+        pagination,
+    } = last_query;
+
+    assert_eq!(pagination.limit, Some(25));
+    assert_eq!(pagination.offset, Some(100));
 }
 
 #[test]
@@ -70,12 +74,14 @@ async fn default_pagination() {
         .await;
     assert!(res.is_ok());
 
-    let last_filter_res = service.repo.get_last_filter().await;
-    assert!(last_filter_res.is_some());
-    if let Some(query) = last_filter_res {
-        assert_eq!(query.pagination.limit, Some(25));
-        assert_eq!(query.pagination.offset, Some(0));
-    }
+    let last_query = service.repo.get_last_filter().await;
+    let QueryOpts {
+        filter: _,
+        pagination,
+    } = last_query;
+
+    assert_eq!(pagination.limit, Some(25));
+    assert_eq!(pagination.offset, Some(0));
 }
 
 #[test]
@@ -96,12 +102,14 @@ async fn limit_caps_at_150() {
         .await;
     assert!(res.is_ok());
 
-    let last_filter_res = service.repo.get_last_filter().await;
-    assert!(last_filter_res.is_some());
-    if let Some(query) = last_filter_res {
-        assert_eq!(query.pagination.limit, Some(150));
-        assert_eq!(query.pagination.offset, Some(0));
-    }
+    let last_query = service.repo.get_last_filter().await;
+    let QueryOpts {
+        filter: _,
+        pagination,
+    } = last_query;
+
+    assert_eq!(pagination.limit, Some(150));
+    assert_eq!(pagination.offset, Some(0));
 }
 
 #[test]
@@ -126,7 +134,7 @@ async fn errors_with_0_limit() {
             err,
             Error::Validation(ValidationError::InvalidValue {
                 field: "limit",
-                reason: _
+                reason: NO_ZERO_LIMIT
             })
         ))
     }
@@ -154,7 +162,7 @@ async fn errors_with_0_page() {
             err,
             Error::Validation(ValidationError::InvalidValue {
                 field: "page",
-                reason: _
+                reason: NO_ZERO_PAGE
             })
         ))
     }
@@ -210,13 +218,12 @@ async fn normalize_category() {
             .repo
             .get_last_filter()
             .await
-            .unwrap()
             .filter
             .category
             .unwrap();
         assert_eq!(
             filter_category_id, test_category_id,
-            "case: {} - expected: {}; found: {}",
+            "case: {} - expected: {} (found: {})",
             name, test_category_id, filter_category_id
         )
     }

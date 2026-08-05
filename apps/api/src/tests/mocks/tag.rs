@@ -27,9 +27,10 @@ use crate::{
 
 #[derive(Clone)]
 pub struct MockTagRepository {
-    repo: MockDB<(TagID, UserID), TagModel>,
-    cat_repo: MockDB<(CategoryID, UserID), (String, String)>,
-    user_repo: Arc<RwLock<HashSet<UserID>>>,
+    users: Arc<RwLock<HashSet<UserID>>>,
+    categories: MockDB<(CategoryID, UserID), (String, String)>,
+    tags: MockDB<(TagID, UserID), TagModel>,
+
     error: Option<Error>,
     last_filter: Arc<RwLock<Option<QueryOpts>>>,
 }
@@ -37,9 +38,9 @@ pub struct MockTagRepository {
 impl MockTagRepository {
     pub fn new() -> Self {
         Self {
-            repo: Arc::new(RwLock::new(HashMap::new())),
-            cat_repo: Arc::new(RwLock::new(HashMap::new())),
-            user_repo: Arc::new(RwLock::new(HashSet::new())),
+            users: Arc::new(RwLock::new(HashSet::new())),
+            categories: Arc::new(RwLock::new(HashMap::new())),
+            tags: Arc::new(RwLock::new(HashMap::new())),
             error: None,
             last_filter: Arc::new(RwLock::new(None)),
         }
@@ -59,19 +60,19 @@ impl MockTagRepository {
         mock
     }
 
-    pub async fn get_last_filter(&self) -> Option<QueryOpts> {
+    pub async fn get_last_filter(&self) -> QueryOpts {
         let mut last_filter = self.last_filter.write().await;
         let res = last_filter.clone();
 
         *last_filter = None;
 
-        res
+        res.unwrap()
     }
 
     pub async fn add_user(&self) -> UserID {
         let user_id = UserID::new_v4();
 
-        let mut user_repo = self.user_repo.write().await;
+        let mut user_repo = self.users.write().await;
         assert!(user_repo.insert(user_id));
 
         user_id
@@ -96,9 +97,9 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut repo = self.repo.write().await;
-        let cat_repo = self.cat_repo.read().await;
-        let user_repo = self.user_repo.read().await;
+        let mut repo = self.tags.write().await;
+        let cat_repo = self.categories.read().await;
+        let user_repo = self.users.read().await;
 
         if !user_repo.contains(&user_id) {
             return Err(Error::Constraint(ConstraintViolation::MissingUser));
@@ -136,7 +137,7 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let repo = self.repo.read().await;
+        let repo = self.tags.read().await;
 
         let tag_opt = repo.get(&(id, user_id));
         if let Some(tag) = tag_opt {
@@ -155,8 +156,8 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let cat_repo = self.cat_repo.read().await;
-        let mut repo = self.repo.write().await;
+        let cat_repo = self.categories.read().await;
+        let mut repo = self.tags.write().await;
 
         let tag_opt = repo.get(&(id, user_id));
         if tag_opt.is_none() {
@@ -215,7 +216,7 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut repo = self.repo.write().await;
+        let mut repo = self.tags.write().await;
 
         let tag_opt = repo.get(&(id, user_id));
         if tag_opt.is_none() {
@@ -233,7 +234,7 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let cat_repo = self.cat_repo.read().await;
+        let cat_repo = self.categories.read().await;
 
         if let Some(((id, _), _)) = cat_repo
             .iter()
@@ -254,8 +255,8 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut cat_repo = self.cat_repo.write().await;
-        let user_repo = self.user_repo.read().await;
+        let mut cat_repo = self.categories.write().await;
+        let user_repo = self.users.read().await;
 
         if !user_repo.contains(&user_id) {
             return Err(Error::Constraint(ConstraintViolation::MissingUser));
@@ -276,7 +277,7 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut cat_repo = self.cat_repo.write().await;
+        let mut cat_repo = self.categories.write().await;
 
         match cat_repo.entry((id, user_id)) {
             Entry::Occupied(mut occupied_entry) => {
@@ -293,7 +294,7 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut cat_repo = self.cat_repo.write().await;
+        let mut cat_repo = self.categories.write().await;
 
         if cat_repo.remove(&(id, user_id)).is_none() {
             Err(Error::Constraint(ConstraintViolation::NotFound(

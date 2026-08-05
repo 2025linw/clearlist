@@ -6,17 +6,15 @@ mod tests;
 use async_trait::async_trait;
 use sqlx::postgres::types::PgInterval;
 
-use crate::{
-    error::{
-        Resource,
-        repo::{ConstraintViolation, Error as RepoError},
-        service::{Error, Result},
-    },
-    user::service::helpers::{validate_create_request, validate_update_request},
+use crate::error::{
+    Resource,
+    repo::{ConstraintViolation, Error as RepoError},
+    service::{Error, Result},
 };
 
 use super::{
     repo::UserRepository,
+    service::helpers::{validate_create_request, validate_update_request},
     types::{
         UserID, UserModel,
         repo::{CreateModel, UpdateModel},

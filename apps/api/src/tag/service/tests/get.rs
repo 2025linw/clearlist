@@ -4,7 +4,7 @@ use crate::{
     error::{Resource, service::Error},
     tag::{
         service::{TagService, TagServiceTrait},
-        types::{TagID, route::CreateRequest},
+        types::{TagID, route::CreateRequest, service::UserContext},
     },
     tests::mocks::tag::MockTagRepository,
     user::types::UserID,
@@ -16,11 +16,13 @@ async fn success() {
 
     let test_user_id = service.repo.add_user().await;
     let test_tag = service
-        .create(test_user_id, CreateRequest::default())
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
-    let res = service.get(test_tag.id, test_user_id).await;
+    let res = service
+        .get(test_tag.id, UserContext { id: test_user_id })
+        .await;
     assert!(res.is_ok());
 }
 
@@ -30,11 +32,18 @@ async fn not_owned() {
 
     let other_user_id = service.repo.add_user().await;
     let other_tag = service
-        .create(other_user_id, CreateRequest::default())
+        .create(UserContext { id: other_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
-    let res = service.get(other_tag.id, UserID::new_v4()).await;
+    let res = service
+        .get(
+            other_tag.id,
+            UserContext {
+                id: UserID::new_v4(),
+            },
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(err, Error::NotFound(Resource::Tag)));
@@ -47,7 +56,9 @@ async fn not_exists() {
 
     let test_user_id = service.repo.add_user().await;
 
-    let res = service.get(TagID::new_v4(), test_user_id).await;
+    let res = service
+        .get(TagID::new_v4(), UserContext { id: test_user_id })
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(err, Error::NotFound(Resource::Tag)));
@@ -59,7 +70,14 @@ async fn not_exists() {
 async fn repo_backend_error() {
     let service = TagService::init(MockTagRepository::new_backend_error());
 
-    let res = service.get(TagID::new_v4(), UserID::new_v4()).await;
+    let res = service
+        .get(
+            TagID::new_v4(),
+            UserContext {
+                id: UserID::new_v4(),
+            },
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(err, Error::Internal(_)));
@@ -70,7 +88,14 @@ async fn repo_backend_error() {
 async fn repo_programming_error() {
     let service = TagService::init(MockTagRepository::new_programming_error());
 
-    let res = service.get(TagID::new_v4(), UserID::new_v4()).await;
+    let res = service
+        .get(
+            TagID::new_v4(),
+            UserContext {
+                id: UserID::new_v4(),
+            },
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(err, Error::Unhandled(_)));

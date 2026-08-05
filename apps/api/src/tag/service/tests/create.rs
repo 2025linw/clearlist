@@ -3,7 +3,7 @@ use tokio::test;
 use crate::{
     error::service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, TOO_LONG, ValidationError},
     tag::{
-        service::{TagService, TagServiceTrait},
+        service::{TagService, TagServiceTrait, UserContext},
         types::route::CreateRequest,
     },
     tests::{
@@ -19,7 +19,9 @@ async fn success() {
 
     let test_user_id = service.repo.add_user().await;
 
-    let res = service.create(test_user_id, CreateRequest::default()).await;
+    let res = service
+        .create(UserContext { id: test_user_id }, CreateRequest::default())
+        .await;
     assert!(res.is_ok())
 }
 
@@ -28,7 +30,12 @@ async fn user_not_exists() {
     let service = TagService::init(MockTagRepository::new());
 
     let res = service
-        .create(UserID::new_v4(), CreateRequest::default())
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            CreateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -49,12 +56,12 @@ async fn normalize_label() {
             ..Default::default()
         };
         let tag = service
-            .create(test_user_id, create_request.clone())
+            .create(UserContext { id: test_user_id }, create_request.clone())
             .await
             .unwrap();
         assert_eq!(
             tag.label, expected,
-            "case: {} - expected: {}; found: {}",
+            "case: {} - expected: {} (found: {})",
             name, expected, tag.label
         );
     }
@@ -69,7 +76,14 @@ async fn errors_with_label_containing_whitespaces() {
             label: input.to_string(),
             ..Default::default()
         };
-        let res = service.create(UserID::new_v4(), create_request).await;
+        let res = service
+            .create(
+                UserContext {
+                    id: UserID::new_v4(),
+                },
+                create_request,
+            )
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(
@@ -100,7 +114,14 @@ async fn errors_with_label_more_than_100_chars() {
         label: too_long_label,
         ..Default::default()
     };
-    let res = service.create(UserID::new_v4(), create_request).await;
+    let res = service
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            create_request,
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(
@@ -130,13 +151,13 @@ async fn normalize_category() {
             ..Default::default()
         };
         let tag = service
-            .create(test_user_id, create_request.clone())
+            .create(UserContext { id: test_user_id }, create_request.clone())
             .await
             .unwrap();
         let category = tag.category_name.unwrap();
         assert_eq!(
             category, expected,
-            "case: {} - expected: {}; found: {}",
+            "case: {} - expected: {} (found: {})",
             name, expected, category
         );
     }
@@ -150,7 +171,14 @@ async fn errors_on_blank_category() {
         category: Some("".to_string()),
         ..Default::default()
     };
-    let res = service.create(UserID::new_v4(), create_request).await;
+    let res = service
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            create_request,
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(matches!(
@@ -172,7 +200,14 @@ async fn errors_with_category_containing_whitespaces() {
             category: Some(input.to_string()),
             ..Default::default()
         };
-        let res = service.create(UserID::new_v4(), create_request).await;
+        let res = service
+            .create(
+                UserContext {
+                    id: UserID::new_v4(),
+                },
+                create_request,
+            )
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(
@@ -203,7 +238,14 @@ async fn errors_with_category_more_than_100_chars() {
         category: Some(too_long_category),
         ..Default::default()
     };
-    let res = service.create(UserID::new_v4(), create_request).await;
+    let res = service
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            create_request,
+        )
+        .await;
     assert!(res.is_err());
     if let Err(err) = res {
         assert!(
@@ -226,7 +268,12 @@ async fn repo_backend_error() {
     let service = TagService::init(MockTagRepository::new_backend_error());
 
     let res = service
-        .create(UserID::new_v4(), CreateRequest::default())
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            CreateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {
@@ -239,7 +286,12 @@ async fn repo_programming_error() {
     let service = TagService::init(MockTagRepository::new_programming_error());
 
     let res = service
-        .create(UserID::new_v4(), CreateRequest::default())
+        .create(
+            UserContext {
+                id: UserID::new_v4(),
+            },
+            CreateRequest::default(),
+        )
         .await;
     assert!(res.is_err());
     if let Err(err) = res {

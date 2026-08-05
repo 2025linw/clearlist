@@ -93,7 +93,7 @@ async fn normalize_display_name() {
         let user = service.update(test_user.id, update_request).await.unwrap();
         assert_eq!(
             user.display_name, expected,
-            "case: {} - expected: {}; found: {}",
+            "case: {} - expected: {} (found: {})",
             name, expected, user.display_name
         );
     }

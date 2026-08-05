@@ -12,14 +12,13 @@ use crate::{
         service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, Result, ValidationError},
     },
     types::pagination::SQLPagination,
-    user::types::UserID,
 };
 
 use super::{
     repo::TagRepository,
     service::helpers::{validate_create_request, validate_query_opts, validate_update_request},
     types::{
-        TagID, TagModel,
+        Tag, TagID,
         repo::{CreateModel, Filter, QueryOpts, UpdateModel},
         route::{CreateRequest, URLQueryOpts, UpdateRequest},
         service::UserContext,
@@ -30,18 +29,19 @@ use super::{
 pub trait TagServiceTrait {
     async fn list(
         &self,
-        user_id: UserContext,
+        user_context: UserContext,
         query: Option<URLQueryOpts>,
-    ) -> Result<Vec<TagModel>>;
-    async fn create(&self, user_id: UserID, create_request: CreateRequest) -> Result<TagModel>;
-    async fn get(&self, id: TagID, user_id: UserID) -> Result<TagModel>;
+    ) -> Result<Vec<Tag>>;
+    async fn create(&self, user_context: UserContext, create_request: CreateRequest)
+    -> Result<Tag>;
+    async fn get(&self, id: TagID, user_context: UserContext) -> Result<Tag>;
     async fn update(
         &self,
         id: TagID,
-        user_id: UserID,
+        user_context: UserContext,
         update_request: UpdateRequest,
-    ) -> Result<TagModel>;
-    async fn delete(&self, id: TagID, user_id: UserID) -> Result<()>;
+    ) -> Result<Tag>;
+    async fn delete(&self, id: TagID, user_context: UserContext) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -61,7 +61,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
         &self,
         user_context: UserContext,
         query: Option<URLQueryOpts>,
-    ) -> Result<Vec<TagModel>> {
+    ) -> Result<Vec<Tag>> {
         let query = if let Some(query) = query {
             let URLQueryOpts {
                 page,
@@ -81,7 +81,6 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             let page = page.unwrap_or(1);
             let limit = limit.unwrap_or(25).min(150);
             let offset = limit * (page - 1);
-
             let mut pagination = SQLPagination::new();
             pagination.limit(limit);
             pagination.offset(offset);
@@ -101,10 +100,15 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
         self.repo
             .list(user_context.id, Some(query))
             .await
+            .map(|tags| tags.into_iter().map(Tag::from).collect())
             .map_err(Error::from)
     }
 
-    async fn create(&self, user_id: UserID, create_request: CreateRequest) -> Result<TagModel> {
+    async fn create(
+        &self,
+        user_context: UserContext,
+        create_request: CreateRequest,
+    ) -> Result<Tag> {
         let CreateRequest {
             label,
             category,
@@ -113,12 +117,16 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
 
         // Get id for category name, if exists
         let category_id = if let Some(category) = category {
-            if let Some(id) = self.repo.get_category_id(user_id, category.clone()).await? {
+            if let Some(id) = self
+                .repo
+                .get_category_id(user_context.id, category.clone())
+                .await?
+            {
                 Some(id)
             } else {
                 Some(
                     self.repo
-                        .add_category(user_id, category, "a".to_string())
+                        .add_category(user_context.id, category, "a".to_string())
                         .await?,
                 )
             }
@@ -132,27 +140,29 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             position_key,
         };
         self.repo
-            .create(user_id, create_model)
+            .create(user_context.id, create_model)
             .await
+            .map(Tag::from)
             .map_err(Error::from)
     }
 
-    async fn get(&self, id: TagID, user_id: UserID) -> Result<TagModel> {
+    async fn get(&self, id: TagID, user_context: UserContext) -> Result<Tag> {
         self.repo
-            .get(id, user_id)
+            .get(id, user_context.id)
             .await
             .map_err(Error::from)?
+            .map(Tag::from)
             .ok_or(Error::NotFound(Resource::Tag))
     }
 
     async fn update(
         &self,
         id: TagID,
-        user_id: UserID,
+        user_context: UserContext,
         update_request: UpdateRequest,
-    ) -> Result<TagModel> {
+    ) -> Result<Tag> {
         if update_request.is_noop() {
-            return self.get(id, user_id).await;
+            return self.get(id, user_context).await;
         }
 
         let UpdateRequest {
@@ -176,12 +186,16 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
                     }));
                 }
 
-                if let Some(id) = self.repo.get_category_id(user_id, category.clone()).await? {
+                if let Some(id) = self
+                    .repo
+                    .get_category_id(user_context.id, category.clone())
+                    .await?
+                {
                     Some(id)
                 } else {
                     Some(
                         self.repo
-                            .add_category(user_id, category, "a".to_string())
+                            .add_category(user_context.id, category, "a".to_string())
                             .await?,
                     )
                 }
@@ -198,7 +212,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             position_key,
         };
         self.repo
-            .update(id, user_id, update_model)
+            .update(id, user_context.id, update_model)
             .await
             .map_err(|err| {
                 if let RepoError::Constraint(ConstraintViolation::NotFound(Resource::Tag)) = err {
@@ -207,10 +221,11 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
 
                 err.into()
             })
+            .map(Tag::from)
     }
 
-    async fn delete(&self, id: TagID, user_id: UserID) -> Result<()> {
-        let res = self.repo.delete(id, user_id).await;
+    async fn delete(&self, id: TagID, user_context: UserContext) -> Result<()> {
+        let res = self.repo.delete(id, user_context.id).await;
         if let Err(err) = res {
             if matches!(
                 err,

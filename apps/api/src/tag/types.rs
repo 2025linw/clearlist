@@ -68,3 +68,35 @@ pub struct TagModel {
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub created_by: UserID,
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Tag {
+    pub id: TagID,
+
+    pub label: String,
+    pub category_id: Option<CategoryID>,
+    pub category_name: Option<String>,
+
+    pub position_key: String,
+    pub cat_position_key: Option<String>,
+
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub created_by: UserID,
+}
+
+impl From<TagModel> for Tag {
+    fn from(value: TagModel) -> Self {
+        Self {
+            id: value.id,
+            label: value.label,
+            category_id: value.category_id,
+            category_name: value.category_name,
+            position_key: value.position_key,
+            cat_position_key: value.cat_position_key,
+            updated_at: value.updated_at,
+            created_at: value.created_at,
+            created_by: value.created_by,
+        }
+    }
+}
