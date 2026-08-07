@@ -2,7 +2,7 @@ import 'dotenv/config';
 
 export const trustedOrigins = [
   'https://todo.localhost:8443',
-  'https://todo.saphynet.io',
+  'https://todo.saphydev.com',
   'clearlist://',
 ];
 
