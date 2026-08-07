@@ -37,7 +37,7 @@ pub struct CreateRequest {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Clone, Default))]
 pub struct UpdateRequest {
     pub title: Option<String>,
     pub notes: Option<Option<String>>,

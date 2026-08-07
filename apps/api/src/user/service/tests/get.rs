@@ -1,5 +1,3 @@
-use tokio::test;
-
 use crate::{
     error::{Resource, service::Error},
     tests::mocks::user::MockUserRepository,
@@ -9,46 +7,75 @@ use crate::{
     },
 };
 
-#[test]
-async fn success() {
-    let service = UserService::init(MockUserRepository::new());
+async fn init() -> (UserID, UserService<MockUserRepository>) {
+    let user_service = UserService::init(MockUserRepository::new());
 
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
+    let user = user_service
+        .create(CreateRequest {
+            display_name: "Test User".to_string(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
 
-    let res = service.get(test_user.id).await;
-    assert!(res.is_ok());
+    (user.id, user_service)
 }
 
-#[test]
-async fn not_exists() {
-    let service = UserService::init(MockUserRepository::new());
+mod success {
+    use tokio::test;
 
-    let res = service.get(UserID::new_v4()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::NotFound(Resource::User)))
+    use super::*;
+
+    #[test]
+    async fn success() {
+        let (user_id, user_service) = init().await;
+
+        let res = user_service.get(user_id).await;
+        assert!(res.is_ok());
     }
 }
 
-// repo errors
-#[test]
-async fn repo_backend_error() {
-    let service = UserService::init(MockUserRepository::new_backend_error());
+mod existence {
+    use tokio::test;
 
-    let res = service.get(UserID::new_v4()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Internal(_)));
+    use super::*;
+
+    #[test]
+    async fn not_exists() {
+        let (_, user_service) = init().await;
+
+        let res = user_service.get(UserID::new_v4()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::NotFound(Resource::User)))
+        }
     }
 }
 
-#[test]
-async fn repo_programming_error() {
-    let service = UserService::init(MockUserRepository::new_programming_error());
+mod error {
+    use tokio::test;
 
-    let res = service.get(UserID::new_v4()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Unhandled(_)));
+    use super::*;
+
+    #[test]
+    async fn repo_backend_error() {
+        let user_service = UserService::init(MockUserRepository::new_backend_error());
+
+        let res = user_service.get(UserID::new_v4()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Internal(_)));
+        }
+    }
+
+    #[test]
+    async fn repo_programming_error() {
+        let user_service = UserService::init(MockUserRepository::new_programming_error());
+
+        let res = user_service.get(UserID::new_v4()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Unhandled(_)));
+        }
     }
 }

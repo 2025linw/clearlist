@@ -18,7 +18,7 @@ pub struct CreateRequest {
 }
 
 #[derive(Debug, Deserialize)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Clone, Default))]
 pub struct UpdateRequest {
     pub display_name: Option<String>,
 

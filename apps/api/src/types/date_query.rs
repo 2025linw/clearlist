@@ -1,16 +1,29 @@
 use std::borrow::Cow;
 
-use serde::{Deserialize, Deserializer, de::Error};
+use serde::{Deserialize, Deserializer, de::Error as DeError};
+
+use crate::error::service::{RANGE_OVERSPECIFIED, ValidationError};
+
+use super::date::{DateBound, DateFilter};
 
 /// Trait to mark a type as a queryable date with DateQueryFilter
-pub trait QueryDate: std::str::FromStr<Err: std::fmt::Display> + Sized {}
+pub trait QueryDate: std::str::FromStr<Err: std::fmt::Display> + Sized {
+    const FIELD: &str;
+}
 
-impl QueryDate for chrono::NaiveDate {}
-impl QueryDate for chrono::DateTime<chrono::Utc> {}
+impl QueryDate for chrono::DateTime<chrono::Utc> {
+    const FIELD: &str = "start";
+}
+impl QueryDate for chrono::NaiveDate {
+    const FIELD: &str = "deadline";
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
-pub enum QueryDateFilter<T: QueryDate> {
+pub enum QueryDateFilter<T>
+where
+    T: QueryDate,
+{
     /// Existence Filter
     #[serde(deserialize_with = "deserialize_bool")]
     Has(bool),
@@ -26,7 +39,7 @@ pub enum QueryDateFilter<T: QueryDate> {
     ISO8601Interval(ISO8601Interval<T>),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 pub struct BracketInterval<T> {
     #[serde(alias = "<>")]
     pub ne: Option<T>,
@@ -87,4 +100,88 @@ where
     }
 
     Ok([start, end])
+}
+
+impl<T> TryFrom<QueryDateFilter<T>> for DateFilter<T>
+where
+    T: QueryDate,
+{
+    type Error = ValidationError;
+
+    fn try_from(value: QueryDateFilter<T>) -> Result<Self, Self::Error> {
+        match value {
+            QueryDateFilter::Has(bool) => Ok(Self::Exists(bool)),
+            QueryDateFilter::Exact(date) => Ok(Self::On(date)),
+            QueryDateFilter::BracketInterval(bracket_interval) => {
+                match bracket_interval {
+                    // ne only
+                    BracketInterval {
+                        ne: Some(date),
+                        lt: None,
+                        lte: None,
+                        gt: None,
+                        gte: None,
+                    } => Ok(DateFilter::NotOn(date)),
+
+                    // invalid: ne with anything else
+                    BracketInterval {
+                        ne: Some(_),
+                        lt,
+                        lte,
+                        gt,
+                        gte,
+                    } if lt.is_some() || lte.is_some() || gt.is_some() || gte.is_some() => {
+                        Err(ValidationError::InvalidValue {
+                            field: T::FIELD,
+                            reason: RANGE_OVERSPECIFIED,
+                        })
+                    }
+
+                    // invalid lower bound
+                    BracketInterval {
+                        gt: Some(_),
+                        gte: Some(_),
+                        ..
+                    } => Err(ValidationError::InvalidValue {
+                        field: T::FIELD,
+                        reason: RANGE_OVERSPECIFIED,
+                    }),
+
+                    // invalid upper bound
+                    BracketInterval {
+                        lt: Some(_),
+                        lte: Some(_),
+                        ..
+                    } => Err(ValidationError::InvalidValue {
+                        field: T::FIELD,
+                        reason: RANGE_OVERSPECIFIED,
+                    }),
+
+                    // valid range
+                    BracketInterval {
+                        gt, gte, lt, lte, ..
+                    } => {
+                        let start = gt
+                            .map(DateBound::Exclusive)
+                            .or_else(|| gte.map(DateBound::Inclusive));
+
+                        let end = lt
+                            .map(DateBound::Exclusive)
+                            .or_else(|| lte.map(DateBound::Inclusive));
+
+                        match (start, end) {
+                            (Some(start), Some(end)) => Ok(DateFilter::Range(start, end)),
+                            (Some(start), None) => Ok(DateFilter::StartRange(start)),
+                            (None, Some(end)) => Ok(DateFilter::EndRange(end)),
+                            (None, None) => unreachable!(),
+                        }
+                    }
+                }
+            }
+            QueryDateFilter::ISO8601Interval([start, end]) => Ok(DateFilter::Range(
+                DateBound::Inclusive(start),
+                DateBound::Exclusive(end),
+            )),
+        }
+    }
 }

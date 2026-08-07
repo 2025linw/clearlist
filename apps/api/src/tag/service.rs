@@ -9,9 +9,10 @@ use crate::{
     error::{
         Resource,
         repo::{ConstraintViolation, Error as RepoError},
-        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, Result, ValidationError},
+        service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, Result, ValidationError},
     },
     types::pagination::SQLPagination,
+    utils::service::is_valid_single_line_string,
 };
 
 use super::{
@@ -179,10 +180,10 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
                         field: "category",
                         reason: NO_EMPTY_STRING,
                     }));
-                } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
+                } else if !is_valid_single_line_string(&category) {
                     return Err(Error::Validation(ValidationError::InvalidValue {
                         field: "category",
-                        reason: NO_WHITESPACE,
+                        reason: NO_NONSPACE_WHITESPACE,
                     }));
                 }
 

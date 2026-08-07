@@ -37,7 +37,14 @@ mod success {
         let (user_id, task_id, task_repo) = init(pool).await;
 
         let res = task_repo
-            .update(task_id, user_id, UpdateModel::default())
+            .update(
+                task_id,
+                user_id,
+                UpdateModel {
+                    title: Some("Updated Task".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_ok());
     }
@@ -87,7 +94,14 @@ mod success {
         let task_init = task_repo.get(task_id, user_id).await.unwrap().unwrap();
 
         let task = task_repo
-            .update(task_id, user_id, UpdateModel::default())
+            .update(
+                task_id,
+                user_id,
+                UpdateModel {
+                    title: Some("Update Task".to_string()),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
         assert!(task.updated_at > task_init.updated_at);
@@ -125,7 +139,14 @@ mod existence {
         soft_delete_task(&task_repo, task_id, user_id).await;
 
         let res = task_repo
-            .update(task_id, user_id, UpdateModel::default())
+            .update(
+                task_id,
+                user_id,
+                UpdateModel {
+                    title: Some("Update Task".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_ok());
     }
@@ -136,7 +157,14 @@ mod existence {
         let (user_id, _, task_repo) = init(pool).await;
 
         let res = task_repo
-            .update(task_id, user_id, UpdateModel::default())
+            .update(
+                task_id,
+                user_id,
+                UpdateModel {
+                    title: Some("Update Task".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -152,7 +180,14 @@ mod existence {
         let (user_id, _, task_repo) = init(pool).await;
 
         let res = task_repo
-            .update(TaskID::new_v4(), user_id, UpdateModel::default())
+            .update(
+                TaskID::new_v4(),
+                user_id,
+                UpdateModel {
+                    title: Some("Updated Task".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {

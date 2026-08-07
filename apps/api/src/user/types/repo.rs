@@ -16,7 +16,7 @@ pub struct CreateModel {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Clone, Default))]
 pub struct UpdateModel {
     pub display_name: Option<String>,
 

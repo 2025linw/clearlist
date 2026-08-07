@@ -2,7 +2,8 @@ use chrono_tz::Tz;
 
 use crate::user::types::UserID;
 
+#[derive(Debug, Clone, Copy)]
 pub struct UserContext {
-    pub user_id: UserID,
-    pub user_tz: Tz,
+    pub id: UserID,
+    pub tz: Tz,
 }

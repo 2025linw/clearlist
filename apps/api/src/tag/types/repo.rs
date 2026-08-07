@@ -40,7 +40,7 @@ pub struct CreateModel {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Clone, Default))]
 pub struct UpdateModel {
     pub label: Option<String>,
     pub category_id: Option<Option<CategoryID>>,

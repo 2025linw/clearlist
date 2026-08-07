@@ -6,11 +6,9 @@ use serde::Deserialize;
 use sqlx::QueryBuilder;
 use ts_rs::TS;
 
-#[derive(Debug, Default, Clone, Deserialize, TS)]
-#[ts(export, rename = "StartPrecision")]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, TS)]
+#[ts(export, rename = "Start")]
 pub enum Start {
-    #[default]
-    None,
     Date(chrono::NaiveDate),
     DateTime(chrono::DateTime<chrono::Utc>),
 }

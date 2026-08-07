@@ -11,6 +11,14 @@ use crate::{
     },
 };
 
+async fn init(pool: PgPool) -> (UserID, PgUserRepository) {
+    let user_repo = PgUserRepository::init(pool.clone());
+
+    let user = user_repo.create(CreateModel::default()).await.unwrap();
+
+    (user.id, user_repo)
+}
+
 mod success {
     use sqlx::test;
 
@@ -18,19 +26,23 @@ mod success {
 
     #[test]
     async fn success(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
+        let (user_id, user_repo) = init(pool).await;
 
-        let test_user = repo.create(CreateModel::default()).await.unwrap();
-
-        let res = repo.update(test_user.id, UpdateModel::default()).await;
+        let res = user_repo
+            .update(
+                user_id,
+                UpdateModel {
+                    display_name: Some("Updated User".to_string()),
+                    ..Default::default()
+                },
+            )
+            .await;
         assert!(res.is_ok());
     }
 
     #[test]
     async fn verify_output(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
-
-        let test_user = repo.create(CreateModel::default()).await.unwrap();
+        let (user_id, user_repo) = init(pool).await;
 
         let update_model = UpdateModel {
             display_name: Some("Updated User".to_string()),
@@ -41,59 +53,60 @@ mod success {
                 microseconds: 0,
             })),
         };
-        let user = repo
-            .update(test_user.id, update_model.clone())
+        let user = user_repo
+            .update(user_id, update_model.clone())
             .await
             .unwrap();
-        {
-            let UpdateModel {
-                display_name,
-                preferred_timezone,
-                completed_task_retention,
-            } = update_model;
 
-            assert_eq!(user.display_name, display_name.unwrap());
-            assert_eq!(user.preferred_timezone, preferred_timezone.unwrap());
-            assert_eq!(
-                user.completed_task_retention,
-                completed_task_retention.unwrap()
-            );
-        }
+        let UpdateModel {
+            display_name,
+            preferred_timezone,
+            completed_task_retention,
+        } = update_model;
+        assert_eq!(user.display_name, display_name.unwrap());
+        assert_eq!(user.preferred_timezone, preferred_timezone.unwrap());
+        assert_eq!(
+            user.completed_task_retention,
+            completed_task_retention.unwrap()
+        );
     }
 
     #[test]
     async fn updates_updated_at(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
+        let (user_id, user_repo) = init(pool).await;
+        let user_init = user_repo.get(user_id).await.unwrap().unwrap();
 
-        let test_user = repo.create(CreateModel::default()).await.unwrap();
-
-        let user = repo
-            .update(test_user.id, UpdateModel::default())
+        let user = user_repo
+            .update(
+                user_id,
+                UpdateModel {
+                    display_name: Some("Updated User".to_string()),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
-        assert!(user.updated_at > test_user.updated_at);
+        assert!(user.updated_at > user_init.updated_at);
     }
 
     #[test]
     async fn is_idempotent(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
-
-        let test_user = repo.create(CreateModel::default()).await.unwrap();
+        let (user_id, user_repo) = init(pool).await;
 
         let update_model = UpdateModel {
             display_name: Some("Updated User".to_string()),
             ..Default::default()
         };
-        let update_1 = repo
-            .update(test_user.id, update_model.clone())
+        let first_update = user_repo
+            .update(user_id, update_model.clone())
             .await
             .unwrap();
-        let update_2 = repo
-            .update(test_user.id, update_model.clone())
+        let second_update = user_repo
+            .update(user_id, update_model.clone())
             .await
             .unwrap();
 
-        assert_eq!(update_1, update_2);
+        assert_eq!(first_update, second_update);
     }
 }
 
@@ -104,9 +117,17 @@ mod existence {
 
     #[test]
     async fn not_exists(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
+        let (_, user_repo) = init(pool).await;
 
-        let res = repo.update(UserID::new_v4(), UpdateModel::default()).await;
+        let res = user_repo
+            .update(
+                UserID::new_v4(),
+                UpdateModel {
+                    display_name: Some("Updated User".to_string()),
+                    ..Default::default()
+                },
+            )
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -124,55 +145,43 @@ mod input {
 
     #[test]
     async fn full_input(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
+        let (user_id, user_repo) = init(pool).await;
 
-        let test_user = repo.create(CreateModel::default()).await.unwrap();
-
-        let res = repo
-            .update(
-                test_user.id,
-                UpdateModel {
-                    display_name: Some("Updated User".to_string()),
-                    preferred_timezone: Some(Some("America/Chicago".to_string())),
-                    completed_task_retention: Some(Some(PgInterval {
-                        months: 0,
-                        days: 1,
-                        microseconds: 0,
-                    })),
-                },
-            )
-            .await;
+        let update_model = UpdateModel {
+            display_name: Some("Updated User".to_string()),
+            preferred_timezone: Some(Some("America/Chicago".to_string())),
+            completed_task_retention: Some(Some(PgInterval {
+                months: 0,
+                days: 1,
+                microseconds: 0,
+            })),
+        };
+        let res = user_repo.update(user_id, update_model).await;
         assert!(res.is_ok());
     }
 
     #[test]
     async fn null_input(pool: PgPool) {
-        let repo = PgUserRepository::init(pool.clone());
-
-        let retention_interval = PgInterval {
-            months: 0,
-            days: 1,
-            microseconds: 0,
-        };
-        let test_user = repo
+        let (_, user_repo) = init(pool).await;
+        let user = user_repo
             .create(CreateModel {
                 preferred_timezone: Some("America/Chicago".to_string()),
-                completed_task_retention: Some(retention_interval),
+                completed_task_retention: Some(PgInterval {
+                    months: 0,
+                    days: 1,
+                    microseconds: 0,
+                }),
                 ..Default::default()
             })
             .await
             .unwrap();
 
-        let res = repo
-            .update(
-                test_user.id,
-                UpdateModel {
-                    preferred_timezone: Some(None),
-                    completed_task_retention: Some(None),
-                    ..Default::default()
-                },
-            )
-            .await;
+        let update_model = UpdateModel {
+            preferred_timezone: Some(None),
+            completed_task_retention: Some(None),
+            ..Default::default()
+        };
+        let res = user_repo.update(user.id, update_model).await;
         assert!(res.is_ok());
         if let Ok(user) = res {
             assert!(user.preferred_timezone.is_none());

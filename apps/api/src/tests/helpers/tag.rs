@@ -1,11 +1,7 @@
 use crate::{
     tag::{
         repo::{PgTagRepository, TagRepository},
-        types::{
-            CategoryID,
-            repo::{CreateModel, UpdateModel},
-            route::{CreateRequest, UpdateRequest},
-        },
+        types::{CategoryID, repo::CreateModel, route::CreateRequest},
     },
     user::types::UserID,
 };
@@ -64,19 +60,9 @@ pub fn tag_with_priority_category(i: usize, tag_category_id: Option<CategoryID>)
 impl Default for CreateRequest {
     fn default() -> Self {
         Self {
-            label: "Test Tag".to_string(),
+            label: String::new(),
             category: None,
             position_key: generate_a_z(0).to_string(),
-        }
-    }
-}
-
-impl Default for UpdateRequest {
-    fn default() -> Self {
-        Self {
-            label: Some("Updated Tag".to_string()),
-            category: None,
-            position_key: None,
         }
     }
 }
@@ -84,19 +70,9 @@ impl Default for UpdateRequest {
 impl Default for CreateModel {
     fn default() -> Self {
         Self {
-            label: "Test Tag".to_string(),
+            label: String::new(),
             category_id: None,
             position_key: generate_a_z(0).to_string(),
-        }
-    }
-}
-
-impl Default for UpdateModel {
-    fn default() -> Self {
-        Self {
-            label: Some("Updated Tag".to_string()),
-            category_id: None,
-            position_key: None,
         }
     }
 }

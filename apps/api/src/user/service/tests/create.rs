@@ -1,109 +1,141 @@
-use tokio::test;
-
 use crate::{
-    error::service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, ValidationError},
+    error::service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, ValidationError},
     tests::{
+        helpers::get_today_date_pg,
         mocks::user::MockUserRepository,
         test_data::{CONTAINS_WHITESPACE_TEST_INPUT, NORMALIZATION_TEST_INPUT},
     },
-    user::service::{CreateRequest, UserService, UserServiceTrait},
+    user::{
+        service::{CreateRequest, UserService, UserServiceTrait},
+        types::UserID,
+    },
 };
 
-#[test]
-async fn success() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let res = service.create(CreateRequest::default()).await;
-    assert!(res.is_ok())
+async fn init() -> UserService<MockUserRepository> {
+    UserService::init(MockUserRepository::new())
 }
 
-// display_name tests
-#[test]
-async fn normalize_display_name() {
-    let service = UserService::init(MockUserRepository::new());
-
-    for (name, input, expected) in NORMALIZATION_TEST_INPUT {
-        let create_request = CreateRequest {
-            display_name: input.to_string(),
-            ..Default::default()
-        };
-        let user = service.create(create_request.clone()).await.unwrap();
-        assert_eq!(
-            user.display_name, expected,
-            "case: {} - expected: {} (found: {})",
-            name, expected, user.display_name
-        );
+fn valid_request() -> CreateRequest {
+    CreateRequest {
+        id: UserID::new_v4(),
+        display_name: "Test User".to_string(),
+        preferred_timezone: None,
+        completed_task_retention: None,
+        created_at: get_today_date_pg(),
     }
 }
 
-#[test]
-async fn errors_on_blank_display_name() {
-    let service = UserService::init(MockUserRepository::new());
+mod success {
+    use tokio::test;
 
-    let create_request = CreateRequest {
-        display_name: "".to_string(),
-        ..Default::default()
-    };
-    let res = service.create(create_request).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Validation(ValidationError::InvalidValue {
-                field: "display_name",
-                reason: NO_EMPTY_STRING,
-            })
-        ),)
+    use super::*;
+
+    #[test]
+    async fn success() {
+        let user_service = init().await;
+
+        let res = user_service.create(valid_request()).await;
+        assert!(res.is_ok())
     }
 }
 
-#[test]
-async fn errors_with_display_name_containing_whitespaces() {
-    let service = UserService::init(MockUserRepository::new());
+mod error {
+    use tokio::test;
 
-    for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
-        let create_request = CreateRequest {
-            display_name: input.to_string(),
-            ..Default::default()
-        };
-        let res = service.create(create_request.clone()).await;
+    use super::*;
+
+    #[test]
+    async fn repo_backend_error() {
+        let user_service = UserService::init(MockUserRepository::new_backend_error());
+
+        let res = user_service.create(valid_request()).await;
         assert!(res.is_err());
         if let Err(err) = res {
-            assert!(
-                matches!(
-                    err,
-                    Error::Validation(ValidationError::InvalidValue {
-                        field: "display_name",
-                        reason: NO_WHITESPACE,
-                    })
-                ),
-                "case: {}; got error: {}",
-                name,
-                err
-            )
+            assert!(matches!(err, Error::Internal(_)));
+        }
+    }
+
+    #[test]
+    async fn repo_programming_error() {
+        let user_service = UserService::init(MockUserRepository::new_programming_error());
+
+        let res = user_service.create(valid_request()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Unhandled(_)));
         }
     }
 }
 
-// repo errors
-#[test]
-async fn repo_backend_error() {
-    let service = UserService::init(MockUserRepository::new_backend_error());
+mod display_name {
+    use tokio::test;
 
-    let res = service.create(CreateRequest::default()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Internal(_)));
+    use super::*;
+
+    #[test]
+    async fn normalize_display_name() {
+        let user_service = init().await;
+
+        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
+            let create_request = CreateRequest {
+                display_name: input.to_string(),
+                ..Default::default()
+            };
+            let user = user_service.create(create_request.clone()).await.unwrap();
+            assert_eq!(
+                user.display_name, expected,
+                "case: {} - expected: {} (found: {})",
+                name, expected, user.display_name
+            );
+        }
     }
-}
 
-#[test]
-async fn repo_programming_error() {
-    let service = UserService::init(MockUserRepository::new_programming_error());
+    #[test]
+    async fn errors_on_blank_display_name() {
+        let user_service = init().await;
 
-    let res = service.create(CreateRequest::default()).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Unhandled(_)));
+        let create_request = CreateRequest {
+            display_name: "".to_string(),
+            ..Default::default()
+        };
+        let res = user_service.create(create_request).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
+                err,
+                Error::Validation(ValidationError::InvalidValue {
+                    field: "display_name",
+                    reason: NO_EMPTY_STRING,
+                })
+            ),)
+        }
+    }
+
+    #[test]
+    async fn errors_with_display_name_containing_whitespaces() {
+        let user_service = init().await;
+
+        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+            let create_request = CreateRequest {
+                display_name: input.to_string(),
+                ..Default::default()
+            };
+            let res = user_service.create(create_request.clone()).await;
+            assert!(res.is_err(), "case: {}; should have failed", name);
+            if let Err(err) = res {
+                assert!(
+                    matches!(
+                        err,
+                        Error::Validation(ValidationError::InvalidValue {
+                            field: "display_name",
+                            reason: NO_NONSPACE_WHITESPACE,
+                        })
+                    ),
+                    "case: {}; got error: {}",
+                    name,
+                    err
+                )
+            }
+        }
     }
 }

@@ -1,5 +1,9 @@
-use crate::error::service::{
-    NO_EMPTY_STRING, NO_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG, ValidationError,
+use crate::{
+    error::service::{
+        NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
+        ValidationError,
+    },
+    utils::service::is_valid_single_line_string,
 };
 
 use super::{CreateRequest, URLQueryOpts, UpdateRequest};
@@ -31,10 +35,10 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
                 field: "category",
                 reason: NO_EMPTY_STRING,
             });
-        } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
+        } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_WHITESPACE,
+                reason: NO_NONSPACE_WHITESPACE,
             });
         }
     }
@@ -45,11 +49,12 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
 pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, ValidationError> {
     let mut request = request;
     normalize_create_request(&mut request);
+    println!("{request:?}");
 
-    if request.label.chars().any(|c| c.is_whitespace() && c != ' ') {
+    if !is_valid_single_line_string(&request.label) {
         return Err(ValidationError::InvalidValue {
             field: "label",
-            reason: NO_WHITESPACE,
+            reason: NO_NONSPACE_WHITESPACE,
         });
     } else if request.label.len() > 100 {
         return Err(ValidationError::InvalidValue {
@@ -64,10 +69,10 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
                 field: "category",
                 reason: NO_EMPTY_STRING,
             });
-        } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
+        } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_WHITESPACE,
+                reason: NO_NONSPACE_WHITESPACE,
             });
         } else if category.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -85,10 +90,10 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
     normalize_update_request(&mut request);
 
     if let Some(ref label) = request.label {
-        if label.chars().any(|c| c.is_whitespace() && c != ' ') {
+        if !is_valid_single_line_string(label) {
             return Err(ValidationError::InvalidValue {
                 field: "label",
-                reason: NO_WHITESPACE,
+                reason: NO_NONSPACE_WHITESPACE,
             });
         } else if label.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -104,10 +109,10 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
                 field: "category",
                 reason: NO_EMPTY_STRING,
             });
-        } else if category.chars().any(|c| c.is_whitespace() && c != ' ') {
+        } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_WHITESPACE,
+                reason: NO_NONSPACE_WHITESPACE,
             });
         } else if category.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -121,27 +126,25 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
 }
 
 fn normalize_query_opts(query: &mut URLQueryOpts) {
-    query.category = query
-        .category
-        .as_mut()
-        .map(|category| category.trim().to_string());
+    if let Some(category) = query.category.as_mut() {
+        *category = category.trim().to_owned();
+    }
 }
 
 fn normalize_create_request(request: &mut CreateRequest) {
-    request.label = request.label.trim().to_string();
+    request.label = request.label.trim().to_owned();
 
-    request.category = request
-        .category
-        .as_mut()
-        .map(|category| category.trim().to_string());
+    if let Some(category) = request.category.as_mut() {
+        *category = category.trim().to_owned();
+    }
 }
 
 fn normalize_update_request(request: &mut UpdateRequest) {
-    request.label = request.label.as_mut().map(|label| label.trim().to_string());
+    if let Some(label) = request.label.as_mut() {
+        *label = label.trim().to_owned();
+    }
 
-    request.category = request.category.as_mut().map(|category_opt| {
-        category_opt
-            .as_mut()
-            .map(|category| category.trim().to_string())
-    });
+    if let Some(category) = request.category.as_mut().and_then(Option::as_mut) {
+        *category = category.trim().to_owned();
+    }
 }

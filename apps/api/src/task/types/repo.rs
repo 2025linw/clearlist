@@ -47,7 +47,8 @@ impl QueryOpts {
         if let Some(tags) = self.filter.tags
             && !tags.is_empty()
         {
-            // NOTE: Make sure this is last as it will contain `HAVING` clauses
+            // THIS MUST BE THE LAST PART IN THE WHERE FILTERS
+            // DUE TO THE `HAVING`` CLAUSE
             builder.push(" AND tt.tag_id = ANY(");
             builder.push_bind(tags.clone());
             builder.push(") GROUP BY t.id HAVING COUNT(DISTINCT tt.tag_id) = cardinality(");
@@ -86,7 +87,7 @@ pub struct CreateModel {
     pub position_key: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(test, derive(Clone))]
 pub struct UpdateModel {
     pub title: Option<String>,

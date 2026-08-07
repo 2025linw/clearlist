@@ -1,4 +1,7 @@
-use crate::error::service::{NO_EMPTY_STRING, NO_WHITESPACE, ValidationError};
+use crate::{
+    error::service::{NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, ValidationError},
+    utils::service::is_valid_single_line_string,
+};
 
 use super::{CreateRequest, UpdateRequest};
 
@@ -11,14 +14,10 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
             field: "display_name",
             reason: NO_EMPTY_STRING,
         });
-    } else if request
-        .display_name
-        .chars()
-        .any(|c| c.is_whitespace() && c != ' ')
-    {
+    } else if !is_valid_single_line_string(&request.display_name) {
         return Err(ValidationError::InvalidValue {
             field: "display_name",
-            reason: NO_WHITESPACE,
+            reason: NO_NONSPACE_WHITESPACE,
         });
     }
 
@@ -35,10 +34,10 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
                 field: "display_name",
                 reason: NO_EMPTY_STRING,
             });
-        } else if display_name.chars().any(|c| c.is_whitespace() && c != ' ') {
+        } else if !is_valid_single_line_string(display_name) {
             return Err(ValidationError::InvalidValue {
                 field: "display_name",
-                reason: NO_WHITESPACE,
+                reason: NO_NONSPACE_WHITESPACE,
             });
         }
     }
@@ -47,12 +46,11 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
 }
 
 fn normalize_create_request(request: &mut CreateRequest) {
-    request.display_name = request.display_name.trim().to_string();
+    request.display_name = request.display_name.trim().to_owned();
 }
 
 fn normalize_update_request(request: &mut UpdateRequest) {
-    request.display_name = request
-        .display_name
-        .as_mut()
-        .map(|name| name.trim().to_string());
+    if let Some(display_name) = request.display_name.as_mut() {
+        *display_name = display_name.trim().to_owned();
+    }
 }

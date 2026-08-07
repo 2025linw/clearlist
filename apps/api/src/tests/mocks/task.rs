@@ -1,7 +1,3 @@
-#![allow(warnings)]
-#![allow(clippy::all)]
-// WARN: REMOVE ABOVE
-
 use std::{
     collections::{HashMap, HashSet, hash_map::Entry},
     sync::Arc,
@@ -32,7 +28,7 @@ use crate::{
 pub struct MockTaskRepository {
     users: Arc<RwLock<HashSet<UserID>>>,
     tasks: MockDB<(TaskID, UserID), TaskModel>,
-    tags: Arc<RwLock<HashSet<TagID>>>,
+    tags: Arc<RwLock<HashSet<(TagID, UserID)>>>,
     task_tags: MockDB<(TaskID, UserID), Vec<TagModel>>,
 
     error: Option<Error>,
@@ -84,38 +80,32 @@ impl MockTaskRepository {
         user_id
     }
 
-    pub async fn add_tag(&self) -> TagID {
+    pub async fn add_tag(&self, user_id: UserID) -> TagID {
         let tag_id = TagID::new_v4();
 
         let mut tags = self.tags.write().await;
-        assert!(tags.insert(tag_id));
+        assert!(tags.insert((tag_id, user_id)));
 
         tag_id
     }
 
     pub async fn get_last_filter(&self) -> QueryOpts {
         let mut last_filter = self.last_filter.write().await;
-        let res = last_filter.clone();
-
-        *last_filter = None;
+        let res = last_filter.take();
 
         res.unwrap()
     }
 
     pub async fn get_last_single_tag(&self) -> TagID {
         let mut last_single_tag = self.last_single_tag.write().await;
-        let res = last_single_tag.clone();
-
-        *last_single_tag = None;
+        let res = last_single_tag.take();
 
         res.unwrap()
     }
 
     pub async fn get_last_multi_tag(&self) -> Vec<TagID> {
         let mut last_multi_tag = self.last_multi_tag.write().await;
-        let res = last_multi_tag.clone();
-
-        *last_multi_tag = None;
+        let res = last_multi_tag.take();
 
         res.unwrap()
     }
@@ -213,11 +203,6 @@ impl TaskRepository for MockTaskRepository {
             )));
         }
         let mut task = task_opt.unwrap().clone();
-        if task.deleted_at.is_some() {
-            return Err(Error::Constraint(ConstraintViolation::Deleted(
-                Resource::Task,
-            )));
-        }
 
         let mut changed = false;
         let now = get_today_date_pg();
@@ -311,7 +296,21 @@ impl TaskRepository for MockTaskRepository {
         ids: Vec<TaskID>,
         user_id: UserID,
     ) -> Result<HashMap<TaskID, Vec<TagModel>>> {
-        todo!()
+        let task_tags_store = self.task_tags.read().await;
+
+        let mut task_tags = HashMap::new();
+
+        for task_id in ids {
+            task_tags.insert(
+                task_id,
+                task_tags_store
+                    .get(&(task_id, user_id))
+                    .cloned()
+                    .unwrap_or_default(),
+            );
+        }
+
+        Ok(task_tags)
     }
 
     async fn list_tags(&self, id: TaskID, user_id: UserID) -> Result<Vec<TagModel>> {
@@ -353,7 +352,7 @@ impl TaskRepository for MockTaskRepository {
                 Resource::Task,
             )));
         }
-        if !tags.contains(&tag_id) {
+        if !tags.contains(&(tag_id, user_id)) {
             return Err(Error::Constraint(ConstraintViolation::NotFound(
                 Resource::Tag,
             )));
@@ -361,10 +360,12 @@ impl TaskRepository for MockTaskRepository {
 
         match tag_repo.entry((id, user_id)) {
             Entry::Occupied(mut o) => {
-                o.get_mut().push(TagModel {
-                    id: tag_id,
-                    ..Default::default()
-                });
+                if !o.get().iter().any(|tag| tag.id == tag_id) {
+                    o.get_mut().push(TagModel {
+                        id: tag_id,
+                        ..Default::default()
+                    });
+                }
             }
             Entry::Vacant(v) => {
                 v.insert(vec![TagModel {
@@ -433,7 +434,7 @@ impl TaskRepository for MockTaskRepository {
             )));
         }
         for tag_id in tag_ids.iter() {
-            if !tags.contains(tag_id) {
+            if !tags.contains(&(*tag_id, user_id)) {
                 return Err(Error::Constraint(ConstraintViolation::NotFound(
                     Resource::Tag,
                 )));
@@ -449,6 +450,12 @@ impl TaskRepository for MockTaskRepository {
             .collect();
         match tag_repo.entry((id, user_id)) {
             Entry::Occupied(mut o) => {
+                let current: HashSet<TagID> = o.get().iter().map(|tag| tag.id).collect();
+                let desired: HashSet<TagID> = tag_ids.into_iter().collect();
+                if current == desired {
+                    return Ok(o.get().to_vec());
+                }
+
                 o.insert(tags.clone());
             }
             Entry::Vacant(v) => {

@@ -1,7 +1,3 @@
-#![allow(warnings)]
-#![allow(clippy::all)]
-// WARN: REMOVE ABOVE
-
 use super::{
     Resource,
     repo::{ConstraintViolation, Error as RepoError},
@@ -13,7 +9,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[cfg_attr(test, derive(Clone))]
 pub enum Error {
     NotFound(Resource),
-    Deleted(Resource),
 
     Validation(ValidationError),
 
@@ -40,8 +35,8 @@ impl From<RepoError> for Error {
             RepoError::Programming(_) => Self::Unhandled(value),
             RepoError::Constraint(constraint) => match constraint {
                 ConstraintViolation::NotFound(resource) => Self::NotFound(resource.clone()),
-                ConstraintViolation::Deleted(resource) => Self::Deleted(resource.clone()),
-                ConstraintViolation::Unique(resource) => Self::Validation(ValidationError::Unique),
+                ConstraintViolation::Deleted(resource) => Self::NotFound(resource.clone()),
+                ConstraintViolation::Unique(_) => Self::Validation(ValidationError::Unique),
                 ConstraintViolation::MissingUser => Self::Internal(value),
             },
         }
@@ -68,7 +63,11 @@ pub enum ValidationError {
 pub const NO_ZERO_LIMIT: &str = "limit must be greater than 0";
 pub const NO_ZERO_PAGE: &str = "page must be greater than 0";
 
+// Date Filter Error Reasons
+pub const RANGE_OVERSPECIFIED: &str = "date range is overspecified";
+
 // Text Error Reasons
-pub const NO_WHITESPACE: &str = "must not contain non-space whitespace characters";
+pub const NO_NONSPACE_WHITESPACE: &str = "must not contain non-space whitespace characters";
+pub const NO_NONMULTILINE_WHITESPACE: &str = "must not contain non-multiline whitespace characters";
 pub const NO_EMPTY_STRING: &str = "must not be empty string";
 pub const TOO_LONG: &str = "must not exceed max length";

@@ -36,7 +36,14 @@ mod success {
         let (user_id, tag_id, tag_repo) = init(pool).await;
 
         let res = tag_repo
-            .update(tag_id, user_id, UpdateModel::default())
+            .update(
+                tag_id,
+                user_id,
+                UpdateModel {
+                    label: Some("Updated Tag".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_ok());
     }
@@ -76,7 +83,14 @@ mod success {
         let tag_init = tag_repo.get(tag_id, user_id).await.unwrap().unwrap();
 
         let tag = tag_repo
-            .update(tag_id, user_id, UpdateModel::default())
+            .update(
+                tag_id,
+                user_id,
+                UpdateModel {
+                    label: Some("Updated Tag".to_string()),
+                    ..Default::default()
+                },
+            )
             .await
             .unwrap();
         assert!(tag.updated_at > tag_init.updated_at);
@@ -114,7 +128,14 @@ mod existence {
         let (user_id, _, tag_repo) = init(pool).await;
 
         let res = tag_repo
-            .update(tag_id, user_id, UpdateModel::default())
+            .update(
+                tag_id,
+                user_id,
+                UpdateModel {
+                    label: Some("Updated Tag".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -130,7 +151,14 @@ mod existence {
         let (user_id, _, tag_repo) = init(pool).await;
 
         let res = tag_repo
-            .update(TagID::new_v4(), user_id, UpdateModel::default())
+            .update(
+                TagID::new_v4(),
+                user_id,
+                UpdateModel {
+                    label: Some("Updated Tag".to_string()),
+                    ..Default::default()
+                },
+            )
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -175,6 +203,7 @@ mod input {
             .create(
                 user_id,
                 CreateModel {
+                    label: "Test Tag".to_string(),
                     category_id: Some(category_id),
                     ..Default::default()
                 },

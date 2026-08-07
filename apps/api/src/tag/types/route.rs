@@ -18,7 +18,7 @@ pub struct CreateRequest {
 }
 
 #[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(Clone, Default))]
 pub struct UpdateRequest {
     pub label: Option<String>,
     pub category: Option<Option<String>>,

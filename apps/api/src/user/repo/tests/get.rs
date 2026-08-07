@@ -11,7 +11,13 @@ use crate::{
 async fn init(pool: PgPool) -> (UserID, PgUserRepository) {
     let user_repo = PgUserRepository::init(pool.clone());
 
-    let user = user_repo.create(CreateModel::default()).await.unwrap();
+    let user = user_repo
+        .create(CreateModel {
+            display_name: "Test User".to_string(),
+            ..Default::default()
+        })
+        .await
+        .unwrap();
 
     (user.id, user_repo)
 }

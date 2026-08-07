@@ -6,7 +6,7 @@ use crate::{
         repo::{PgTaskRepository, TaskRepository},
         types::{
             repo::{CreateModel, UpdateModel},
-            route::{CreateRequest, UpdateRequest},
+            route::CreateRequest,
         },
     },
     user::types::UserID,
@@ -105,7 +105,7 @@ pub fn task_with_deadline(i: usize) -> CreateModel {
 impl Default for CreateRequest {
     fn default() -> Self {
         Self {
-            title: "Test Task".to_string(),
+            title: String::new(),
             notes: None,
             start: None,
             deadline: None,
@@ -115,43 +115,15 @@ impl Default for CreateRequest {
     }
 }
 
-impl Default for UpdateRequest {
-    fn default() -> Self {
-        Self {
-            title: Some("Updated Task".to_string()),
-            notes: None,
-            start: None,
-            deadline: None,
-            tags: None,
-            position_key: None,
-        }
-    }
-}
-
 impl Default for CreateModel {
     fn default() -> Self {
         Self {
-            title: "Test Task".to_string(),
+            title: String::new(),
             notes: None,
             start: None,
             has_time: true,
             deadline: None,
             position_key: generate_a_z(0).to_string(),
-        }
-    }
-}
-
-impl Default for UpdateModel {
-    fn default() -> Self {
-        Self {
-            title: Some("Updated Task".to_string()),
-            notes: None,
-            start: None,
-            has_time: None,
-            deadline: None,
-            completed: None,
-            deleted: None,
-            position_key: None,
         }
     }
 }

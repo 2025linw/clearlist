@@ -1,5 +1,3 @@
-use tokio::test;
-
 use crate::{
     error::{Resource, service::Error},
     tag::{
@@ -10,115 +8,111 @@ use crate::{
     user::types::UserID,
 };
 
-#[test]
-async fn success() {
-    let service = TagService::init(MockTagRepository::new());
+async fn init() -> (UserContext, TagID, TagService<MockTagRepository>) {
+    let tag_service = TagService::init(MockTagRepository::new());
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let res = service
-        .delete(test_tag.id, UserContext { id: test_user_id })
-        .await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn not_owned() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let other_user_id = service.repo.add_user().await;
-    let other_tag = service
-        .create(UserContext { id: other_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let res = service
-        .delete(
-            other_tag.id,
-            UserContext {
-                id: UserID::new_v4(),
+    let user_context = UserContext {
+        id: tag_service.repo.add_user().await,
+    };
+    let tag = tag_service
+        .create(
+            user_context,
+            CreateRequest {
+                label: "Test Tag".to_string(),
+                ..Default::default()
             },
         )
-        .await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn not_exists() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-
-    let res = service
-        .delete(TagID::new_v4(), UserContext { id: test_user_id })
-        .await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn is_idempotent() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
         .await
         .unwrap();
 
-    let res = service
-        .delete(test_tag.id, UserContext { id: test_user_id })
-        .await;
-    assert!(res.is_ok());
-    let res = service
-        .delete(test_tag.id, UserContext { id: test_user_id })
-        .await;
-    assert!(res.is_ok());
+    (user_context, tag.id, tag_service)
+}
 
-    let res = service
-        .get(test_tag.id, UserContext { id: test_user_id })
-        .await;
-    if let Err(err) = res {
-        assert!(matches!(err, Error::NotFound(Resource::Tag)))
+mod success {
+    use tokio::test;
+
+    use super::*;
+
+    #[test]
+    async fn success() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let res = tag_service.delete(tag_id, user_context).await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn is_idempotent() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let res = tag_service.delete(tag_id, user_context).await;
+        assert!(res.is_ok());
+        let res = tag_service.delete(tag_id, user_context).await;
+        assert!(res.is_ok());
+
+        let res = tag_service.get(tag_id, user_context).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::NotFound(Resource::Tag)))
+        }
     }
 }
 
-// repo errors
-#[test]
-async fn repo_backend_error() {
-    let service = TagService::init(MockTagRepository::new_backend_error());
+mod existence {
+    use tokio::test;
 
-    let res = service
-        .delete(
-            TagID::new_v4(),
-            UserContext {
-                id: UserID::new_v4(),
-            },
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Internal(_)));
+    use super::*;
+
+    #[test]
+    async fn not_owned() {
+        let (_, tag_id, tag_service) = init().await;
+        let user_context = UserContext {
+            id: tag_service.repo.add_user().await,
+        };
+
+        let res = tag_service.delete(tag_id, user_context).await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn not_exists() {
+        let (user_context, _, tag_service) = init().await;
+
+        let res = tag_service.delete(TagID::new_v4(), user_context).await;
+        assert!(res.is_ok());
     }
 }
 
-#[test]
-async fn repo_programming_error() {
-    let service = TagService::init(MockTagRepository::new_programming_error());
+mod error {
+    use tokio::test;
 
-    let res = service
-        .delete(
-            TagID::new_v4(),
-            UserContext {
-                id: UserID::new_v4(),
-            },
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Unhandled(_)));
+    use super::*;
+
+    #[test]
+    async fn repo_backend_error() {
+        let tag_service = TagService::init(MockTagRepository::new_backend_error());
+        let user_context = UserContext {
+            id: UserID::new_v4(),
+        };
+
+        let res = tag_service.delete(TagID::new_v4(), user_context).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Internal(_)));
+        }
+    }
+
+    #[test]
+    async fn repo_programming_error() {
+        let tag_service = TagService::init(MockTagRepository::new_programming_error());
+        let user_context = UserContext {
+            id: UserID::new_v4(),
+        };
+
+        let res = tag_service.delete(TagID::new_v4(), user_context).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Unhandled(_)));
+        }
     }
 }

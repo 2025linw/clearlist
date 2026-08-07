@@ -1,9 +1,7 @@
-use tokio::test;
-
 use crate::{
     error::{
         Resource,
-        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, TOO_LONG, ValidationError},
+        service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, TOO_LONG, ValidationError},
     },
     tag::{
         service::{TagService, TagServiceTrait},
@@ -20,181 +18,224 @@ use crate::{
     user::types::UserID,
 };
 
-#[test]
-async fn success() {
-    let service = TagService::init(MockTagRepository::new());
+async fn init() -> (UserContext, TagID, TagService<MockTagRepository>) {
+    let tag_service = TagService::init(MockTagRepository::new());
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let res = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            UpdateRequest::default(),
-        )
-        .await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn not_owned() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let other_user_id = service.repo.add_user().await;
-    let other_tag = service
-        .create(UserContext { id: other_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let res = service
-        .update(
-            other_tag.id,
-            UserContext {
-                id: UserID::new_v4(),
-            },
-            UpdateRequest::default(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::NotFound(Resource::Tag)));
-    }
-}
-
-#[test]
-async fn not_exists() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = UserID::new_v4();
-
-    let res = service
-        .update(
-            TagID::new_v4(),
-            UserContext { id: test_user_id },
-            UpdateRequest::default(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::NotFound(Resource::Tag)))
-    }
-}
-
-#[test]
-async fn no_op() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let update_request = UpdateRequest {
-        label: None,
-        ..Default::default()
+    let user_context = UserContext {
+        id: tag_service.repo.add_user().await,
     };
-    let res = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request,
+    let tag = tag_service
+        .create(
+            user_context,
+            CreateRequest {
+                label: "Test Tag".to_string(),
+                ..Default::default()
+            },
         )
-        .await;
-    assert!(res.is_ok());
-    if let Ok(tag) = res {
-        assert_eq!(tag, test_tag);
+        .await
+        .unwrap();
+
+    (user_context, tag.id, tag_service)
+}
+
+fn valid_request() -> UpdateRequest {
+    UpdateRequest {
+        label: Some("Updated Tag".to_string()),
+        ..Default::default()
     }
 }
 
-#[test]
-async fn is_idempotent() {
-    let service = TagService::init(MockTagRepository::new());
+mod success {
+    use tokio::test;
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
+    use super::*;
 
-    let update_request = UpdateRequest::default();
-    let update_1 = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request.clone(),
-        )
-        .await
-        .unwrap();
-    let update_2 = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request.clone(),
-        )
-        .await
-        .unwrap();
+    #[test]
+    async fn success() {
+        let (user_context, tag_id, tag_service) = init().await;
 
-    assert_eq!(update_1, update_2);
-}
+        let res = tag_service
+            .update(tag_id, user_context, valid_request())
+            .await;
+        assert!(res.is_ok());
+    }
 
-// label tests
-#[test]
-async fn normalize_label() {
-    let service = TagService::init(MockTagRepository::new());
+    #[test]
+    async fn no_op() {
+        let (user_context, tag_id, tag_service) = init().await;
+        let init_tag = tag_service.get(tag_id, user_context).await.unwrap();
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    for (name, input, expected) in NORMALIZATION_TEST_INPUT {
-        let update_request = UpdateRequest {
-            label: Some(input.to_string()),
-            ..Default::default()
-        };
-        let tag = service
-            .update(
-                test_tag.id,
-                UserContext { id: test_user_id },
-                update_request,
-            )
+        let tag = tag_service
+            .update(tag_id, user_context, UpdateRequest::default())
             .await
             .unwrap();
-        assert_eq!(
-            tag.label, expected,
-            "case: {} - expected: {}; found {}",
-            name, expected, tag.label,
-        )
+        assert_eq!(tag, init_tag);
+    }
+
+    #[test]
+    async fn is_idempotent() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let update_request = UpdateRequest {
+            label: Some("Updated Tag".to_string()),
+            ..Default::default()
+        };
+        let first_update = tag_service
+            .update(tag_id, user_context, update_request.clone())
+            .await
+            .unwrap();
+        let second_update = tag_service
+            .update(tag_id, user_context, update_request.clone())
+            .await
+            .unwrap();
+
+        assert_eq!(first_update, second_update);
     }
 }
 
-#[test]
-async fn errors_with_label_containing_whitespaces() {
-    let service = TagService::init(MockTagRepository::new());
+mod existence {
+    use tokio::test;
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
+    use super::*;
 
-    for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+    #[test]
+    async fn not_owned() {
+        let (_, tag_id, tag_service) = init().await;
+        let user_context = UserContext {
+            id: tag_service.repo.add_user().await,
+        };
+
+        let res = tag_service
+            .update(tag_id, user_context, valid_request())
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::NotFound(Resource::Tag)));
+        }
+    }
+
+    #[test]
+    async fn not_exists() {
+        let (user_context, _, tag_service) = init().await;
+
+        let res = tag_service
+            .update(TagID::new_v4(), user_context, valid_request())
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::NotFound(Resource::Tag)))
+        }
+    }
+}
+
+mod error {
+    use tokio::test;
+
+    use super::*;
+
+    #[test]
+    async fn repo_backend_error() {
+        let tag_service = TagService::init(MockTagRepository::new_backend_error());
+        let user_context = UserContext {
+            id: UserID::new_v4(),
+        };
+
+        let res = tag_service
+            .update(TagID::new_v4(), user_context, valid_request())
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Internal(_)));
+        }
+    }
+
+    #[test]
+    async fn repo_programming_error() {
+        let tag_service = TagService::init(MockTagRepository::new_programming_error());
+        let user_context = UserContext {
+            id: UserID::new_v4(),
+        };
+
+        let res = tag_service
+            .update(TagID::new_v4(), user_context, valid_request())
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Unhandled(_)));
+        }
+    }
+}
+
+mod label {
+    use tokio::test;
+
+    use super::*;
+
+    #[test]
+    async fn normalize_label() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
+            let update_request = UpdateRequest {
+                label: Some(input.to_string()),
+                ..Default::default()
+            };
+            let tag = tag_service
+                .update(tag_id, user_context, update_request)
+                .await
+                .unwrap();
+            assert_eq!(
+                tag.label, expected,
+                "case: {} - expected: {}; found {}",
+                name, expected, tag.label,
+            )
+        }
+    }
+
+    #[test]
+    async fn errors_with_label_containing_whitespaces() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+            let update_request = UpdateRequest {
+                label: Some(input.to_string()),
+                ..Default::default()
+            };
+            let res = tag_service
+                .update(tag_id, user_context, update_request)
+                .await;
+            assert!(res.is_err(), "case: {}; should have failed", name);
+            if let Err(err) = res {
+                assert!(
+                    matches!(
+                        err,
+                        Error::Validation(ValidationError::InvalidValue {
+                            field: "label",
+                            reason: NO_NONSPACE_WHITESPACE
+                        })
+                    ),
+                    "case: {}; got error: {}",
+                    name,
+                    err
+                )
+            }
+        }
+    }
+
+    #[test]
+    async fn errors_with_label_more_than_100_chars() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let mut too_long_label = String::new();
+        for _ in 0..12 {
+            too_long_label.push_str("1234567890");
+        }
         let update_request = UpdateRequest {
-            label: Some(input.to_string()),
+            label: Some(too_long_label),
             ..Default::default()
         };
-        let res = service
-            .update(
-                test_tag.id,
-                UserContext { id: test_user_id },
-                update_request,
-            )
+        let res = tag_service
+            .update(tag_id, user_context, update_request)
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -203,147 +244,112 @@ async fn errors_with_label_containing_whitespaces() {
                     err,
                     Error::Validation(ValidationError::InvalidValue {
                         field: "label",
-                        reason: NO_WHITESPACE
+                        reason: TOO_LONG,
                     })
                 ),
-                "case: {}; got error: {}",
-                name,
+                "got error: {}",
                 err
             )
         }
     }
 }
 
-#[test]
-async fn errors_with_label_more_than_100_chars() {
-    let service = TagService::init(MockTagRepository::new());
+mod category {
+    use tokio::test;
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
+    use super::*;
 
-    let mut too_long_label = String::new();
-    for _ in 0..12 {
-        too_long_label.push_str("1234567890");
+    #[test]
+    async fn normalize_category() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
+            let update_request = UpdateRequest {
+                category: Some(Some(input.to_string())),
+                ..Default::default()
+            };
+            let tag = tag_service
+                .update(tag_id, user_context, update_request)
+                .await
+                .unwrap();
+            assert_eq!(
+                tag.category_name.unwrap(),
+                expected,
+                "case: {} - expected: {}; found {}",
+                name,
+                expected,
+                tag.label,
+            )
+        }
     }
-    let update_request = UpdateRequest {
-        label: Some(too_long_label),
-        ..Default::default()
-    };
-    let res = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request,
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(
-            matches!(
+
+    #[test]
+    async fn errors_on_blank_category() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let update_request = UpdateRequest {
+            category: Some(Some("".to_string())),
+            ..Default::default()
+        };
+        let res = tag_service
+            .update(tag_id, user_context, update_request)
+            .await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
                 err,
                 Error::Validation(ValidationError::InvalidValue {
-                    field: "label",
-                    reason: TOO_LONG,
+                    field: "category",
+                    reason: NO_EMPTY_STRING,
                 })
-            ),
-            "got error: {}",
-            err
-        )
+            ))
+        }
     }
-}
 
-// category tests
-#[test]
-async fn normalize_category() {
-    let service = TagService::init(MockTagRepository::new());
+    #[test]
+    async fn errors_with_category_containing_whitespaces() {
+        let (user_context, tag_id, tag_service) = init().await;
 
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
+        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+            let update_request = UpdateRequest {
+                category: Some(Some(input.to_string())),
+                ..Default::default()
+            };
+            let res = tag_service
+                .update(tag_id, user_context, update_request)
+                .await;
+            assert!(res.is_err(), "case: {}; should have failed", name);
+            if let Err(err) = res {
+                assert!(
+                    matches!(
+                        err,
+                        Error::Validation(ValidationError::InvalidValue {
+                            field: "category",
+                            reason: NO_NONSPACE_WHITESPACE
+                        })
+                    ),
+                    "case: {}; got error: {}",
+                    name,
+                    err
+                )
+            }
+        }
+    }
 
-    for (name, input, expected) in NORMALIZATION_TEST_INPUT {
+    #[test]
+    async fn errors_with_category_more_than_100_chars() {
+        let (user_context, tag_id, tag_service) = init().await;
+
+        let mut too_long_label = String::new();
+        for _ in 0..12 {
+            too_long_label.push_str("1234567890");
+        }
         let update_request = UpdateRequest {
-            category: Some(Some(input.to_string())),
+            category: Some(Some(too_long_label)),
             ..Default::default()
         };
-        let tag = service
-            .update(
-                test_tag.id,
-                UserContext { id: test_user_id },
-                update_request,
-            )
-            .await
-            .unwrap();
-        assert_eq!(
-            tag.category_name.unwrap(),
-            expected,
-            "case: {} - expected: {}; found {}",
-            name,
-            expected,
-            tag.label,
-        )
-    }
-}
-
-#[test]
-async fn errors_on_blank_category() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let update_request = UpdateRequest {
-        category: Some(Some("".to_string())),
-        ..Default::default()
-    };
-    let res = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request,
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Validation(ValidationError::InvalidValue {
-                field: "category",
-                reason: NO_EMPTY_STRING,
-            })
-        ))
-    }
-}
-
-#[test]
-async fn errors_with_category_containing_whitespaces() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
-        let update_request = UpdateRequest {
-            category: Some(Some(input.to_string())),
-            ..Default::default()
-        };
-        let res = service
-            .update(
-                test_tag.id,
-                UserContext { id: test_user_id },
-                update_request,
-            )
+        let res = tag_service
+            .update(tag_id, user_context, update_request)
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -352,93 +358,12 @@ async fn errors_with_category_containing_whitespaces() {
                     err,
                     Error::Validation(ValidationError::InvalidValue {
                         field: "category",
-                        reason: NO_WHITESPACE
+                        reason: TOO_LONG,
                     })
                 ),
-                "case: {}; got error: {}",
-                name,
+                "got error: {}",
                 err
             )
         }
-    }
-}
-
-#[test]
-async fn errors_with_category_more_than_100_chars() {
-    let service = TagService::init(MockTagRepository::new());
-
-    let test_user_id = service.repo.add_user().await;
-    let test_tag = service
-        .create(UserContext { id: test_user_id }, CreateRequest::default())
-        .await
-        .unwrap();
-
-    let mut too_long_label = String::new();
-    for _ in 0..12 {
-        too_long_label.push_str("1234567890");
-    }
-    let update_request = UpdateRequest {
-        category: Some(Some(too_long_label)),
-        ..Default::default()
-    };
-    let res = service
-        .update(
-            test_tag.id,
-            UserContext { id: test_user_id },
-            update_request,
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(
-            matches!(
-                err,
-                Error::Validation(ValidationError::InvalidValue {
-                    field: "category",
-                    reason: TOO_LONG,
-                })
-            ),
-            "got error: {}",
-            err
-        )
-    }
-}
-
-// repo errors
-#[test]
-async fn repo_backend_error() {
-    let service = TagService::init(MockTagRepository::new_backend_error());
-
-    let res = service
-        .update(
-            TagID::new_v4(),
-            UserContext {
-                id: UserID::new_v4(),
-            },
-            UpdateRequest::default(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Internal(_)));
-    }
-}
-
-#[test]
-async fn repo_programming_error() {
-    let service = TagService::init(MockTagRepository::new_programming_error());
-
-    let res = service
-        .update(
-            TagID::new_v4(),
-            UserContext {
-                id: UserID::new_v4(),
-            },
-            UpdateRequest::default(),
-        )
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Unhandled(_)));
     }
 }

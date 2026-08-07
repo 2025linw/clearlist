@@ -1,9 +1,7 @@
-use tokio::test;
-
 use crate::{
     error::{
         Resource,
-        service::{Error, NO_EMPTY_STRING, NO_WHITESPACE, ValidationError},
+        service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, ValidationError},
     },
     tests::{
         mocks::user::MockUserRepository,
@@ -18,163 +16,187 @@ use crate::{
     },
 };
 
-#[test]
-async fn success() {
-    let service = UserService::init(MockUserRepository::new());
+async fn init() -> (UserID, UserService<MockUserRepository>) {
+    let user_service = UserService::init(MockUserRepository::new());
 
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
-
-    let res = service.update(test_user.id, UpdateRequest::default()).await;
-    assert!(res.is_ok());
-}
-
-#[test]
-async fn not_exists() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let res = service
-        .update(UserID::new_v4(), UpdateRequest::default())
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::NotFound(Resource::User)))
-    }
-}
-
-#[test]
-async fn no_ops() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
-
-    let update_request = UpdateRequest {
-        display_name: None,
-        ..Default::default()
-    };
-    let res = service.update(test_user.id, update_request).await;
-    assert!(res.is_ok());
-    if let Ok(user) = res {
-        assert_eq!(user, test_user);
-    }
-}
-
-#[test]
-async fn is_idempotent() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
-
-    let update_request = UpdateRequest::default();
-    let update_1 = service
-        .update(test_user.id, update_request.clone())
-        .await
-        .unwrap();
-    let update_2 = service
-        .update(test_user.id, update_request.clone())
+    let user = user_service
+        .create(CreateRequest {
+            display_name: "Test User".to_string(),
+            ..Default::default()
+        })
         .await
         .unwrap();
 
-    assert_eq!(update_1, update_2);
+    (user.id, user_service)
 }
 
-// display_name tests
-#[test]
-async fn normalize_display_name() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
-
-    for (name, input, expected) in NORMALIZATION_TEST_INPUT {
-        let update_request = UpdateRequest {
-            display_name: Some(input.to_string()),
-            preferred_timezone: None,
-            completed_task_retention: None,
-        };
-        let user = service.update(test_user.id, update_request).await.unwrap();
-        assert_eq!(
-            user.display_name, expected,
-            "case: {} - expected: {} (found: {})",
-            name, expected, user.display_name
-        );
-    }
-}
-
-#[test]
-async fn errors_on_blank_display_name() {
-    let service = UserService::init(MockUserRepository::new());
-
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
-
-    let update_request = UpdateRequest {
-        display_name: Some("".to_string()),
+fn valid_request() -> UpdateRequest {
+    UpdateRequest {
+        display_name: Some("Updated User".to_string()),
         ..Default::default()
-    };
-    let res = service.update(test_user.id, update_request).await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(
-            err,
-            Error::Validation(ValidationError::InvalidValue {
-                field: "display_name",
-                reason: NO_EMPTY_STRING,
-            })
-        ))
     }
 }
 
-#[test]
-async fn errors_with_display_name_containing_whitespaces() {
-    let service = UserService::init(MockUserRepository::new());
+mod success {
+    use tokio::test;
 
-    let test_user = service.create(CreateRequest::default()).await.unwrap();
+    use super::*;
 
-    for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+    #[test]
+    async fn success() {
+        let (user_id, user_service) = init().await;
+
+        let res = user_service.update(user_id, valid_request()).await;
+        assert!(res.is_ok());
+    }
+
+    #[test]
+    async fn no_ops() {
+        let (user_id, user_service) = init().await;
+        let init_user = user_service.get(user_id).await.unwrap();
+
+        let user = user_service
+            .update(user_id, UpdateRequest::default())
+            .await
+            .unwrap();
+        assert_eq!(user, init_user);
+    }
+
+    #[test]
+    async fn is_idempotent() {
+        let (user_id, user_service) = init().await;
+
         let update_request = UpdateRequest {
-            display_name: Some(input.to_string()),
+            display_name: Some("Updated User".to_string()),
             ..Default::default()
         };
-        let res = service.update(test_user.id, update_request).await;
+        let first_update = user_service
+            .update(user_id, update_request.clone())
+            .await
+            .unwrap();
+        let second_update = user_service
+            .update(user_id, update_request.clone())
+            .await
+            .unwrap();
+
+        assert_eq!(first_update, second_update);
+    }
+}
+
+mod existence {
+    use tokio::test;
+
+    use super::*;
+
+    #[test]
+    async fn not_exists() {
+        let (_, user_service) = init().await;
+
+        let res = user_service.update(UserID::new_v4(), valid_request()).await;
         assert!(res.is_err());
         if let Err(err) = res {
-            assert!(
-                matches!(
-                    err,
-                    Error::Validation(ValidationError::InvalidValue {
-                        field: "display_name",
-                        reason: NO_WHITESPACE
-                    })
-                ),
-                "case: {}; got error: {}",
-                name,
-                err
-            )
+            assert!(matches!(err, Error::NotFound(Resource::User)))
         }
     }
 }
 
-// repo errors
-#[test]
-async fn repo_backend_error() {
-    let service = UserService::init(MockUserRepository::new_backend_error());
+mod error {
+    use tokio::test;
 
-    let res = service
-        .update(UserID::new_v4(), UpdateRequest::default())
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Internal(_)));
+    use super::*;
+
+    #[test]
+    async fn repo_backend_error() {
+        let user_service = UserService::init(MockUserRepository::new_backend_error());
+
+        let res = user_service.update(UserID::new_v4(), valid_request()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Internal(_)));
+        }
+    }
+
+    #[test]
+    async fn repo_programming_error() {
+        let user_service = UserService::init(MockUserRepository::new_programming_error());
+
+        let res = user_service.update(UserID::new_v4(), valid_request()).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(err, Error::Unhandled(_)));
+        }
     }
 }
 
-#[test]
-async fn repo_programming_error() {
-    let service = UserService::init(MockUserRepository::new_programming_error());
+mod display_name {
+    use tokio::test;
 
-    let res = service
-        .update(UserID::new_v4(), UpdateRequest::default())
-        .await;
-    assert!(res.is_err());
-    if let Err(err) = res {
-        assert!(matches!(err, Error::Unhandled(_)));
+    use super::*;
+
+    #[test]
+    async fn normalize_display_name() {
+        let (user_id, user_service) = init().await;
+
+        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
+            let update_request = UpdateRequest {
+                display_name: Some(input.to_string()),
+                ..Default::default()
+            };
+            let user = user_service.update(user_id, update_request).await.unwrap();
+            assert_eq!(
+                user.display_name, expected,
+                "case: {} - expected: {} (found: {})",
+                name, expected, user.display_name
+            );
+        }
+    }
+
+    #[test]
+    async fn errors_on_blank_display_name() {
+        let (user_id, user_service) = init().await;
+
+        let update_request = UpdateRequest {
+            display_name: Some("".to_string()),
+            ..Default::default()
+        };
+        let res = user_service.update(user_id, update_request).await;
+        assert!(res.is_err());
+        if let Err(err) = res {
+            assert!(matches!(
+                err,
+                Error::Validation(ValidationError::InvalidValue {
+                    field: "display_name",
+                    reason: NO_EMPTY_STRING,
+                })
+            ))
+        }
+    }
+
+    #[test]
+    async fn errors_with_display_name_containing_whitespaces() {
+        let (user_id, user_service) = init().await;
+
+        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+            let update_request = UpdateRequest {
+                display_name: Some(input.to_string()),
+                ..Default::default()
+            };
+            let res = user_service.update(user_id, update_request).await;
+            assert!(res.is_err(), "case: {}; should have failed", name);
+            if let Err(err) = res {
+                assert!(
+                    matches!(
+                        err,
+                        Error::Validation(ValidationError::InvalidValue {
+                            field: "display_name",
+                            reason: NO_NONSPACE_WHITESPACE
+                        })
+                    ),
+                    "case: {}; got error: {}",
+                    name,
+                    err
+                )
+            }
+        }
     }
 }
