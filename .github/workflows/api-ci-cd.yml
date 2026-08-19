@@ -63,7 +63,7 @@ jobs:
 
       - name: Run clippy (strict)
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
-        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented
+        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::print_stdout -D clippy::print_stderr
 
       - name: Run test
         env:
