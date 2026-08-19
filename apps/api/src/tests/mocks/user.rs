@@ -20,14 +20,15 @@ use crate::{
 
 #[derive(Clone)]
 pub struct MockUserRepository {
-    repo: MockDB<UserID, UserModel>,
+    users: MockDB<UserID, UserModel>,
+
     error: Option<Error>,
 }
 
 impl MockUserRepository {
     pub fn new() -> Self {
         Self {
-            repo: Arc::new(RwLock::new(HashMap::new())),
+            users: Arc::new(RwLock::new(HashMap::new())),
             error: None,
         }
     }
@@ -41,7 +42,7 @@ impl MockUserRepository {
 
     pub fn new_programming_error() -> Self {
         let mut mock = Self::new();
-        mock.error = Some(Error::Programming("mock programming error".to_string()));
+        mock.error = Some(Error::Internal("mock programming error".to_string()));
 
         mock
     }
@@ -53,13 +54,19 @@ impl UserRepository for MockUserRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut repo = self.repo.write().await;
+        let mut repo = self.users.write().await;
+        if repo.contains_key(&create_model.id) {
+            return Err(Error::Constraint(ConstraintViolation::Unique {
+                resource: Resource::User,
+                message: "users_pkey".to_string(),
+            }));
+        }
 
         let user = UserModel {
             id: create_model.id,
             display_name: create_model.display_name,
-            preferred_timezone: create_model.preferred_timezone,
-            completed_task_retention: create_model.completed_task_retention,
+            preferred_timezone: None,
+            completed_task_retention: None,
             updated_at: create_model.created_at,
             created_at: create_model.created_at,
         };
@@ -73,14 +80,14 @@ impl UserRepository for MockUserRepository {
             return Err(err.clone());
         }
 
-        Ok(self.repo.read().await.get(&id).cloned())
+        Ok(self.users.read().await.get(&id).cloned())
     }
 
     async fn update(&self, id: UserID, update_model: UpdateModel) -> Result<UserModel> {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let mut repo = self.repo.write().await;
+        let mut repo = self.users.write().await;
 
         let user_opt = repo.get(&id);
         if user_opt.is_none() {
@@ -92,6 +99,9 @@ impl UserRepository for MockUserRepository {
         let mut user = user_opt.unwrap().clone();
         if let Some(display_name) = update_model.display_name {
             user.display_name = display_name;
+        }
+        if let Some(preferred_timezone) = update_model.preferred_timezone {
+            user.preferred_timezone = preferred_timezone;
         }
         if let Some(completed_task_retention) = update_model.completed_task_retention {
             user.completed_task_retention = completed_task_retention;

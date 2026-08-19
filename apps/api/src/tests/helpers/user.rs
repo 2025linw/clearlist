@@ -1,14 +1,12 @@
-use crate::user::types::{UserID, repo::CreateModel, route::CreateRequest};
+use crate::user::types::{UserID, repo::CreateModel, route::ProvisionRequest};
 
 use super::get_today_date_pg;
 
-impl Default for CreateRequest {
+impl Default for ProvisionRequest {
     fn default() -> Self {
         Self {
-            id: UserID::new_v4(),
+            id: UserID::new_random(),
             display_name: String::new(),
-            preferred_timezone: None,
-            completed_task_retention: None,
             created_at: get_today_date_pg(),
         }
     }
@@ -17,10 +15,8 @@ impl Default for CreateRequest {
 impl Default for CreateModel {
     fn default() -> Self {
         Self {
-            id: UserID::new_v4(),
+            id: UserID::new_random(),
             display_name: String::new(),
-            preferred_timezone: None,
-            completed_task_retention: None,
             created_at: get_today_date_pg(),
         }
     }

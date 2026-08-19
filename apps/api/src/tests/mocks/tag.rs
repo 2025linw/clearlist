@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet, hash_map::Entry},
+    collections::{HashMap, hash_map::Entry},
     sync::Arc,
 };
 
@@ -20,16 +20,19 @@ use crate::{
     },
     tests::{
         helpers::{generate_a_z, get_today_date_pg},
-        mocks::MockDB,
+        mocks::{MockDB, MockUserRepository},
     },
-    user::types::UserID,
+    user::{
+        repo::UserRepository,
+        types::{UserID, repo::CreateModel as UserCreateModel},
+    },
 };
 
 #[derive(Clone)]
 pub struct MockTagRepository {
-    users: Arc<RwLock<HashSet<UserID>>>,
-    categories: MockDB<(CategoryID, UserID), (String, String)>,
     tags: MockDB<(TagID, UserID), TagModel>,
+    categories: MockDB<(CategoryID, UserID), (String, String)>,
+    users: MockUserRepository,
 
     error: Option<Error>,
     last_filter: Arc<RwLock<Option<QueryOpts>>>,
@@ -38,9 +41,19 @@ pub struct MockTagRepository {
 impl MockTagRepository {
     pub fn new() -> Self {
         Self {
-            users: Arc::new(RwLock::new(HashSet::new())),
-            categories: Arc::new(RwLock::new(HashMap::new())),
+            users: MockUserRepository::new(),
             tags: Arc::new(RwLock::new(HashMap::new())),
+            categories: Arc::new(RwLock::new(HashMap::new())),
+            error: None,
+            last_filter: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    pub fn init(user_repo: MockUserRepository) -> Self {
+        Self {
+            users: user_repo,
+            tags: Arc::new(RwLock::new(HashMap::new())),
+            categories: Arc::new(RwLock::new(HashMap::new())),
             error: None,
             last_filter: Arc::new(RwLock::new(None)),
         }
@@ -53,9 +66,9 @@ impl MockTagRepository {
         mock
     }
 
-    pub fn new_programming_error() -> Self {
+    pub fn new_internal_error() -> Self {
         let mut mock = Self::new();
-        mock.error = Some(Error::Programming("mock programming error".to_string()));
+        mock.error = Some(Error::Internal("mock programming error".to_string()));
 
         mock
     }
@@ -70,12 +83,9 @@ impl MockTagRepository {
     }
 
     pub async fn add_user(&self) -> UserID {
-        let user_id = UserID::new_v4();
+        let user = self.users.create(UserCreateModel::default()).await.unwrap();
 
-        let mut user_repo = self.users.write().await;
-        assert!(user_repo.insert(user_id));
-
-        user_id
+        user.id
     }
 }
 
@@ -99,10 +109,12 @@ impl TagRepository for MockTagRepository {
         }
         let mut repo = self.tags.write().await;
         let cat_repo = self.categories.read().await;
-        let user_repo = self.users.read().await;
 
-        if !user_repo.contains(&user_id) {
-            return Err(Error::Constraint(ConstraintViolation::MissingUser));
+        if self.users.get(user_id).await.unwrap().is_none() {
+            return Err(Error::Constraint(ConstraintViolation::ForeignKey {
+                resource: Resource::User,
+                message: "tags_created_by_fkey".to_string(),
+            }));
         }
 
         let (category_id, category_name) = if let Some(category_id) = create_model.category_id {
@@ -118,12 +130,12 @@ impl TagRepository for MockTagRepository {
         };
         let created_at = get_today_date_pg();
         let tag = TagModel {
-            id: TagID::new_v4(),
+            id: TagID::new_random(),
             label: create_model.label,
             category_id,
             category_name,
             position_key: create_model.position_key,
-            cat_position_key: Some(generate_a_z(0).to_string()),
+            category_position_key: Some(generate_a_z(0).to_string()),
             updated_at: created_at,
             created_at,
             created_by: user_id,
@@ -196,6 +208,7 @@ impl TagRepository for MockTagRepository {
             }
             changed = true;
         }
+
         if let Some(position_key) = update_model.position_key
             && position_key != tag.position_key
         {
@@ -256,13 +269,15 @@ impl TagRepository for MockTagRepository {
             return Err(err.clone());
         }
         let mut cat_repo = self.categories.write().await;
-        let user_repo = self.users.read().await;
 
-        if !user_repo.contains(&user_id) {
-            return Err(Error::Constraint(ConstraintViolation::MissingUser));
+        if self.users.get(user_id).await.unwrap().is_none() {
+            return Err(Error::Constraint(ConstraintViolation::ForeignKey {
+                resource: Resource::User,
+                message: "categories_created_by_fkey".to_string(),
+            }));
         }
 
-        let id = CategoryID::new_v4();
+        let id = CategoryID::new_random();
         cat_repo.insert((id, user_id), (category, position_key));
 
         Ok(id)

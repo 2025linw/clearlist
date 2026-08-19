@@ -101,7 +101,9 @@ fn normalize_create_request(request: &mut CreateRequest) {
         *notes = notes.trim().to_owned();
     }
 
-    request.tags = dedupe_array(request.tags.to_vec());
+    if let Some(tags) = request.tags.as_mut() {
+        *tags = dedupe_array(tags.to_vec());
+    }
 }
 
 fn normalize_update_request(request: &mut UpdateRequest) {

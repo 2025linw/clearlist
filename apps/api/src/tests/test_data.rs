@@ -1,6 +1,6 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::NaiveDate;
 
-use crate::types::date_query::BracketInterval;
+use crate::types::{field::Start, query::BracketInterval};
 
 pub const NORMALIZATION_TEST_INPUT: [(&str, &str, &str); 4] = [
     ("contains spaces", "  Test Text     ", "Test Text"),
@@ -24,36 +24,36 @@ pub const CONTAINS_MULTILINE_TEST_INPUT: [(&str, &str); 6] = [
     ("multiline 6", "Test\u{2029}Text"), // Paragraph separator
 ];
 
-pub fn create_overspecified_start_range() -> Vec<BracketInterval<DateTime<Utc>>> {
+pub fn create_overspecified_start_range() -> Vec<BracketInterval<Start>> {
     vec![
         BracketInterval {
-            ne: Some(DateTime::<Utc>::MIN_UTC),
-            lt: Some(DateTime::<Utc>::MIN_UTC),
+            ne: Some(Start::default()),
+            lt: Some(Start::default()),
             ..Default::default()
         },
         BracketInterval {
-            ne: Some(DateTime::<Utc>::MIN_UTC),
-            lte: Some(DateTime::<Utc>::MIN_UTC),
+            ne: Some(Start::default()),
+            lte: Some(Start::default()),
             ..Default::default()
         },
         BracketInterval {
-            ne: Some(DateTime::<Utc>::MIN_UTC),
-            gt: Some(DateTime::<Utc>::MIN_UTC),
+            ne: Some(Start::default()),
+            gt: Some(Start::default()),
             ..Default::default()
         },
         BracketInterval {
-            ne: Some(DateTime::<Utc>::MIN_UTC),
-            gte: Some(DateTime::<Utc>::MIN_UTC),
+            ne: Some(Start::default()),
+            gte: Some(Start::default()),
             ..Default::default()
         },
         BracketInterval {
-            lt: Some(DateTime::<Utc>::MIN_UTC),
-            lte: Some(DateTime::<Utc>::MIN_UTC),
+            lt: Some(Start::default()),
+            lte: Some(Start::default()),
             ..Default::default()
         },
         BracketInterval {
-            gt: Some(DateTime::<Utc>::MIN_UTC),
-            gte: Some(DateTime::<Utc>::MIN_UTC),
+            gt: Some(Start::default()),
+            gte: Some(Start::default()),
             ..Default::default()
         },
     ]

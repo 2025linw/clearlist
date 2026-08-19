@@ -2,21 +2,16 @@ use sqlx::{QueryBuilder, postgres::types::PgInterval};
 
 use super::UserID;
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone)]
 pub struct CreateModel {
     pub id: UserID,
 
     pub display_name: String,
 
-    pub preferred_timezone: Option<String>,
-    pub completed_task_retention: Option<PgInterval>,
-
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone, Default))]
+#[derive(Debug, Default, Clone)]
 pub struct UpdateModel {
     pub display_name: Option<String>,
 

@@ -1,16 +1,10 @@
-#[cfg(test)]
-mod tests;
-
 use async_trait::async_trait;
-use sqlx::{
-    PgConnection, PgPool, QueryBuilder, error::DatabaseError, postgres::PgDatabaseError, query,
-    query_scalar,
-};
+use sqlx::{PgConnection, PgPool, QueryBuilder, query, query_scalar};
 
 use crate::{
     error::{
         Resource,
-        repo::{ConstraintViolation, Error, Result},
+        repo::{Error, Result},
     },
     user::types::UserID,
     utils::repo::query_as,
@@ -22,7 +16,7 @@ use super::types::{
 };
 
 #[async_trait]
-pub trait TagRepository: Send + Sync + Clone {
+pub trait TagRepository: Send + Sync + Clone + 'static {
     async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TagModel>>;
     async fn create(&self, user_id: UserID, create_model: CreateModel) -> Result<TagModel>;
     async fn get(&self, id: TagID, user_id: UserID) -> Result<Option<TagModel>>;
@@ -39,6 +33,7 @@ pub trait TagRepository: Send + Sync + Clone {
         user_id: UserID,
         category: String,
     ) -> Result<Option<CategoryID>>;
+    // async fn list_categories(&self, user_id: UserID) -> Result<Vec<CategoryModel>>;
     async fn add_category(
         &self,
         user_id: UserID,
@@ -70,7 +65,7 @@ impl PgTagRepository {
         query: Option<QueryOpts>,
     ) -> Result<Vec<TagModel>> {
         let mut builder = QueryBuilder::new(
-            "SELECT t.*, tc.category_name, tc.position_key as cat_position_key
+            "SELECT t.*, tc.category_name, tc.position_key as category_position_key
             FROM app.tags t
             LEFT JOIN app.categories tc ON t.category_id = tc.id
             WHERE t.created_by = ",
@@ -82,7 +77,11 @@ impl PgTagRepository {
 
         let query = builder.build_query_as::<TagModel>();
 
-        Ok(query.fetch_all(conn.as_mut()).await?)
+        let tasks = query
+            .fetch_all(conn.as_mut())
+            .await
+            .map_err(|err| Error::from_sqlx(err, Resource::Tag))?;
+        Ok(tasks)
     }
 
     async fn create_tag_row(
@@ -95,25 +94,14 @@ impl PgTagRepository {
             VALUES ($1, $2, $3, $4, $5)
             RETURNING id",
         )
-        .bind(TagID::new_v4())
+        .bind(TagID::new_random())
         .bind(create_model.label)
         .bind(create_model.category_id)
         .bind(create_model.position_key)
         .bind(user_id)
         .fetch_one(conn.as_mut())
         .await
-        .map_err(|err| {
-            if let sqlx::Error::Database(db_err) = &err {
-                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
-                if pg_err.is_foreign_key_violation() {
-                    return Error::Constraint(ConstraintViolation::MissingUser);
-                } else if pg_err.is_unique_violation() {
-                    return Error::Constraint(ConstraintViolation::Unique(Resource::Tag));
-                }
-            }
-
-            err.into()
-        })?;
+        .map_err(|err| Error::from_sqlx(err, Resource::Tag))?;
 
         Ok(Self::fetch_tag_row(conn, id, user_id)
             .await?
@@ -126,14 +114,15 @@ impl PgTagRepository {
         user_id: UserID,
     ) -> Result<Option<TagModel>> {
         let tag_opt = query_as::<TagModel>(
-            "SELECT t.*, tc.category_name, tc.position_key as cat_position_key FROM app.tags t
+            "SELECT t.*, tc.category_name, tc.position_key as category_position_key FROM app.tags t
             LEFT JOIN app.categories tc ON t.category_id = tc.id
             WHERE t.id = $1 AND t.created_by = $2",
         )
         .bind(id)
         .bind(user_id)
         .fetch_optional(conn.as_mut())
-        .await?;
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Tag))?;
 
         Ok(tag_opt)
     }
@@ -150,27 +139,13 @@ impl PgTagRepository {
         builder.push_bind(id);
         builder.push(" AND created_by = ");
         builder.push_bind(user_id);
-        builder.push(" RETURNING id");
+        builder.push(" RETURNING *");
 
-        let res = builder
+        builder
             .build()
-            .execute(conn.as_mut())
+            .fetch_one(conn.as_mut())
             .await
-            .map_err(|err| {
-                if let sqlx::Error::Database(db_err) = &err {
-                    let pg_err = db_err.downcast_ref::<PgDatabaseError>();
-                    if pg_err.is_unique_violation() {
-                        return Error::Constraint(ConstraintViolation::Unique(Resource::Tag));
-                    }
-                }
-
-                err.into()
-            })?;
-        if res.rows_affected() == 0 {
-            return Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Tag,
-            )));
-        }
+            .map_err(|err| Error::from_sqlx(err, Resource::Tag))?;
 
         Ok(Self::fetch_tag_row(conn, id, user_id)
             .await
@@ -179,19 +154,16 @@ impl PgTagRepository {
     }
 
     async fn delete_tag_row(conn: &mut PgConnection, id: TagID, user_id: UserID) -> Result<()> {
-        let res = query(
+        query(
             "DELETE FROM app.tags
-            WHERE id = $1 AND created_by = $2",
+            WHERE id = $1 AND created_by = $2
+            RETURNING id",
         )
         .bind(id)
         .bind(user_id)
-        .execute(conn.as_mut())
-        .await?;
-        if res.rows_affected() == 0 {
-            return Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Tag,
-            )));
-        }
+        .fetch_one(conn.as_mut())
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Tag))?;
 
         Ok(())
     }
@@ -263,11 +235,25 @@ impl TagRepository for PgTagRepository {
         .bind(category)
         .bind(user_id)
         .fetch_optional(conn.as_mut())
-        .await?;
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
 
         conn.close().await?;
         Ok(id_opt)
     }
+
+    // async fn list_categories(&self, user_id: UserID) -> Result<Vec<CategoryModel>> {
+    //     let mut conn = self.db.acquire().await?;
+
+    //     let categories = query_as::<CategoryModel>("")
+    //         .bind(user_id)
+    //         .fetch_all(conn.as_mut())
+    //         .await
+    //         .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
+
+    //     conn.close().await?;
+    //     Ok(categories)
+    // }
 
     async fn add_category(
         &self,
@@ -281,24 +267,13 @@ impl TagRepository for PgTagRepository {
             "INSERT INTO app.categories (id, category_name, position_key, created_by)
             VALUES ($1, $2, $3, $4) RETURNING id",
         )
-        .bind(CategoryID::new_v4())
+        .bind(CategoryID::new_random())
         .bind(category)
         .bind(position_key)
         .bind(user_id)
         .fetch_one(tx.as_mut())
         .await
-        .map_err(|err| {
-            if let sqlx::Error::Database(db_err) = &err {
-                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
-                if pg_err.is_foreign_key_violation() {
-                    return Error::Constraint(ConstraintViolation::MissingUser);
-                } else if pg_err.is_unique_violation() {
-                    return Error::Constraint(ConstraintViolation::Unique(Resource::Category));
-                }
-            }
-
-            err.into()
-        })?;
+        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
 
         tx.commit().await?;
         Ok(id)
@@ -323,13 +298,7 @@ impl TagRepository for PgTagRepository {
         .bind(user_id)
         .fetch_one(tx.as_mut())
         .await
-        .map_err(|err| {
-            if let sqlx::Error::RowNotFound = err {
-                return Error::Constraint(ConstraintViolation::NotFound(Resource::Category));
-            }
-
-            err.into()
-        })?;
+        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
 
         tx.commit().await?;
         Ok(id)
@@ -347,13 +316,7 @@ impl TagRepository for PgTagRepository {
         .bind(user_id)
         .fetch_one(tx.as_mut())
         .await
-        .map_err(|err| {
-            if let sqlx::Error::RowNotFound = err {
-                return Error::Constraint(ConstraintViolation::NotFound(Resource::Category));
-            }
-
-            err.into()
-        })?;
+        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
 
         tx.commit().await?;
         Ok(())

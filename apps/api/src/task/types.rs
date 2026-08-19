@@ -1,24 +1,25 @@
 pub mod repo;
 pub mod route;
-pub mod service;
 
 use chrono_tz::Tz;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
 use uuid::Uuid;
 
 use crate::{
     tag::types::{Tag, TagModel},
-    types::date::Start,
+    types::field::Start,
     user::types::UserID,
 };
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Type)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+)]
 #[sqlx(transparent)]
 pub struct TaskID(Uuid);
 
 impl TaskID {
-    pub fn new_v4() -> Self {
+    pub fn new_random() -> Self {
         Self(Uuid::new_v4())
     }
 }
@@ -29,7 +30,13 @@ impl Default for TaskID {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Deserialize)]
+impl std::fmt::Display for TaskID {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub enum SortBy {
     ID,
     Created,
@@ -52,8 +59,7 @@ impl std::fmt::Display for SortBy {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, FromRow)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone, PartialEq, Eq, FromRow)]
 pub struct TaskModel {
     pub id: TaskID,
 
@@ -72,7 +78,8 @@ pub struct TaskModel {
     pub created_by: UserID,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(Deserialize))]
 pub struct Task {
     pub id: TaskID,
 

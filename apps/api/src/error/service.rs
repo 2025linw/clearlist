@@ -8,16 +8,16 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug)]
 #[cfg_attr(test, derive(Clone))]
 pub enum Error {
-    NotFound(Resource),
+    Internal(String),
 
+    // Resource Errors
+    NotFound(Resource),
+    Conflict,
     Validation(ValidationError),
 
-    Forbidden,
-    Conflict,
+    // Authorization Errors
     Unauthorized,
-
-    Internal(RepoError),
-    Unhandled(RepoError),
+    Forbidden,
 }
 
 impl std::error::Error for Error {}
@@ -30,22 +30,24 @@ impl std::fmt::Display for Error {
 
 impl From<RepoError> for Error {
     fn from(value: RepoError) -> Self {
-        match &value {
-            RepoError::Backend(_) => Self::Internal(value),
-            RepoError::Programming(_) => Self::Unhandled(value),
+        match value {
+            RepoError::Backend(_) | RepoError::Internal(_) => Self::Internal(value.to_string()),
             RepoError::Constraint(constraint) => match constraint {
+                ConstraintViolation::ForeignKey { resource, message } => {
+                    if message.contains("created_by") {
+                        Self::Internal("expected user record to exist".to_string())
+                    } else {
+                        Self::NotFound(resource)
+                    }
+                }
+                ConstraintViolation::Unique { .. } => Self::Conflict,
+                ConstraintViolation::Check { resource, message } => {
+                    unimplemented!("nothing uses check right now: {resource}, {message}")
+                }
+                ConstraintViolation::SoftDeleted(resource) => Self::NotFound(resource.clone()),
                 ConstraintViolation::NotFound(resource) => Self::NotFound(resource.clone()),
-                ConstraintViolation::Deleted(resource) => Self::NotFound(resource.clone()),
-                ConstraintViolation::Unique(_) => Self::Validation(ValidationError::Unique),
-                ConstraintViolation::MissingUser => Self::Internal(value),
             },
         }
-    }
-}
-
-impl From<ValidationError> for Error {
-    fn from(value: ValidationError) -> Self {
-        Self::Validation(value)
     }
 }
 
@@ -56,7 +58,12 @@ pub enum ValidationError {
         field: &'static str,
         reason: &'static str,
     },
-    Unique,
+}
+
+impl From<ValidationError> for Error {
+    fn from(value: ValidationError) -> Self {
+        Self::Validation(value)
+    }
 }
 
 // Pagination Error Reasons

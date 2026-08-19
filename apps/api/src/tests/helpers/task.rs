@@ -109,7 +109,7 @@ impl Default for CreateRequest {
             notes: None,
             start: None,
             deadline: None,
-            tags: Vec::new(),
+            tags: None,
             position_key: generate_a_z(0).to_string(),
         }
     }

@@ -1,13 +1,7 @@
-#[cfg(test)]
-mod tests;
-
 use std::collections::{HashMap, HashSet, hash_map::Entry};
 
 use async_trait::async_trait;
-use sqlx::{
-    PgConnection, PgPool, QueryBuilder, error::DatabaseError, postgres::PgDatabaseError, query,
-    query_scalar,
-};
+use sqlx::{PgConnection, PgPool, QueryBuilder, postgres::PgDatabaseError, query, query_scalar};
 use uuid::Uuid;
 
 use crate::{
@@ -27,7 +21,7 @@ use super::types::{
 };
 
 #[async_trait]
-pub trait TaskRepository: Send + Sync + Clone {
+pub trait TaskRepository: Send + Sync + Clone + 'static {
     async fn task_exists(&self, id: TaskID, user_id: UserID) -> Result<bool>;
 
     async fn list(&self, user_id: UserID, query: Option<QueryOpts>) -> Result<Vec<TaskModel>>;
@@ -86,7 +80,11 @@ impl PgTaskRepository {
 
         let query = builder.build_query_as::<TaskModel>();
 
-        Ok(query.fetch_all(conn.as_mut()).await?)
+        let tasks = query
+            .fetch_all(conn.as_mut())
+            .await
+            .map_err(|err| Error::from_sqlx(err, Resource::Task))?;
+        Ok(tasks)
     }
 
     async fn create_task_row(
@@ -109,15 +107,7 @@ impl PgTaskRepository {
         .bind(user_id)
         .fetch_one(conn.as_mut())
         .await.map_err(|err| {
-            if let sqlx::Error::Database(db_err) = &err {
-                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
-                if pg_err.is_foreign_key_violation() {
-                    return Error::Constraint(ConstraintViolation::MissingUser);
-
-                }
-            }
-
-            err.into()
+            Error::from_sqlx(err, Resource::Task)
         })?;
 
         Ok(Self::fetch_task_row(conn, id, user_id)
@@ -137,7 +127,8 @@ impl PgTaskRepository {
         .bind(id)
         .bind(user_id)
         .fetch_optional(conn.as_mut())
-        .await?;
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Task))?;
 
         match task_opt {
             Some(task) => {
@@ -169,30 +160,20 @@ impl PgTaskRepository {
             .build_query_as::<TaskModel>()
             .fetch_one(conn.as_mut())
             .await
-            .map_err(|err| {
-                if let sqlx::Error::RowNotFound = err {
-                    return Error::Constraint(ConstraintViolation::NotFound(Resource::Task));
-                }
-
-                err.into()
-            })
+            .map_err(|err| Error::from_sqlx(err, Resource::Task))
     }
 
     async fn delete_task_row(conn: &mut PgConnection, id: TaskID, user_id: UserID) -> Result<()> {
-        let res = query(
+        query(
             "DELETE FROM app.tasks
-            WHERE id = $1 AND created_by = $2",
+            WHERE id = $1 AND created_by = $2
+            RETURNING id",
         )
         .bind(id)
         .bind(user_id)
-        .execute(conn.as_mut())
-        .await?;
-
-        if res.rows_affected() == 0 {
-            return Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Task,
-            )));
-        }
+        .fetch_one(conn.as_mut())
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Task))?;
 
         Ok(())
     }
@@ -202,8 +183,8 @@ impl PgTaskRepository {
         id: TaskID,
         user_id: UserID,
     ) -> Result<Vec<TagModel>> {
-        Ok(query_as::<TagModel>(
-            "SELECT tg.*, tc.category_name, tc.position_key as cat_position_key
+        query_as::<TagModel>(
+            "SELECT tg.*, tc.category_name, tc.position_key as category_position_key
             FROM app.tags tg
             LEFT JOIN app.categories tc ON tg.category_id = tc.id
             JOIN app.task_tags tt ON tg.id = tt.tag_id
@@ -214,7 +195,8 @@ impl PgTaskRepository {
         .bind(id)
         .bind(user_id)
         .fetch_all(conn.as_mut())
-        .await?)
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Task))
     }
 
     async fn add_tag_to_task(
@@ -231,27 +213,19 @@ impl PgTaskRepository {
         .bind(tag_id)
         .execute(conn.as_mut())
         .await;
-        if let Err(err) = res {
-            let mut error = None;
-            if let sqlx::Error::Database(db_err) = &err {
-                let pg_err = db_err.downcast_ref::<PgDatabaseError>();
-                if pg_err.is_unique_violation() {
+        let query_res = match res {
+            Ok(query_result) => query_result,
+            Err(err) => {
+                let error = Error::from_sqlx(err, Resource::Tag);
+                if let Error::Constraint(ConstraintViolation::Unique { .. }) = error {
                     return Ok(());
                 }
 
-                let message = pg_err.message();
-                if message == "resource_not_found" || message == "ownership_mismatch" {
-                    error = Some(Error::Constraint(ConstraintViolation::NotFound(
-                        Resource::Tag,
-                    )));
-                }
+                return Err(error);
             }
+        };
 
-            return Err(error.unwrap_or(err.into()));
-        }
-
-        let res = res.unwrap();
-        if res.rows_affected() != 0 {
+        if query_res.rows_affected() != 0 {
             set_updated_timestamp(conn, id, user_id).await?;
         }
 
@@ -264,7 +238,7 @@ impl PgTaskRepository {
         user_id: UserID,
         tag_id: TagID,
     ) -> Result<()> {
-        let res = query(
+        let query_res = query(
             "DELETE FROM app.task_tags
             WHERE task_id = $1 AND tag_id = $2
             RETURNING *",
@@ -272,9 +246,10 @@ impl PgTaskRepository {
         .bind(id)
         .bind(tag_id)
         .execute(conn.as_mut())
-        .await?;
+        .await
+        .map_err(|err| Error::from_sqlx(err, Resource::Task))?;
 
-        if res.rows_affected() != 0 {
+        if query_res.rows_affected() != 0 {
             set_updated_timestamp(conn, id, user_id).await?;
         }
 
@@ -329,7 +304,7 @@ impl PgTaskRepository {
                 }
             }
 
-            err.into()
+            Error::from_sqlx(err, Resource::Task)
         })?
         .rows_affected();
         assert_eq!(num_added as usize, to_add.len());
@@ -442,7 +417,7 @@ impl TaskRepository for PgTaskRepository {
 
         match Self::fetch_task_row(&mut conn, id, user_id).await? {
             TaskState::Deleted(_) => {
-                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                return Err(Error::Constraint(ConstraintViolation::SoftDeleted(
                     Resource::Task,
                 )));
             }
@@ -464,7 +439,7 @@ impl TaskRepository for PgTaskRepository {
 
         match Self::fetch_task_row(&mut tx, id, user_id).await? {
             TaskState::Deleted(_) => {
-                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                return Err(Error::Constraint(ConstraintViolation::SoftDeleted(
                     Resource::Task,
                 )));
             }
@@ -486,7 +461,7 @@ impl TaskRepository for PgTaskRepository {
 
         match Self::fetch_task_row(&mut tx, id, user_id).await? {
             TaskState::Deleted(_) => {
-                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                return Err(Error::Constraint(ConstraintViolation::SoftDeleted(
                     Resource::Task,
                 )));
             }
@@ -513,7 +488,7 @@ impl TaskRepository for PgTaskRepository {
 
         match Self::fetch_task_row(&mut tx, id, user_id).await? {
             TaskState::Deleted(_) => {
-                return Err(Error::Constraint(ConstraintViolation::Deleted(
+                return Err(Error::Constraint(ConstraintViolation::SoftDeleted(
                     Resource::Task,
                 )));
             }

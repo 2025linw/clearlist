@@ -1,36 +1,31 @@
 mod helpers;
 
-#[cfg(test)]
-mod tests;
-
-use async_trait::async_trait;
 use sqlx::postgres::types::PgInterval;
 
-use crate::error::{
-    Resource,
-    repo::{ConstraintViolation, Error as RepoError},
-    service::{Error, Result},
+use crate::{
+    error::{
+        Resource,
+        repo::{ConstraintViolation, Error as RepoError},
+        service::{Error, Result},
+    },
+    user::types::User,
 };
 
 use super::{
     repo::UserRepository,
-    service::helpers::{validate_create_request, validate_update_request},
+    service::helpers::{validate_provision_request, validate_update_request},
     types::{
-        UserID, UserModel,
+        UserID,
         repo::{CreateModel, UpdateModel},
-        route::{CreateRequest, UpdateRequest},
+        route::{ProvisionRequest, UpdateRequest},
     },
 };
 
-#[async_trait]
-pub trait UserServiceTrait {
-    async fn create(&self, create_request: CreateRequest) -> Result<UserModel>;
-    async fn get(&self, id: UserID) -> Result<UserModel>;
-    async fn update(&self, id: UserID, update_request: UpdateRequest) -> Result<UserModel>;
-}
-
 #[derive(Clone)]
-pub struct UserService<R: UserRepository> {
+pub struct UserService<R>
+where
+    R: UserRepository,
+{
     repo: R,
 }
 
@@ -38,38 +33,36 @@ impl<R: UserRepository> UserService<R> {
     pub fn init(repo: R) -> Self {
         Self { repo }
     }
-}
 
-#[async_trait]
-impl<R: UserRepository> UserServiceTrait for UserService<R> {
-    async fn create(&self, create_request: CreateRequest) -> Result<UserModel> {
-        let CreateRequest {
+    pub async fn create(&self, provision_request: ProvisionRequest) -> Result<User> {
+        let ProvisionRequest {
             id,
             display_name,
-            preferred_timezone,
-            completed_task_retention,
             created_at,
-        } = validate_create_request(create_request)?;
+        } = validate_provision_request(provision_request)?;
 
         let create_model = CreateModel {
             id,
             display_name,
-            preferred_timezone: preferred_timezone.map(|tz| tz.to_string()),
-            completed_task_retention: completed_task_retention.map(|int| int.into()),
             created_at,
         };
-        self.repo.create(create_model).await.map_err(Error::from)
+        self.repo
+            .create(create_model)
+            .await
+            .map(User::from)
+            .map_err(Error::from)
     }
 
-    async fn get(&self, id: UserID) -> Result<UserModel> {
+    pub async fn get(&self, id: UserID) -> Result<User> {
         self.repo
             .get(id)
             .await
             .map_err(Error::from)?
+            .map(User::from)
             .ok_or(Error::NotFound(Resource::User))
     }
 
-    async fn update(&self, id: UserID, update_request: UpdateRequest) -> Result<UserModel> {
+    pub async fn update(&self, id: UserID, update_request: UpdateRequest) -> Result<User> {
         if update_request.is_noop() {
             return self.get(id).await;
         }
@@ -86,12 +79,17 @@ impl<R: UserRepository> UserServiceTrait for UserService<R> {
             completed_task_retention: completed_task_retention
                 .map(|inner| inner.map(PgInterval::from)),
         };
-        self.repo.update(id, update_model).await.map_err(|err| {
-            if let RepoError::Constraint(ConstraintViolation::NotFound(Resource::User)) = err {
-                return Error::NotFound(Resource::User);
-            }
 
-            err.into()
-        })
+        self.repo
+            .update(id, update_model)
+            .await
+            .map_err(|err| {
+                if let RepoError::Constraint(ConstraintViolation::NotFound(Resource::User)) = err {
+                    return Error::NotFound(Resource::User);
+                }
+
+                err.into()
+            })
+            .map(User::from)
     }
 }

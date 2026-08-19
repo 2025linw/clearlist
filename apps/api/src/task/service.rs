@@ -1,10 +1,5 @@
 mod helpers;
 
-#[cfg(test)]
-mod tests;
-
-use async_trait::async_trait;
-
 use crate::{
     error::{
         Resource,
@@ -16,7 +11,13 @@ use crate::{
         service::helpers::validate_set_tags,
         types::repo::{CreateModel, UpdateModel},
     },
-    types::{date::Start, order::SortOrder, pagination::SQLPagination},
+    types::{
+        extract::UserContext,
+        field::{DateBound, DateFilter, Start},
+        order::SortOrder,
+        pagination::SQLPagination,
+        query::DateFilter as DateFilterQuery,
+    },
 };
 
 use super::{
@@ -26,61 +27,20 @@ use super::{
         SortBy, Task, TaskID,
         repo::{Filter, QueryOpts, Sort},
         route::{CreateRequest, URLQueryOpts, UpdateRequest},
-        service::UserContext,
     },
 };
 
-#[async_trait]
-pub trait TaskServiceTrait {
-    async fn list(
-        &self,
-        user_context: UserContext,
-        query: Option<URLQueryOpts>,
-    ) -> Result<Vec<Task>>;
-    async fn create(
-        &self,
-        user_context: UserContext,
-        create_request: CreateRequest,
-    ) -> Result<Task>;
-    async fn get(&self, id: TaskID, user_context: UserContext) -> Result<Task>;
-    async fn update(
-        &self,
-        id: TaskID,
-        user_context: UserContext,
-        update_request: UpdateRequest,
-    ) -> Result<Task>;
-
-    async fn delete(&self, id: TaskID, user_context: UserContext) -> Result<()>;
-    async fn restore(&self, id: TaskID, user_context: UserContext) -> Result<()>;
-
-    async fn complete(&self, id: TaskID, user_context: UserContext) -> Result<()>;
-    async fn reopen(&self, id: TaskID, user_context: UserContext) -> Result<()>;
-
-    async fn list_tags(&self, id: TaskID, user_context: UserContext) -> Result<Vec<Tag>>;
-    async fn add_tag(&self, id: TaskID, user_context: UserContext, tag_id: TagID) -> Result<()>;
-    async fn remove_tag(&self, id: TaskID, user_context: UserContext, tag_id: TagID) -> Result<()>;
-    async fn set_tags(
-        &self,
-        id: TaskID,
-        user_context: UserContext,
-        tag_ids: Vec<TagID>,
-    ) -> Result<Vec<Tag>>;
-}
-
 #[derive(Clone)]
 pub struct TaskService<R: TaskRepository> {
-    repo: R,
+    pub(super) repo: R,
 }
 
 impl<R: TaskRepository> TaskService<R> {
     pub fn init(repo: R) -> Self {
         Self { repo }
     }
-}
 
-#[async_trait]
-impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
-    async fn list(
+    pub async fn list(
         &self,
         user_context: UserContext,
         query: Option<URLQueryOpts>,
@@ -100,8 +60,43 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
 
             let mut filter = Filter::new();
             if let Some(start) = start {
-                // TODO: normalize start date to user context
-                filter.start(start.try_into()?);
+                let start = match start {
+                    DateFilterQuery::Has(bool) => DateFilter::Exists(bool),
+                    DateFilterQuery::Exact(start) => {
+                        DateFilter::On(start.into_datetime_utc_with_tz(user_context.tz))
+                    }
+                    DateFilterQuery::BracketInterval(bracket_interval) => DateFilter::try_from(
+                        bracket_interval.into_datetime_utc_with_tz(user_context.tz),
+                    )?,
+                    DateFilterQuery::ISO8601Interval(range) => match range {
+                        [Start::Date(_), Start::Date(_)] => {
+                            let [start, end] = range;
+
+                            DateFilter::Range(
+                                DateBound::Inclusive(
+                                    start.into_datetime_utc_with_tz(user_context.tz),
+                                ),
+                                DateBound::Exclusive(
+                                    end.into_datetime_utc_with_tz(user_context.tz),
+                                ),
+                            )
+                        }
+                        [Start::DateTime(start), Start::DateTime(end)] => DateFilter::Range(
+                            DateBound::Inclusive(start),
+                            DateBound::Exclusive(end),
+                        ),
+                        _ => {
+                            return Err(Error::Validation(
+                                crate::error::service::ValidationError::InvalidValue {
+                                    field: "start",
+                                    reason: "start and end must be the same date format",
+                                },
+                            ));
+                        }
+                    },
+                };
+
+                filter.start(start);
             }
             if let Some(deadline) = deadline {
                 filter.deadline(deadline.try_into()?);
@@ -172,7 +167,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .collect())
     }
 
-    async fn create(
+    pub async fn create(
         &self,
         user_context: UserContext,
         create_request: CreateRequest,
@@ -220,15 +215,18 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .create(user_context.id, create_model)
             .await
             .map_err(Error::from)?;
-        let tags = self
-            .repo
-            .set_tags(task_model.id, user_context.id, tags)
-            .await?;
+        let tags = if let Some(tags) = tags {
+            self.repo
+                .set_tags(task_model.id, user_context.id, tags)
+                .await?
+        } else {
+            Vec::new()
+        };
 
         Ok(Task::from(task_model, user_context.tz, tags))
     }
 
-    async fn get(&self, id: TaskID, user_context: UserContext) -> Result<Task> {
+    pub async fn get(&self, id: TaskID, user_context: UserContext) -> Result<Task> {
         let tags = self.repo.list_tags(id, user_context.id).await?;
         let task = self.repo.get(id, user_context.id).await?;
         if !task.exists() {
@@ -243,7 +241,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
         Ok(task)
     }
 
-    async fn update(
+    pub async fn update(
         &self,
         id: TaskID,
         user_context: UserContext,
@@ -309,7 +307,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
         Ok(Task::from(task_model, user_context.tz, tags))
     }
 
-    async fn delete(&self, id: TaskID, user_context: UserContext) -> Result<()> {
+    pub async fn delete(&self, id: TaskID, user_context: UserContext) -> Result<()> {
         if let Err(err) = self
             .repo
             .update(
@@ -323,7 +321,8 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .await
         {
             return if let RepoError::Constraint(ConstraintViolation::NotFound(Resource::Task))
-            | RepoError::Constraint(ConstraintViolation::Deleted(Resource::Task)) = err
+            | RepoError::Constraint(ConstraintViolation::SoftDeleted(Resource::Task)) =
+                err
             {
                 Ok(())
             } else {
@@ -334,7 +333,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
         Ok(())
     }
 
-    async fn restore(&self, id: TaskID, user_context: UserContext) -> Result<()> {
+    pub async fn restore(&self, id: TaskID, user_context: UserContext) -> Result<()> {
         self.repo
             .update(
                 id,
@@ -349,7 +348,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .map_err(Error::from)
     }
 
-    async fn complete(&self, id: TaskID, user_context: UserContext) -> Result<()> {
+    pub async fn complete(&self, id: TaskID, user_context: UserContext) -> Result<()> {
         self.repo
             .update(
                 id,
@@ -364,7 +363,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .map_err(Error::from)
     }
 
-    async fn reopen(&self, id: TaskID, user_context: UserContext) -> Result<()> {
+    pub async fn reopen(&self, id: TaskID, user_context: UserContext) -> Result<()> {
         self.repo
             .update(
                 id,
@@ -379,7 +378,7 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .map_err(Error::from)
     }
 
-    async fn list_tags(&self, id: TaskID, user_context: UserContext) -> Result<Vec<Tag>> {
+    pub async fn list_tags(&self, id: TaskID, user_context: UserContext) -> Result<Vec<Tag>> {
         Ok(self
             .repo
             .list_tags(id, user_context.id)
@@ -390,21 +389,31 @@ impl<R: TaskRepository> TaskServiceTrait for TaskService<R> {
             .collect())
     }
 
-    async fn add_tag(&self, id: TaskID, user_context: UserContext, tag_id: TagID) -> Result<()> {
+    pub async fn add_tag(
+        &self,
+        id: TaskID,
+        user_context: UserContext,
+        tag_id: TagID,
+    ) -> Result<()> {
         self.repo
             .add_tag(id, user_context.id, tag_id)
             .await
             .map_err(Error::from)
     }
 
-    async fn remove_tag(&self, id: TaskID, user_context: UserContext, tag_id: TagID) -> Result<()> {
+    pub async fn remove_tag(
+        &self,
+        id: TaskID,
+        user_context: UserContext,
+        tag_id: TagID,
+    ) -> Result<()> {
         self.repo
             .remove_tag(id, user_context.id, tag_id)
             .await
             .map_err(Error::from)
     }
 
-    async fn set_tags(
+    pub async fn set_tags(
         &self,
         id: TaskID,
         user_context: UserContext,

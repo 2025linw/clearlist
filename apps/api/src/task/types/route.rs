@@ -2,22 +2,25 @@ use serde::Deserialize;
 
 use crate::{
     tag::types::TagID,
-    types::{date::Start, date_query::QueryDateFilter, order::SortOrder},
+    types::{field::Start, order::SortOrder, query::DateFilter},
 };
 
 use super::SortBy;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct URLQueryOpts {
     pub page: Option<u32>,
     pub limit: Option<u32>,
 
+    #[serde(alias = "sort")]
     pub sort_by: Option<SortBy>,
+    #[serde(alias = "order")]
     pub sort_order: Option<SortOrder>,
 
-    pub start: Option<QueryDateFilter<chrono::DateTime<chrono::Utc>>>,
-    pub deadline: Option<QueryDateFilter<chrono::NaiveDate>>,
+    pub start: Option<DateFilter<Start>>,
+    pub deadline: Option<DateFilter<chrono::NaiveDate>>,
 
     pub completed: Option<bool>,
     pub deleted: Option<bool>,
@@ -25,19 +28,20 @@ pub struct URLQueryOpts {
     pub tags: Option<Vec<TagID>>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateRequest {
     pub title: String,
     pub notes: Option<String>,
     pub start: Option<Start>,
     pub deadline: Option<chrono::NaiveDate>,
-    pub tags: Vec<TagID>,
+    pub tags: Option<Vec<TagID>>,
 
     pub position_key: String,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone, Default))]
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateRequest {
     pub title: Option<String>,
     pub notes: Option<Option<String>>,
@@ -46,4 +50,24 @@ pub struct UpdateRequest {
     pub tags: Option<Vec<TagID>>,
 
     pub position_key: Option<String>,
+}
+
+impl UpdateRequest {
+    pub fn is_noop(&self) -> bool {
+        let Self {
+            title,
+            notes,
+            start,
+            deadline,
+            tags,
+            position_key,
+        } = self;
+
+        title.is_none()
+            && notes.is_none()
+            && start.is_none()
+            && deadline.is_none()
+            && tags.is_none()
+            && position_key.is_none()
+    }
 }

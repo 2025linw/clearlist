@@ -12,7 +12,10 @@ use crate::{
         Resource,
         repo::{ConstraintViolation, Error, Result},
     },
-    tag::types::{TagID, TagModel},
+    tag::{
+        repo::TagRepository,
+        types::{TagID, TagModel, repo::CreateModel as TagCreateModel},
+    },
     task::{
         repo::TaskRepository,
         types::{
@@ -20,16 +23,22 @@ use crate::{
             repo::{CreateModel, QueryOpts, TaskState, UpdateModel},
         },
     },
-    tests::{helpers::get_today_date_pg, mocks::MockDB},
-    user::types::UserID,
+    tests::{
+        helpers::get_today_date_pg,
+        mocks::{MockDB, MockTagRepository, MockUserRepository},
+    },
+    user::{
+        repo::UserRepository,
+        types::{UserID, repo::CreateModel as UserCreateModel},
+    },
 };
 
 #[derive(Clone)]
 pub struct MockTaskRepository {
-    users: Arc<RwLock<HashSet<UserID>>>,
     tasks: MockDB<(TaskID, UserID), TaskModel>,
-    tags: Arc<RwLock<HashSet<(TagID, UserID)>>>,
     task_tags: MockDB<(TaskID, UserID), Vec<TagModel>>,
+    tags: MockTagRepository,
+    users: MockUserRepository,
 
     error: Option<Error>,
     user_tz: Tz,
@@ -40,11 +49,28 @@ pub struct MockTaskRepository {
 
 impl MockTaskRepository {
     pub fn new() -> Self {
+        let user_repo = MockUserRepository::new();
+        let tag_repo = MockTagRepository::init(user_repo.clone());
+
         Self {
-            users: Arc::new(RwLock::new(HashSet::new())),
             tasks: Arc::new(RwLock::new(HashMap::new())),
-            tags: Arc::new(RwLock::new(HashSet::new())),
             task_tags: Arc::new(RwLock::new(HashMap::new())),
+            tags: tag_repo,
+            users: user_repo,
+            error: None,
+            user_tz: Tz::America__Chicago,
+            last_filter: Arc::new(RwLock::new(None)),
+            last_single_tag: Arc::new(RwLock::new(None)),
+            last_multi_tag: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    pub fn init(user_repo: MockUserRepository, tag_repo: MockTagRepository) -> Self {
+        Self {
+            tasks: Arc::new(RwLock::new(HashMap::new())),
+            task_tags: Arc::new(RwLock::new(HashMap::new())),
+            tags: tag_repo,
+            users: user_repo,
             error: None,
             user_tz: Tz::America__Chicago,
             last_filter: Arc::new(RwLock::new(None)),
@@ -62,7 +88,7 @@ impl MockTaskRepository {
 
     pub fn new_programming_error() -> Self {
         let mut mock = Self::new();
-        mock.error = Some(Error::Programming("mock programming error".to_string()));
+        mock.error = Some(Error::Internal("mock programming error".to_string()));
 
         mock
     }
@@ -72,21 +98,19 @@ impl MockTaskRepository {
     }
 
     pub async fn add_user(&self) -> UserID {
-        let user_id = UserID::new_v4();
+        let user = self.users.create(UserCreateModel::default()).await.unwrap();
 
-        let mut users = self.users.write().await;
-        assert!(users.insert(user_id));
-
-        user_id
+        user.id
     }
 
     pub async fn add_tag(&self, user_id: UserID) -> TagID {
-        let tag_id = TagID::new_v4();
+        let tag = self
+            .tags
+            .create(user_id, TagCreateModel::default())
+            .await
+            .unwrap();
 
-        let mut tags = self.tags.write().await;
-        assert!(tags.insert((tag_id, user_id)));
-
-        tag_id
+        tag.id
     }
 
     pub async fn get_last_filter(&self) -> QueryOpts {
@@ -139,15 +163,17 @@ impl TaskRepository for MockTaskRepository {
             return Err(err.clone());
         }
         let mut repo = self.tasks.write().await;
-        let user_repo = self.users.read().await;
 
-        if !user_repo.contains(&user_id) {
-            return Err(Error::Constraint(ConstraintViolation::MissingUser));
+        if self.users.get(user_id).await.unwrap().is_none() {
+            return Err(Error::Constraint(ConstraintViolation::ForeignKey {
+                resource: Resource::User,
+                message: "tasks_created_by_fkey".to_string(),
+            }));
         }
 
         let created_at = get_today_date_pg();
         let task = TaskModel {
-            id: TaskID::new_v4(),
+            id: TaskID::new_random(),
             title: create_model.title,
             notes: create_model.notes,
             start_dt: create_model.start,
@@ -236,12 +262,7 @@ impl TaskRepository for MockTaskRepository {
             task.deadline = deadline;
             changed = true;
         }
-        if let Some(position_key) = update_model.position_key
-            && position_key != task.position_key
-        {
-            task.position_key = position_key;
-            changed = true;
-        }
+
         if let Some(completed) = update_model.completed
             && completed != task.completed_at.is_some()
         {
@@ -260,6 +281,13 @@ impl TaskRepository for MockTaskRepository {
             } else {
                 task.deleted_at = None;
             }
+            changed = true;
+        }
+
+        if let Some(position_key) = update_model.position_key
+            && position_key != task.position_key
+        {
+            task.position_key = position_key;
             changed = true;
         }
 
@@ -342,7 +370,6 @@ impl TaskRepository for MockTaskRepository {
         let mut last_tag = self.last_single_tag.write().await;
         *last_tag = Some(tag_id);
 
-        let tags = self.tags.read().await;
         let repo = self.tasks.read().await;
         let mut tag_repo = self.task_tags.write().await;
 
@@ -352,7 +379,7 @@ impl TaskRepository for MockTaskRepository {
                 Resource::Task,
             )));
         }
-        if !tags.contains(&(tag_id, user_id)) {
+        if self.tags.get(tag_id, user_id).await.unwrap().is_none() {
             return Err(Error::Constraint(ConstraintViolation::NotFound(
                 Resource::Tag,
             )));
@@ -423,7 +450,6 @@ impl TaskRepository for MockTaskRepository {
         let mut last_tags = self.last_multi_tag.write().await;
         *last_tags = Some(tag_ids.clone());
 
-        let tags = self.tags.read().await;
         let repo = self.tasks.read().await;
         let mut tag_repo = self.task_tags.write().await;
 
@@ -434,7 +460,7 @@ impl TaskRepository for MockTaskRepository {
             )));
         }
         for tag_id in tag_ids.iter() {
-            if !tags.contains(&(*tag_id, user_id)) {
+            if self.tags.get(*tag_id, user_id).await.unwrap().is_none() {
                 return Err(Error::Constraint(ConstraintViolation::NotFound(
                     Resource::Tag,
                 )));

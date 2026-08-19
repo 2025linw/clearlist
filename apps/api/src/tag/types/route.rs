@@ -1,6 +1,8 @@
 use serde::Deserialize;
 
-#[derive(Debug, Default, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+#[serde(rename_all = "camelCase")]
 pub struct URLQueryOpts {
     pub page: Option<u32>,
     pub limit: Option<u32>,
@@ -8,8 +10,8 @@ pub struct URLQueryOpts {
     pub category: Option<String>,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CreateRequest {
     pub label: String,
     pub category: Option<String>,
@@ -17,8 +19,8 @@ pub struct CreateRequest {
     pub position_key: String,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone, Default))]
+#[derive(Debug, Default, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UpdateRequest {
     pub label: Option<String>,
     pub category: Option<Option<String>>,

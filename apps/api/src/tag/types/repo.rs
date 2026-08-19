@@ -2,8 +2,7 @@ use sqlx::QueryBuilder;
 
 use crate::{tag::types::CategoryID, types::pagination::SQLPagination};
 
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
 pub struct QueryOpts {
     pub filter: Filter,
     pub pagination: SQLPagination,
@@ -18,7 +17,7 @@ impl QueryOpts {
         }
 
         // Sort (forced)
-        builder.push(" ORDER BY tc.position_key NULLS FIRST, t.position_key");
+        builder.push(" ORDER BY tc.position_key, t.position_key, t.updated_at DESC");
 
         // Pagination
         if let Some(limit) = self.pagination.limit {
@@ -30,8 +29,22 @@ impl QueryOpts {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
+pub struct Filter {
+    pub category: Option<CategoryID>,
+}
+
+impl Filter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn category(&mut self, category: CategoryID) {
+        self.category = Some(category);
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CreateModel {
     pub label: String,
     pub category_id: Option<CategoryID>,
@@ -39,8 +52,7 @@ pub struct CreateModel {
     pub position_key: String,
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone, Default))]
+#[derive(Debug, Default, Clone)]
 pub struct UpdateModel {
     pub label: Option<String>,
     pub category_id: Option<Option<CategoryID>>,
@@ -64,21 +76,5 @@ impl UpdateModel {
             separated.push("position_key = ");
             separated.push_bind_unseparated(position_key);
         }
-    }
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
-pub struct Filter {
-    pub category: Option<CategoryID>,
-}
-
-impl Filter {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn category(&mut self, category: CategoryID) {
-        self.category = Some(category);
     }
 }

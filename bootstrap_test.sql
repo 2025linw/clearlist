@@ -32,9 +32,9 @@ ALTER ROLE cl_auth SET search_path TO auth;
 -- Grant permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON
 -- Users table
-app.users
+app.users,
 -- Tasks table
-app.tasks
+app.tasks,
 -- Tags table
 app.tags,
 app.task_tags
@@ -42,9 +42,9 @@ TO cl_rw;
 
 GRANT SELECT ON
 -- Users table
-app.users
+app.users,
 -- Tasks table
-app.tasks
+app.tasks,
 -- Tags table
 app.tags,
 app.task_tags

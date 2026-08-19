@@ -3,9 +3,11 @@ use crate::{
     utils::service::is_valid_single_line_string,
 };
 
-use super::{CreateRequest, UpdateRequest};
+use super::{ProvisionRequest, UpdateRequest};
 
-pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, ValidationError> {
+pub fn validate_provision_request(
+    request: ProvisionRequest,
+) -> Result<ProvisionRequest, ValidationError> {
     let mut request = request;
     normalize_create_request(&mut request);
 
@@ -45,7 +47,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
     Ok(request)
 }
 
-fn normalize_create_request(request: &mut CreateRequest) {
+fn normalize_create_request(request: &mut ProvisionRequest) {
     request.display_name = request.display_name.trim().to_owned();
 }
 

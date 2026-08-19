@@ -4,13 +4,12 @@ use sqlx::{QueryBuilder, prelude::FromRow};
 use crate::{
     tag::types::{TagID, TagModel},
     task::types::TaskID,
-    types::{date::DateFilter, order::SortOrder, pagination::SQLPagination},
+    types::{field::DateFilter, order::SortOrder, pagination::SQLPagination},
 };
 
 use super::SortBy;
 
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
 pub struct QueryOpts {
     pub filter: Filter,
     pub sort: Sort,
@@ -60,7 +59,16 @@ impl QueryOpts {
 
         // Sort
         if let Some((by, order)) = self.sort.sort {
-            builder.push(format!(" ORDER BY {} {} NULLS LAST", by, order));
+            match by {
+                SortBy::Updated => {
+                    builder.push(format!(" ORDER BY {by} {order} NULLS LAST, id ASC"));
+                }
+                _ => {
+                    builder.push(format!(
+                        " ORDER BY {by} {order} NULLS LAST, updated_at DESC"
+                    ));
+                }
+            }
         } else {
             builder.push(" ORDER BY id ASC");
         }
@@ -75,8 +83,63 @@ impl QueryOpts {
     }
 }
 
-#[derive(Debug)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
+pub struct Filter {
+    pub start: Option<DateFilter<DateTime<Utc>>>,
+    pub deadline: Option<DateFilter<NaiveDate>>,
+
+    pub completed: Option<bool>,
+    pub deleted: Option<bool>,
+
+    pub tags: Option<Vec<TagID>>,
+}
+
+impl Filter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn start(&mut self, start: DateFilter<DateTime<Utc>>) {
+        self.start = Some(start);
+    }
+
+    pub fn deadline(&mut self, deadline: DateFilter<NaiveDate>) {
+        self.deadline = Some(deadline);
+    }
+
+    pub fn completed(&mut self, completed: bool) {
+        self.completed = Some(completed);
+    }
+
+    pub fn deleted(&mut self, deleted: bool) {
+        self.deleted = Some(deleted);
+    }
+
+    pub fn tags(&mut self, tags: Vec<TagID>) {
+        self.tags = Some(tags);
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct Sort {
+    pub sort: Option<(SortBy, SortOrder)>,
+}
+
+impl Sort {
+    pub fn new(by: Option<SortBy>, order: SortOrder) -> Self {
+        if let Some(by) = by {
+            Self {
+                sort: Some((by, order)),
+            }
+        } else {
+            Self {
+                sort: Some((SortBy::ID, order)),
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CreateModel {
     pub title: String,
     pub notes: Option<String>,
@@ -87,8 +150,7 @@ pub struct CreateModel {
     pub position_key: String,
 }
 
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
 pub struct UpdateModel {
     pub title: Option<String>,
     pub notes: Option<Option<String>>,
@@ -154,62 +216,6 @@ pub struct TaskTag {
 
     #[sqlx(flatten)]
     pub tag: TagModel,
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct Filter {
-    pub start: Option<DateFilter<DateTime<Utc>>>,
-    pub deadline: Option<DateFilter<NaiveDate>>,
-
-    pub completed: Option<bool>,
-    pub deleted: Option<bool>,
-
-    pub tags: Option<Vec<TagID>>,
-}
-
-impl Filter {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn start(&mut self, start: DateFilter<DateTime<Utc>>) {
-        self.start = Some(start);
-    }
-
-    pub fn deadline(&mut self, deadline: DateFilter<NaiveDate>) {
-        self.deadline = Some(deadline);
-    }
-
-    pub fn completed(&mut self, completed: bool) {
-        self.completed = Some(completed);
-    }
-
-    pub fn deleted(&mut self, deleted: bool) {
-        self.deleted = Some(deleted);
-    }
-
-    pub fn tags(&mut self, tags: Vec<TagID>) {
-        self.tags = Some(tags);
-    }
-}
-
-#[derive(Debug, Clone, Default)]
-pub struct Sort {
-    pub sort: Option<(SortBy, SortOrder)>,
-}
-
-impl Sort {
-    pub fn new(by: Option<SortBy>, order: SortOrder) -> Self {
-        if let Some(by) = by {
-            Self {
-                sort: Some((by, order)),
-            }
-        } else {
-            Self {
-                sort: Some((SortBy::ID, order)),
-            }
-        }
-    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

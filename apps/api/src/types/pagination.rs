@@ -3,7 +3,7 @@ use serde_with::{DisplayFromStr, serde_as};
 
 // TODO: remove URLPagination
 #[serde_as]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(default)]
 pub struct QueryPagination {
     #[serde_as(as = "DisplayFromStr")]
@@ -24,8 +24,7 @@ impl Default for QueryPagination {
     }
 }
 
-#[derive(Debug, Default)]
-#[cfg_attr(test, derive(Clone))]
+#[derive(Debug, Default, Clone)]
 pub struct SQLPagination {
     pub limit: Option<u32>,
     pub offset: Option<u32>,

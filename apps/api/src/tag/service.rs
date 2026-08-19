@@ -1,17 +1,12 @@
 mod helpers;
 
-#[cfg(test)]
-mod tests;
-
-use async_trait::async_trait;
-
 use crate::{
     error::{
         Resource,
         repo::{ConstraintViolation, Error as RepoError},
         service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, Result, ValidationError},
     },
-    types::pagination::SQLPagination,
+    types::{extract::UserContext, pagination::SQLPagination},
     utils::service::is_valid_single_line_string,
 };
 
@@ -22,43 +17,20 @@ use super::{
         Tag, TagID,
         repo::{CreateModel, Filter, QueryOpts, UpdateModel},
         route::{CreateRequest, URLQueryOpts, UpdateRequest},
-        service::UserContext,
     },
 };
 
-#[async_trait]
-pub trait TagServiceTrait {
-    async fn list(
-        &self,
-        user_context: UserContext,
-        query: Option<URLQueryOpts>,
-    ) -> Result<Vec<Tag>>;
-    async fn create(&self, user_context: UserContext, create_request: CreateRequest)
-    -> Result<Tag>;
-    async fn get(&self, id: TagID, user_context: UserContext) -> Result<Tag>;
-    async fn update(
-        &self,
-        id: TagID,
-        user_context: UserContext,
-        update_request: UpdateRequest,
-    ) -> Result<Tag>;
-    async fn delete(&self, id: TagID, user_context: UserContext) -> Result<()>;
-}
-
 #[derive(Clone)]
 pub struct TagService<R: TagRepository> {
-    repo: R,
+    pub(super) repo: R,
 }
 
 impl<R: TagRepository> TagService<R> {
     pub fn init(repo: R) -> Self {
         Self { repo }
     }
-}
 
-#[async_trait]
-impl<R: TagRepository> TagServiceTrait for TagService<R> {
-    async fn list(
+    pub async fn list(
         &self,
         user_context: UserContext,
         query: Option<URLQueryOpts>,
@@ -105,7 +77,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             .map_err(Error::from)
     }
 
-    async fn create(
+    pub async fn create(
         &self,
         user_context: UserContext,
         create_request: CreateRequest,
@@ -147,7 +119,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             .map_err(Error::from)
     }
 
-    async fn get(&self, id: TagID, user_context: UserContext) -> Result<Tag> {
+    pub async fn get(&self, id: TagID, user_context: UserContext) -> Result<Tag> {
         self.repo
             .get(id, user_context.id)
             .await
@@ -156,7 +128,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             .ok_or(Error::NotFound(Resource::Tag))
     }
 
-    async fn update(
+    pub async fn update(
         &self,
         id: TagID,
         user_context: UserContext,
@@ -225,7 +197,7 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
             .map(Tag::from)
     }
 
-    async fn delete(&self, id: TagID, user_context: UserContext) -> Result<()> {
+    pub async fn delete(&self, id: TagID, user_context: UserContext) -> Result<()> {
         let res = self.repo.delete(id, user_context.id).await;
         if let Err(err) = res {
             if matches!(
@@ -240,4 +212,20 @@ impl<R: TagRepository> TagServiceTrait for TagService<R> {
 
         Ok(())
     }
+
+    // pub async fn list_categories(&self, user_context: UserContext) -> Result<Vec<Category>> {
+    //     self.repo
+    //         .list_categories(user_context.id)
+    //         .await
+    //         .map(|tags| tags.into_iter().map(Category::from).collect())
+    //         .map_err(Error::from)
+    // }
+
+    // pub async fn add_category(&self, user_context: UserContext, name: String) -> Result<Category> {
+    //     self.repo.add_category(user_context.id, name, position_key)
+    // }
+
+    // pub async fn remove_category(&self, user_context: UserContext, category_id: CategoryID) -> Result<()> {
+    //     todo!()
+    // }
 }

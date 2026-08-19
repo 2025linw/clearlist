@@ -35,7 +35,7 @@ pub async fn seed_tags_with_category(
 
 pub fn default_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
-        label: format!("Default Tag {}", i),
+        label: format!("Default Tag {i}"),
         category_id: tag_category_id,
         position_key: format!("def{}", generate_a_z(i)),
     }
@@ -43,7 +43,7 @@ pub fn default_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel
 
 pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
-        label: format!("Workflow Tag {}", i),
+        label: format!("Workflow Tag {i}"),
         category_id: tag_category_id,
         position_key: format!("workflow{}", generate_a_z(i)),
     }
@@ -51,7 +51,7 @@ pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<CategoryID>)
 
 pub fn tag_with_priority_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
-        label: format!("Priority Tag {}", i),
+        label: format!("Priority Tag {i}"),
         category_id: tag_category_id,
         position_key: format!("priority{}", generate_a_z(i)),
     }

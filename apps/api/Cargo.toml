@@ -7,16 +7,21 @@ edition = "2024"
 async-trait = "0.1.89"
 axum = { version = "0.8.9", features = ["macros"] }
 axum-extra = { version = "0.12.6", features = ["cookie"] }
+base64 = "0.23.1"
 chrono = { version = "0.4.44", features = ["serde"] }
 chrono-tz = { version = "0.10.4", features = ["case-insensitive", "serde"] }
 dotenvy = "0.15.7"
 governor = "^0.8.1"
+hex = "0.4.3"
+hmac = "0.13.0"
 reqwest = { version = "0.13.4", features = ["json", "rustls"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 serde_qs = { version = "1.1.2", features = ["axum"] }
 serde_with = "3.20.0"
+sha2 = "0.11.0"
 sqlx = { version = "0.8.6", default-features = false, features = ["runtime-tokio", "tls-rustls", "macros", "derive", "postgres", "migrate", "uuid", "chrono"] }
+subtle = "2.6.1"
 tokio = { version = "1.52.3", features = ["full"] }
 tower = "0.5.3"
 tower-http = { version = "0.6.11", features = ["cors", "trace"] }
@@ -25,3 +30,9 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
 ts-rs = { version = "12.0.1", features = ["chrono-impl", "uuid-impl"] }
 uuid = { version = "1.23.1", features = ["serde", "v4"] }
+
+[lints.clippy]
+# pedantic = { level = "warn", priority = -1 }
+dbg_macro = "warn"
+print_stdout = "warn"
+# print_stderr = "warn"

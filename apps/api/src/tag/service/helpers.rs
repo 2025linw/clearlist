@@ -40,6 +40,11 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
                 field: "category",
                 reason: NO_NONSPACE_WHITESPACE,
             });
+        } else if category.len() > 100 {
+            return Err(ValidationError::InvalidValue {
+                field: "category",
+                reason: TOO_LONG,
+            });
         }
     }
 
@@ -49,7 +54,6 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
 pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, ValidationError> {
     let mut request = request;
     normalize_create_request(&mut request);
-    println!("{request:?}");
 
     if !is_valid_single_line_string(&request.label) {
         return Err(ValidationError::InvalidValue {

@@ -1,6 +1,3 @@
-#[cfg(test)]
-mod tests;
-
 use async_trait::async_trait;
 use sqlx::{PgConnection, PgPool, QueryBuilder};
 
@@ -18,7 +15,7 @@ use super::types::{
 };
 
 #[async_trait]
-pub trait UserRepository: Send + Sync + Clone {
+pub trait UserRepository: Send + Sync + Clone + 'static {
     async fn create(&self, create_model: CreateModel) -> Result<UserModel>;
     async fn get(&self, id: UserID) -> Result<Option<UserModel>>;
     async fn update(&self, id: UserID, update_model: UpdateModel) -> Result<UserModel>;
@@ -36,14 +33,12 @@ impl PgUserRepository {
 
     async fn create_model(conn: &mut PgConnection, create_model: CreateModel) -> Result<UserModel> {
         Ok(query_as::<UserModel>(
-            "INSERT INTO app.users (id, display_name, preferred_timezone, completed_task_retention, updated_at, created_at)
-            VALUES ($1, $2, $3, $4, $5, $5)
+            "INSERT INTO app.users (id, display_name, updated_at, created_at)
+            VALUES ($1, $2, $3, $3)
             RETURNING *",
         )
         .bind(create_model.id)
         .bind(create_model.display_name)
-        .bind(create_model.preferred_timezone)
-        .bind(create_model.completed_task_retention)
         .bind(create_model.created_at)
         .fetch_one(conn.as_mut())
         .await?)
