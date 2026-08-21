@@ -49,7 +49,7 @@ impl Client {
     }
 
     pub async fn get(&self, auth: bool) -> Response {
-        let mut client = reqwest::Client::new().get(format!("{}/me", self.url));
+        let mut client = reqwest::Client::new().get(&self.url);
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token))
         }
@@ -58,7 +58,7 @@ impl Client {
     }
 
     pub async fn update(&self, auth: bool, body: serde_json::Value) -> Response {
-        let mut client = reqwest::Client::new().patch(format!("{}/me", self.url));
+        let mut client = reqwest::Client::new().patch(&self.url);
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token))
         }

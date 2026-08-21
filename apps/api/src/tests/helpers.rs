@@ -1,3 +1,4 @@
+pub mod category;
 pub mod tag;
 pub mod task;
 pub mod user;
@@ -5,6 +6,10 @@ pub mod user;
 use chrono::{DateTime, SubsecRound, Utc};
 
 use crate::{
+    category::{
+        repo::{CategoryRepository, PgCategoryRepository},
+        types::{CategoryModel, repo::CreateModel as CategoryCreateModel},
+    },
     task::{
         repo::{PgTaskRepository, TaskRepository},
         types::{TaskID, TaskModel, repo::UpdateModel as TaskUpdateModel},
@@ -51,7 +56,24 @@ where
 }
 
 pub async fn create_test_user(repo: &PgUserRepository) -> UserModel {
-    repo.create(UserCreateModel::default()).await.unwrap()
+    repo.create(UserCreateModel {
+        display_name: "Test User".to_string(),
+        ..Default::default()
+    })
+    .await
+    .unwrap()
+}
+
+pub async fn create_test_category(repo: &PgCategoryRepository, user_id: UserID) -> CategoryModel {
+    repo.create(
+        user_id,
+        CategoryCreateModel {
+            name: "Test Category".to_string(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap()
 }
 
 pub async fn soft_delete_task(repo: &PgTaskRepository, id: TaskID, user_id: UserID) -> TaskModel {

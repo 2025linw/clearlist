@@ -9,8 +9,10 @@ use crate::{
     user::types::UserID,
 };
 
-async fn new() -> (UserContext, TaskID, TaskService<MockTaskRepository>) {
-    let task_service = TaskService::init(MockTaskRepository::new());
+use super::init_test_setup;
+
+async fn init() -> (UserContext, TaskID, TaskService<MockTaskRepository>) {
+    let task_service = init_test_setup();
 
     let user_context = UserContext {
         id: task_service.repo.add_user().await,
@@ -30,7 +32,7 @@ mod success {
 
     #[test]
     async fn success() {
-        let (user_context, task_id, task_service) = new().await;
+        let (user_context, task_id, task_service) = init().await;
 
         let res = task_service.complete(task_id, user_context).await;
         assert!(res.is_ok());
@@ -38,7 +40,7 @@ mod success {
 
     #[test]
     async fn is_idempotent() {
-        let (user_context, task_id, task_service) = new().await;
+        let (user_context, task_id, task_service) = init().await;
 
         let res = task_service.complete(task_id, user_context).await;
         assert!(res.is_ok());
@@ -56,7 +58,7 @@ mod existence {
 
     #[test]
     async fn soft_deleted() {
-        let (user_context, task_id, task_service) = new().await;
+        let (user_context, task_id, task_service) = init().await;
         task_service.delete(task_id, user_context).await.unwrap();
 
         let res = task_service.complete(task_id, user_context).await;
@@ -67,7 +69,7 @@ mod existence {
 
     #[test]
     async fn not_owned() {
-        let (_, task_id, task_service) = new().await;
+        let (_, task_id, task_service) = init().await;
         let user_context = UserContext {
             id: task_service.repo.add_user().await,
             tz: task_service.repo.tz(),
@@ -82,7 +84,7 @@ mod existence {
 
     #[test]
     async fn not_exists() {
-        let (user_context, _, task_service) = new().await;
+        let (user_context, _, task_service) = init().await;
 
         let res = task_service
             .complete(TaskID::new_random(), user_context)

@@ -184,7 +184,7 @@ impl PgTaskRepository {
         user_id: UserID,
     ) -> Result<Vec<TagModel>> {
         query_as::<TagModel>(
-            "SELECT tg.*, tc.category_name, tc.position_key as category_position_key
+            "SELECT tg.*, tc.name as category_name, tc.position_key as category_position_key
             FROM app.tags tg
             LEFT JOIN app.categories tc ON tg.category_id = tc.id
             JOIN app.task_tags tt ON tg.id = tt.tag_id

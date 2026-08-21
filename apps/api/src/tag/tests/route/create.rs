@@ -35,6 +35,7 @@ mod success {
     #[test]
     async fn return_body() {
         let client = init().await;
+        client.create_category().await;
 
         let body = client
             .create(
@@ -55,6 +56,7 @@ mod success {
     #[test]
     async fn full_body() {
         let client = init().await;
+        client.create_category().await;
 
         let body = client
             .create(
@@ -130,6 +132,7 @@ mod error {
             .create(
                 true,
                 json!({
+                    "label": "Test Tag",
                     "category": "",
                     "positionKey": "a",
                 }),
@@ -149,14 +152,15 @@ mod error {
             .create(
                 true,
                 json!({
+                    "label": "Test Tag",
                     "category": "Fake Category",
                     "positionKey": "a",
                 }),
             )
             .await;
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
 
         let body = res.json::<ErrorResponse>().await.unwrap();
-        assert_eq!(body.status, StatusCode::BAD_REQUEST);
+        assert_eq!(body.status, StatusCode::NOT_FOUND);
     }
 }

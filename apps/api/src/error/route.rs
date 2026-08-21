@@ -7,6 +7,8 @@ use super::{
     service::{Error as ServiceError, ValidationError},
 };
 
+pub type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug, Clone)]
 pub enum Error {
     Ok,                          // 200

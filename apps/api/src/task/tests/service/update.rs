@@ -1,7 +1,7 @@
 use crate::{
     error::{
         Resource,
-        service::{Error, NO_NONMULTILINE_WHITESPACE, NO_NONSPACE_WHITESPACE, ValidationError},
+        service::{Error, INVALID_MULTILINE, INVALID_SINGLE_LINE, ValidationError},
     },
     tag::types::TagID,
     task::{
@@ -14,16 +14,16 @@ use crate::{
     tests::{
         helpers::get_today_date_pg,
         mocks::MockTaskRepository,
-        test_data::{
-            CONTAINS_MULTILINE_TEST_INPUT, CONTAINS_WHITESPACE_TEST_INPUT, NORMALIZATION_TEST_INPUT,
-        },
+        test_data::{MULTILINE_TEST_INPUT, NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
     types::{extract::UserContext, field::Start},
     user::types::UserID,
 };
 
+use super::init_test_setup;
+
 async fn init() -> (UserContext, TaskID, TaskService<MockTaskRepository>) {
-    let task_service = TaskService::init(MockTaskRepository::new());
+    let task_service = init_test_setup();
 
     let user_context = UserContext {
         id: task_service.repo.add_user().await,
@@ -211,7 +211,7 @@ mod title {
     async fn errors_with_title_containing_whitespaces() {
         let (user_context, task_id, task_service) = init().await;
 
-        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+        for (name, input) in SINGLE_LINE_TEST_INPUT {
             let update_request = UpdateRequest {
                 title: Some(input.to_string()),
                 ..Default::default()
@@ -226,7 +226,7 @@ mod title {
                         err,
                         Error::Validation(ValidationError::InvalidValue {
                             field: "title",
-                            reason: NO_NONSPACE_WHITESPACE
+                            reason: INVALID_SINGLE_LINE
                         })
                     ),
                     "case: {name}; got error: {err}",
@@ -265,7 +265,7 @@ mod notes {
     async fn errors_on_notes_containing_invalid_whitespace() {
         let (user_context, task_id, task_service) = init().await;
 
-        for (name, input) in CONTAINS_MULTILINE_TEST_INPUT {
+        for (name, input) in MULTILINE_TEST_INPUT {
             let update_request = UpdateRequest {
                 notes: Some(Some(input.to_string())),
                 ..Default::default()
@@ -280,7 +280,7 @@ mod notes {
                         err,
                         Error::Validation(ValidationError::InvalidValue {
                             field: "notes",
-                            reason: NO_NONMULTILINE_WHITESPACE,
+                            reason: INVALID_MULTILINE,
                         })
                     ),
                     "case: {name}; got error: {err}",

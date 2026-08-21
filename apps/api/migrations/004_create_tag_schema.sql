@@ -2,14 +2,14 @@
 CREATE TABLE app.categories (
     id uuid PRIMARY KEY,
 
-    category_name varchar(255),
+    name varchar(255),
     position_key text NOT NULL,
 
     created_by uuid NOT NULL,
 
     FOREIGN KEY (created_by) REFERENCES app.users (id),
 
-    UNIQUE (category_name, created_by)
+    UNIQUE (name, created_by)
 );
 
 -- Tag Schema

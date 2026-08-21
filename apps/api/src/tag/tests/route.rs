@@ -7,13 +7,19 @@ mod update;
 use std::{collections::HashMap, net::SocketAddr};
 
 use axum::{Router, http::StatusCode, routing::post};
-use reqwest::{Response, header::COOKIE};
+use reqwest::header::COOKIE;
+use serde_json::json;
 
 use crate::{
+    category::{
+        route::create_handler as category_create_handler,
+        types::{Category, CategoryID},
+    },
     tag::route::create_router,
     tests::server::{
         TEST_COOKIE_KEY, auth::Client as AuthClient, get_test_user_info, start_test_servers,
     },
+    types::extract::Response,
     user::route::provision_handler,
 };
 
@@ -21,6 +27,7 @@ async fn init_test_setup() -> Client {
     let server_ips = start_test_servers(|| {
         Router::new()
             .route("/internal/users/provision", post(provision_handler))
+            .route("/category", post(category_create_handler))
             .merge(create_router())
     })
     .await;
@@ -52,7 +59,27 @@ impl Client {
         }
     }
 
-    pub async fn list(&self, auth: bool, query: HashMap<String, String>) -> Response {
+    pub async fn create_category(&self) -> CategoryID {
+        let url = format!("{}/category", self.url);
+
+        let body = reqwest::Client::new()
+            .post(url)
+            .header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token))
+            .json(&json!({
+                "name": "Test Category",
+                "positionKey": "a",
+            }))
+            .send()
+            .await
+            .unwrap()
+            .json::<Response<Category>>()
+            .await
+            .unwrap();
+
+        body.data.id
+    }
+
+    pub async fn list(&self, auth: bool, query: HashMap<String, String>) -> reqwest::Response {
         let mut url = self.url.to_string();
         let query = query
             .into_iter()
@@ -71,7 +98,7 @@ impl Client {
         client.send().await.unwrap()
     }
 
-    pub async fn create(&self, auth: bool, body: serde_json::Value) -> Response {
+    pub async fn create(&self, auth: bool, body: serde_json::Value) -> reqwest::Response {
         let mut client = reqwest::Client::new().post(&self.url);
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token));
@@ -80,7 +107,7 @@ impl Client {
         client.json(&body).send().await.unwrap()
     }
 
-    pub async fn get(&self, auth: bool, tag_id: String) -> Response {
+    pub async fn get(&self, auth: bool, tag_id: String) -> reqwest::Response {
         let mut client = reqwest::Client::new().get(format!("{}/{}", self.url, tag_id));
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token));
@@ -89,7 +116,12 @@ impl Client {
         client.send().await.unwrap()
     }
 
-    pub async fn update(&self, auth: bool, tag_id: String, body: serde_json::Value) -> Response {
+    pub async fn update(
+        &self,
+        auth: bool,
+        tag_id: String,
+        body: serde_json::Value,
+    ) -> reqwest::Response {
         let mut client = reqwest::Client::new().patch(format!("{}/{}", self.url, tag_id));
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token));
@@ -98,7 +130,7 @@ impl Client {
         client.json(&body).send().await.unwrap()
     }
 
-    pub async fn delete(&self, auth: bool, tag_id: String) -> Response {
+    pub async fn delete(&self, auth: bool, tag_id: String) -> reqwest::Response {
         let mut client = reqwest::Client::new().delete(format!("{}/{}", self.url, tag_id));
         if auth {
             client = client.header(COOKIE, format!("{}={}", TEST_COOKIE_KEY, self.token));

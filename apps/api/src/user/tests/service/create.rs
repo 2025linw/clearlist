@@ -1,9 +1,9 @@
 use crate::{
-    error::service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, ValidationError},
+    error::service::{Error, INVALID_SINGLE_LINE, NO_EMPTY_STRING, ValidationError},
     tests::{
         helpers::get_today_date_pg,
         mocks::MockUserRepository,
-        test_data::{CONTAINS_WHITESPACE_TEST_INPUT, NORMALIZATION_TEST_INPUT},
+        test_data::{NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
     user::{
         service::UserService,
@@ -11,8 +11,10 @@ use crate::{
     },
 };
 
+use super::init_test_setup;
+
 async fn init() -> UserService<MockUserRepository> {
-    UserService::init(MockUserRepository::new())
+    init_test_setup()
 }
 
 fn valid_request() -> ProvisionRequest {
@@ -110,7 +112,7 @@ mod display_name {
     async fn errors_with_display_name_containing_whitespaces() {
         let user_service = init().await;
 
-        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+        for (name, input) in SINGLE_LINE_TEST_INPUT {
             let create_request = ProvisionRequest {
                 display_name: input.to_string(),
                 ..Default::default()
@@ -123,7 +125,7 @@ mod display_name {
                         err,
                         Error::Validation(ValidationError::InvalidValue {
                             field: "display_name",
-                            reason: NO_NONSPACE_WHITESPACE,
+                            reason: INVALID_SINGLE_LINE,
                         })
                     ),
                     "case: {name}; got error: {err}",

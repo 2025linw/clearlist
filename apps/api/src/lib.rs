@@ -3,6 +3,7 @@ pub mod types;
 pub mod utils;
 
 // Resources
+pub mod category;
 pub mod tag;
 pub mod task;
 pub mod user;
@@ -22,6 +23,11 @@ use serde_json::json;
 use sqlx::PgPool;
 
 use crate::{
+    category::{
+        repo::{CategoryRepository, PgCategoryRepository},
+        route::create_router as create_category_router,
+        service::CategoryService,
+    },
     tag::{
         repo::{PgTagRepository, TagRepository},
         route::create_router as create_tag_router,
@@ -75,31 +81,39 @@ impl Config {
 }
 
 #[derive(Clone)]
-pub struct GenericAppState<U, T, Ta>
+pub struct GenericAppState<U, T, Ta, C>
 where
     U: UserRepository,
-    T: TaskRepository,
+    C: CategoryRepository,
     Ta: TagRepository,
+    T: TaskRepository,
 {
     config: Config,
     user_service: UserService<U>,
+    category_service: CategoryService<C>,
+    tag_service: TagService<Ta, C>,
     task_service: TaskService<T>,
-    tag_service: TagService<Ta>,
 }
 
-pub type PgAppState = GenericAppState<PgUserRepository, PgTaskRepository, PgTagRepository>;
+pub type PgAppState =
+    GenericAppState<PgUserRepository, PgTaskRepository, PgTagRepository, PgCategoryRepository>;
 
 impl PgAppState {
     pub fn init(pool: PgPool, config: Config) -> Self {
         let user_service = UserService::init(PgUserRepository::init(pool.clone()));
+        let category_service = CategoryService::init(PgCategoryRepository::init(pool.clone()));
+        let tag_service = TagService::init(
+            PgTagRepository::init(pool.clone()),
+            PgCategoryRepository::init(pool.clone()),
+        );
         let task_service = TaskService::init(PgTaskRepository::init(pool.clone()));
-        let tag_service = TagService::init(PgTagRepository::init(pool.clone()));
 
         Self {
             config,
             user_service,
             task_service,
             tag_service,
+            category_service,
         }
     }
 }
@@ -112,19 +126,10 @@ pub fn create_app(app_state: PgAppState) -> Router {
     // user-facing routes
     let api_routes = Router::new()
         .route("/health", get(health_check_handler))
-        .merge(create_user_router::<
-            PgUserRepository,
-            PgTaskRepository,
-            PgTagRepository,
-        >())
-        .nest(
-            "/tasks",
-            create_task_router::<PgUserRepository, PgTaskRepository, PgTagRepository>(),
-        )
-        .nest(
-            "/tags",
-            create_tag_router::<PgUserRepository, PgTaskRepository, PgTagRepository>(),
-        );
+        .nest("/me", create_user_router())
+        .nest("/tasks", create_task_router())
+        .nest("/tags", create_tag_router())
+        .nest("/categories", create_category_router());
 
     Router::new()
         .nest("/internal", internal_routes)

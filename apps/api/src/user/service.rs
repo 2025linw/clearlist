@@ -13,7 +13,6 @@ use crate::{
 
 use super::{
     repo::UserRepository,
-    service::helpers::{validate_provision_request, validate_update_request},
     types::{
         UserID,
         repo::{CreateModel, UpdateModel},
@@ -39,7 +38,7 @@ impl<R: UserRepository> UserService<R> {
             id,
             display_name,
             created_at,
-        } = validate_provision_request(provision_request)?;
+        } = helpers::validate_create_request(provision_request)?;
 
         let create_model = CreateModel {
             id,
@@ -71,7 +70,7 @@ impl<R: UserRepository> UserService<R> {
             display_name,
             preferred_timezone,
             completed_task_retention,
-        } = validate_update_request(update_request)?;
+        } = helpers::validate_update_request(update_request)?;
 
         let update_model = UpdateModel {
             display_name,

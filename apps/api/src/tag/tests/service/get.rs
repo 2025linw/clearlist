@@ -6,12 +6,18 @@ use crate::{
         service::TagService,
         types::{TagID, route::CreateRequest},
     },
-    tests::mocks::MockTagRepository,
+    tests::mocks::{MockTagRepository, category::MockCategoryRepository},
     types::extract::UserContext,
 };
 
-async fn init() -> (UserContext, TagID, TagService<MockTagRepository>) {
-    let tag_service = TagService::init(MockTagRepository::new());
+use super::init_test_setup;
+
+async fn init() -> (
+    UserContext,
+    TagID,
+    TagService<MockTagRepository, MockCategoryRepository>,
+) {
+    let tag_service = init_test_setup();
 
     let user_context = UserContext {
         id: tag_service.repo.add_user().await,
@@ -81,7 +87,10 @@ mod error {
 
     #[test]
     async fn repo_backend_error() {
-        let tag_service = TagService::init(MockTagRepository::new_backend_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_backend_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,
@@ -96,7 +105,10 @@ mod error {
 
     #[test]
     async fn repo_programming_error() {
-        let tag_service = TagService::init(MockTagRepository::new_internal_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_internal_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,

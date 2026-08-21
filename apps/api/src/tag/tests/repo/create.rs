@@ -1,6 +1,7 @@
 use sqlx::PgPool;
 
 use crate::{
+    category::{repo::PgCategoryRepository, types::CategoryID},
     error::{
         Resource,
         repo::{ConstraintViolation, Error},
@@ -9,17 +10,19 @@ use crate::{
         repo::{PgTagRepository, TagRepository},
         types::repo::CreateModel,
     },
-    tests::helpers::{create_test_user, generate_a_z},
+    tests::helpers::{create_test_category, create_test_user, generate_a_z},
     user::{repo::PgUserRepository, types::UserID},
 };
 
-async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
+async fn init(pool: PgPool) -> (UserID, CategoryID, PgTagRepository) {
     let user_repo = PgUserRepository::init(pool.clone());
+    let category_repo = PgCategoryRepository::init(pool.clone());
     let tag_repo = PgTagRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
+    let category = create_test_category(&category_repo, user.id).await;
 
-    (user.id, tag_repo)
+    (user.id, category.id, tag_repo)
 }
 
 mod success {
@@ -28,7 +31,7 @@ mod success {
 
     #[test]
     async fn success(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         let res = tag_repo.create(user_id, CreateModel::default()).await;
         assert!(res.is_ok());
@@ -36,15 +39,11 @@ mod success {
 
     #[test]
     async fn verify_output(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category_id, tag_repo) = init(pool).await;
 
-        let test_category_id = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
         let create_model = CreateModel {
             label: "Test Tag".to_string(),
-            category_id: Some(test_category_id),
+            category_id: Some(category_id),
             position_key: generate_a_z(0).to_string(),
         };
         let tag = tag_repo
@@ -59,7 +58,7 @@ mod success {
         } = create_model;
         assert_eq!(tag.label, label);
         assert_eq!(tag.category_id, category_id);
-        assert_eq!(tag.category_name.unwrap(), "Testing");
+        assert_eq!(tag.category_name.unwrap(), "Test Category");
         assert_eq!(tag.position_key, position_key);
     }
 }
@@ -70,7 +69,7 @@ mod input {
 
     #[test]
     async fn required_input(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         let create_model = CreateModel {
             label: "Test Tag".to_string(),
@@ -83,12 +82,8 @@ mod input {
 
     #[test]
     async fn full_input(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category_id, tag_repo) = init(pool).await;
 
-        let category_id = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
         let create_model = CreateModel {
             label: "Test Tag".to_string(),
             category_id: Some(category_id),
@@ -105,7 +100,7 @@ mod constraint {
 
     #[test]
     async fn user_not_exists(pool: PgPool) {
-        let (_, tag_repo) = init(pool).await;
+        let (_, _, tag_repo) = init(pool).await;
 
         let res = tag_repo
             .create(UserID::new_random(), CreateModel::default())
@@ -124,7 +119,7 @@ mod constraint {
 
     #[test]
     async fn errors_on_duplicate_uncategorized_tag(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         tag_repo
             .create(user_id, CreateModel::default())
@@ -146,12 +141,8 @@ mod constraint {
 
     #[test]
     async fn errors_on_duplicate_categorized_tag(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category_id, tag_repo) = init(pool).await;
 
-        let category_id = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
         tag_repo
             .create(
                 user_id,

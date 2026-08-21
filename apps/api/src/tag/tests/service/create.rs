@@ -1,17 +1,26 @@
 use chrono_tz::Tz;
 
 use crate::{
-    error::service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, TOO_LONG, ValidationError},
+    error::{
+        Resource,
+        service::{Error, INVALID_SINGLE_LINE, TOO_LONG, ValidationError},
+    },
     tag::{service::TagService, types::route::CreateRequest},
     tests::{
-        mocks::MockTagRepository,
-        test_data::{CONTAINS_WHITESPACE_TEST_INPUT, NORMALIZATION_TEST_INPUT},
+        mocks::{MockTagRepository, category::MockCategoryRepository},
+        test_data::{NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
     types::extract::UserContext,
+    user::types::UserID,
 };
 
-async fn init() -> (UserContext, TagService<MockTagRepository>) {
-    let tag_service = TagService::init(MockTagRepository::new());
+use super::init_test_setup;
+
+async fn init() -> (
+    UserContext,
+    TagService<MockTagRepository, MockCategoryRepository>,
+) {
+    let tag_service = init_test_setup();
 
     let user_context = UserContext {
         id: tag_service.repo.add_user().await,
@@ -42,8 +51,6 @@ mod success {
 }
 
 mod error {
-    use crate::user::types::UserID;
-
     use super::*;
     use tokio::test;
 
@@ -64,7 +71,10 @@ mod error {
 
     #[test]
     async fn repo_backend_error() {
-        let tag_service = TagService::init(MockTagRepository::new_backend_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_backend_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,
@@ -79,7 +89,10 @@ mod error {
 
     #[test]
     async fn repo_programming_error() {
-        let tag_service = TagService::init(MockTagRepository::new_internal_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_internal_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,
@@ -122,7 +135,7 @@ mod label {
     async fn errors_with_label_containing_whitespaces() {
         let (user_context, tag_service) = init().await;
 
-        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
+        for (name, input) in SINGLE_LINE_TEST_INPUT {
             let create_request = CreateRequest {
                 label: input.to_string(),
                 ..Default::default()
@@ -135,7 +148,7 @@ mod label {
                         err,
                         Error::Validation(ValidationError::InvalidValue {
                             field: "label",
-                            reason: NO_NONSPACE_WHITESPACE
+                            reason: INVALID_SINGLE_LINE
                         })
                     ),
                     "case: {name}; got error: {err}",
@@ -178,98 +191,38 @@ mod category {
     use tokio::test;
 
     #[test]
-    async fn normalize_category() {
+    async fn category_not_owned() {
         let (user_context, tag_service) = init().await;
-
-        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
-            let create_request = CreateRequest {
-                category: Some(input.to_string()),
-                ..Default::default()
-            };
-            let tag = tag_service
-                .create(user_context, create_request)
-                .await
-                .unwrap();
-            let category = tag.category.unwrap().name;
-            assert_eq!(
-                category, expected,
-                "case: {name} - expected: {expected} (found: {category})",
-            );
-        }
-    }
-
-    #[test]
-    async fn errors_on_blank_category() {
-        let (user_context, tag_service) = init().await;
+        let category = tag_service
+            .repo
+            .add_category(tag_service.repo.add_user().await)
+            .await;
 
         let create_request = CreateRequest {
-            category: Some("".to_string()),
+            label: "Test Tag".to_string(),
+            category: Some(category.name),
             ..Default::default()
         };
         let res = tag_service.create(user_context, create_request).await;
         assert!(res.is_err());
         if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Validation(ValidationError::InvalidValue {
-                    field: "category",
-                    reason: NO_EMPTY_STRING,
-                })
-            ))
+            assert!(matches!(err, Error::NotFound(Resource::Category)), "{err}")
         }
     }
 
     #[test]
-    async fn errors_with_category_containing_whitespaces() {
+    async fn category_not_exists() {
         let (user_context, tag_service) = init().await;
 
-        for (name, input) in CONTAINS_WHITESPACE_TEST_INPUT {
-            let create_request = CreateRequest {
-                category: Some(input.to_string()),
-                ..Default::default()
-            };
-            let res = tag_service.create(user_context, create_request).await;
-            assert!(res.is_err(), "case: {name}; should have failed");
-            if let Err(err) = res {
-                assert!(
-                    matches!(
-                        err,
-                        Error::Validation(ValidationError::InvalidValue {
-                            field: "category",
-                            reason: NO_NONSPACE_WHITESPACE
-                        })
-                    ),
-                    "case: {name}; got error: {err}",
-                )
-            }
-        }
-    }
-
-    #[test]
-    async fn errors_with_category_more_than_100_chars() {
-        let (user_context, tag_service) = init().await;
-
-        let mut too_long_category = String::new();
-        for _ in 0..12 {
-            too_long_category.push_str("1234567890");
-        }
         let create_request = CreateRequest {
-            category: Some(too_long_category),
+            label: "Test Tag".to_string(),
+            category: Some("Not Exists".to_string()),
             ..Default::default()
         };
         let res = tag_service.create(user_context, create_request).await;
         assert!(res.is_err());
         if let Err(err) = res {
-            assert!(
-                matches!(
-                    err,
-                    Error::Validation(ValidationError::InvalidValue {
-                        field: "category",
-                        reason: TOO_LONG,
-                    })
-                ),
-                "got error: {err}",
-            )
+            assert!(matches!(err, Error::NotFound(Resource::Category)))
         }
     }
 }

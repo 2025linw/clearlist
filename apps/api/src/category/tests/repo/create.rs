@@ -1,25 +1,25 @@
 use sqlx::PgPool;
 
 use crate::{
+    category::{
+        repo::{CategoryRepository, PgCategoryRepository},
+        types::repo::CreateModel,
+    },
     error::{
         Resource,
         repo::{ConstraintViolation, Error},
-    },
-    tag::{
-        repo::{PgTagRepository, TagRepository},
-        types::repo::CreateModel,
     },
     tests::helpers::{create_test_user, generate_a_z},
     user::{repo::PgUserRepository, types::UserID},
 };
 
-async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
+async fn init(pool: PgPool) -> (UserID, PgCategoryRepository) {
     let user_repo = PgUserRepository::init(pool.clone());
-    let tag_repo = PgTagRepository::init(pool.clone());
+    let category_repo = PgCategoryRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
 
-    (user.id, tag_repo)
+    (user.id, category_repo)
 }
 
 mod success {
@@ -27,34 +27,29 @@ mod success {
     use sqlx::test;
 
     #[test]
-    async fn input(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+    async fn success(pool: PgPool) {
+        let (user_id, category_repo) = init(pool).await;
 
-        let res = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
-            .await;
+        let res = category_repo.create(user_id, CreateModel::default()).await;
         assert!(res.is_ok())
     }
 
     #[test]
     async fn verify_output(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category_repo) = init(pool).await;
 
-        let category_id = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
+        let create_model = CreateModel {
+            name: "Test Category".to_string(),
+            position_key: generate_a_z(0).to_string(),
+        };
+        let category = category_repo
+            .create(user_id, create_model.clone())
             .await
             .unwrap();
 
-        tag_repo
-            .create(
-                user_id,
-                CreateModel {
-                    category_id: Some(category_id),
-                    ..Default::default()
-                },
-            )
-            .await
-            .unwrap();
+        let CreateModel { name, position_key } = create_model;
+        assert_eq!(category.name, name);
+        assert_eq!(category.position_key, position_key);
     }
 }
 
@@ -64,14 +59,10 @@ mod constraint {
 
     #[test]
     async fn user_not_exists(pool: PgPool) {
-        let (_, tag_repo) = init(pool).await;
+        let (_, category_repo) = init(pool).await;
 
-        let res = tag_repo
-            .add_category(
-                UserID::new_random(),
-                "Test Category".to_string(),
-                generate_a_z(0).to_string(),
-            )
+        let res = category_repo
+            .create(UserID::new_random(), CreateModel::default())
             .await;
         assert!(res.is_err());
         if let Err(err) = res {
@@ -87,22 +78,26 @@ mod constraint {
 
     #[test]
     async fn errors_on_duplicate_category(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category_repo) = init(pool).await;
 
-        tag_repo
-            .add_category(
+        category_repo
+            .create(
                 user_id,
-                "Test Category".to_string(),
-                generate_a_z(0).to_string(),
+                CreateModel {
+                    name: "Test Category".to_string(),
+                    ..Default::default()
+                },
             )
             .await
             .unwrap();
 
-        let res = tag_repo
-            .add_category(
+        let res = category_repo
+            .create(
                 user_id,
-                "Test Category".to_string(),
-                generate_a_z(0).to_string(),
+                CreateModel {
+                    name: "Test Category".to_string(),
+                    ..Default::default()
+                },
             )
             .await;
         assert!(res.is_err());

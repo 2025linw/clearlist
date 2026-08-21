@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::{
     GenericAppState,
+    category::repo::CategoryRepository,
     error::route::Error::{self, Unauthenticated},
     tag::repo::TagRepository,
     task::repo::TaskRepository,
@@ -23,17 +24,18 @@ pub struct UserContext {
     pub tz: Tz,
 }
 
-impl<U, T, Ta> FromRequestParts<GenericAppState<U, T, Ta>> for UserContext
+impl<U, T, Ta, C> FromRequestParts<GenericAppState<U, T, Ta, C>> for UserContext
 where
     U: UserRepository,
     T: TaskRepository,
     Ta: TagRepository,
+    C: CategoryRepository,
 {
     type Rejection = Error;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &GenericAppState<U, T, Ta>,
+        state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         match Session::from_request_parts(parts, state).await {
             Ok(session) => {
@@ -66,17 +68,18 @@ pub struct Session {
     pub expires_at: chrono::DateTime<chrono::Utc>,
 }
 
-impl<U, T, Ta> FromRequestParts<GenericAppState<U, T, Ta>> for Session
+impl<U, T, Ta, C> FromRequestParts<GenericAppState<U, T, Ta, C>> for Session
 where
     U: UserRepository,
     T: TaskRepository,
     Ta: TagRepository,
+    C: CategoryRepository,
 {
     type Rejection = Error;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &GenericAppState<U, T, Ta>,
+        state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         match IntermediateFormat::from_request_parts(parts, state).await {
             Ok(session) => Ok(Self {
@@ -94,17 +97,18 @@ where
 
 pub type OptionalSession = Option<Session>;
 
-impl<U, T, Ta> FromRequestParts<GenericAppState<U, T, Ta>> for OptionalSession
+impl<U, T, Ta, C> FromRequestParts<GenericAppState<U, T, Ta, C>> for OptionalSession
 where
     U: UserRepository,
     T: TaskRepository,
     Ta: TagRepository,
+    C: CategoryRepository,
 {
     type Rejection = (StatusCode, &'static str);
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &GenericAppState<U, T, Ta>,
+        state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         match Session::from_request_parts(parts, state).await {
             Ok(session) => Ok(Some(session)),
@@ -120,17 +124,18 @@ struct IntermediateFormat {
     pub session: IntermediateSession,
 }
 
-impl<U, T, Ta> FromRequestParts<GenericAppState<U, T, Ta>> for IntermediateFormat
+impl<U, T, Ta, C> FromRequestParts<GenericAppState<U, T, Ta, C>> for IntermediateFormat
 where
     U: UserRepository,
     T: TaskRepository,
     Ta: TagRepository,
+    C: CategoryRepository,
 {
     type Rejection = Error;
 
     async fn from_request_parts(
         parts: &mut Parts,
-        state: &GenericAppState<U, T, Ta>,
+        state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         let cookies = CookieJar::from_headers(&parts.headers);
         let session_id = cookies

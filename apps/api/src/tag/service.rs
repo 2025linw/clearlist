@@ -1,18 +1,17 @@
 mod helpers;
 
 use crate::{
+    category::repo::CategoryRepository,
     error::{
         Resource,
         repo::{ConstraintViolation, Error as RepoError},
-        service::{Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, Result, ValidationError},
+        service::{Error, Result},
     },
     types::{extract::UserContext, pagination::SQLPagination},
-    utils::service::is_valid_single_line_string,
 };
 
 use super::{
     repo::TagRepository,
-    service::helpers::{validate_create_request, validate_query_opts, validate_update_request},
     types::{
         Tag, TagID,
         repo::{CreateModel, Filter, QueryOpts, UpdateModel},
@@ -21,13 +20,17 @@ use super::{
 };
 
 #[derive(Clone)]
-pub struct TagService<R: TagRepository> {
+pub struct TagService<R: TagRepository, C: CategoryRepository> {
     pub(super) repo: R,
+    pub(super) category_repo: C,
 }
 
-impl<R: TagRepository> TagService<R> {
-    pub fn init(repo: R) -> Self {
-        Self { repo }
+impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
+    pub fn init(repo: R, category_repo: C) -> Self {
+        Self {
+            repo,
+            category_repo,
+        }
     }
 
     pub async fn list(
@@ -40,14 +43,29 @@ impl<R: TagRepository> TagService<R> {
                 page,
                 limit,
                 category,
-            } = validate_query_opts(query)?;
+            } = helpers::validate_query_opts(query)?;
 
             let mut filter = Filter::new();
             if let Some(category) = category {
-                if let Some(id) = self.repo.get_category_id(user_context.id, category).await? {
-                    filter.category(id);
-                } else {
-                    return Ok(vec![]);
+                match self
+                    .category_repo
+                    .get_id_by_name(user_context.id, category)
+                    .await
+                {
+                    Ok(id) => filter.category(id),
+                    Err(err) => {
+                        if matches!(
+                            err,
+                            RepoError::Constraint(ConstraintViolation::NotFound(
+                                Resource::Category
+                            ))
+                        ) {
+                            return Ok(Vec::new());
+                        }
+
+                        eprintln!("{err}");
+                        return Err(err.into());
+                    }
                 }
             }
 
@@ -86,22 +104,27 @@ impl<R: TagRepository> TagService<R> {
             label,
             category,
             position_key,
-        } = validate_create_request(create_request)?;
+        } = helpers::validate_create_request(create_request)?;
 
         // Get id for category name, if exists
-        let category_id = if let Some(category) = category {
-            if let Some(id) = self
-                .repo
-                .get_category_id(user_context.id, category.clone())
-                .await?
+        let category_id = if let Some(category_name) = category {
+            match self
+                .category_repo
+                .get_id_by_name(user_context.id, category_name.clone())
+                .await
             {
-                Some(id)
-            } else {
-                Some(
-                    self.repo
-                        .add_category(user_context.id, category, "a".to_string())
-                        .await?,
-                )
+                Ok(id) => Some(id),
+                Err(err) => {
+                    if matches!(
+                        err,
+                        RepoError::Constraint(ConstraintViolation::NotFound(Resource::Category))
+                    ) {
+                        return Err(Error::NotFound(Resource::Category));
+                    }
+
+                    eprintln!("{err}");
+                    return Err(err.into());
+                }
             }
         } else {
             None
@@ -142,35 +165,30 @@ impl<R: TagRepository> TagService<R> {
             label,
             category,
             position_key,
-        } = validate_update_request(update_request)?;
+        } = helpers::validate_update_request(update_request)?;
 
         // Get id for category name, if exists
         let category_id = if let Some(category_opt) = category {
             Some(if let Some(category) = category_opt {
-                if category.is_empty() {
-                    return Err(Error::Validation(ValidationError::InvalidValue {
-                        field: "category",
-                        reason: NO_EMPTY_STRING,
-                    }));
-                } else if !is_valid_single_line_string(&category) {
-                    return Err(Error::Validation(ValidationError::InvalidValue {
-                        field: "category",
-                        reason: NO_NONSPACE_WHITESPACE,
-                    }));
-                }
-
-                if let Some(id) = self
-                    .repo
-                    .get_category_id(user_context.id, category.clone())
-                    .await?
+                match self
+                    .category_repo
+                    .get_id_by_name(user_context.id, category.clone())
+                    .await
                 {
-                    Some(id)
-                } else {
-                    Some(
-                        self.repo
-                            .add_category(user_context.id, category, "a".to_string())
-                            .await?,
-                    )
+                    Ok(id) => Some(id),
+                    Err(err) => {
+                        if matches!(
+                            err,
+                            RepoError::Constraint(ConstraintViolation::NotFound(
+                                Resource::Category
+                            ))
+                        ) {
+                            return Err(Error::NotFound(Resource::Category));
+                        }
+
+                        eprintln!("{err}");
+                        return Err(err.into());
+                    }
                 }
             } else {
                 None
@@ -212,20 +230,4 @@ impl<R: TagRepository> TagService<R> {
 
         Ok(())
     }
-
-    // pub async fn list_categories(&self, user_context: UserContext) -> Result<Vec<Category>> {
-    //     self.repo
-    //         .list_categories(user_context.id)
-    //         .await
-    //         .map(|tags| tags.into_iter().map(Category::from).collect())
-    //         .map_err(Error::from)
-    // }
-
-    // pub async fn add_category(&self, user_context: UserContext, name: String) -> Result<Category> {
-    //     self.repo.add_category(user_context.id, name, position_key)
-    // }
-
-    // pub async fn remove_category(&self, user_context: UserContext, category_id: CategoryID) -> Result<()> {
-    //     todo!()
-    // }
 }

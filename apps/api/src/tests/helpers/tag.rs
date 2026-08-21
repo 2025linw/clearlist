@@ -1,7 +1,8 @@
 use crate::{
+    category::types::CategoryID,
     tag::{
         repo::{PgTagRepository, TagRepository},
-        types::{CategoryID, repo::CreateModel, route::CreateRequest},
+        types::{repo::CreateModel, route::CreateRequest},
     },
     user::types::UserID,
 };
@@ -41,19 +42,11 @@ pub fn default_tag(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel
     }
 }
 
-pub fn tag_with_workflow_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
-    CreateModel {
-        label: format!("Workflow Tag {i}"),
-        category_id: tag_category_id,
-        position_key: format!("workflow{}", generate_a_z(i)),
-    }
-}
-
-pub fn tag_with_priority_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
+pub fn tag_with_category(i: usize, tag_category_id: Option<CategoryID>) -> CreateModel {
     CreateModel {
         label: format!("Priority Tag {i}"),
         category_id: tag_category_id,
-        position_key: format!("priority{}", generate_a_z(i)),
+        position_key: format!("cat{}", generate_a_z(i)),
     }
 }
 

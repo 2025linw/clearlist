@@ -1,12 +1,13 @@
-use std::{
-    collections::{HashMap, hash_map::Entry},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use async_trait::async_trait;
 use tokio::sync::RwLock;
 
 use crate::{
+    category::{
+        repo::CategoryRepository,
+        types::{CategoryModel, repo::CreateModel as CategoryCreateModel},
+    },
     error::{
         Resource,
         repo::{ConstraintViolation, Error, Result},
@@ -14,13 +15,13 @@ use crate::{
     tag::{
         repo::TagRepository,
         types::{
-            CategoryID, TagID, TagModel,
+            TagID, TagModel,
             repo::{CreateModel, QueryOpts, UpdateModel},
         },
     },
     tests::{
-        helpers::{generate_a_z, get_today_date_pg},
-        mocks::{MockDB, MockUserRepository},
+        helpers::get_today_date_pg,
+        mocks::{MockDB, MockUserRepository, category::MockCategoryRepository},
     },
     user::{
         repo::UserRepository,
@@ -31,7 +32,7 @@ use crate::{
 #[derive(Clone)]
 pub struct MockTagRepository {
     tags: MockDB<(TagID, UserID), TagModel>,
-    categories: MockDB<(CategoryID, UserID), (String, String)>,
+    categories: MockCategoryRepository,
     users: MockUserRepository,
 
     error: Option<Error>,
@@ -40,20 +41,22 @@ pub struct MockTagRepository {
 
 impl MockTagRepository {
     pub fn new() -> Self {
+        let user_repo = MockUserRepository::new();
+
         Self {
-            users: MockUserRepository::new(),
             tags: Arc::new(RwLock::new(HashMap::new())),
-            categories: Arc::new(RwLock::new(HashMap::new())),
+            categories: MockCategoryRepository::init(user_repo.clone()),
+            users: user_repo,
             error: None,
             last_filter: Arc::new(RwLock::new(None)),
         }
     }
 
-    pub fn init(user_repo: MockUserRepository) -> Self {
+    pub fn init(user_repo: MockUserRepository, category_repo: MockCategoryRepository) -> Self {
         Self {
-            users: user_repo,
             tags: Arc::new(RwLock::new(HashMap::new())),
-            categories: Arc::new(RwLock::new(HashMap::new())),
+            categories: category_repo,
+            users: user_repo,
             error: None,
             last_filter: Arc::new(RwLock::new(None)),
         }
@@ -73,6 +76,10 @@ impl MockTagRepository {
         mock
     }
 
+    pub fn categories(&self) -> MockCategoryRepository {
+        self.categories.clone()
+    }
+
     pub async fn get_last_filter(&self) -> QueryOpts {
         let mut last_filter = self.last_filter.write().await;
         let res = last_filter.clone();
@@ -86,6 +93,19 @@ impl MockTagRepository {
         let user = self.users.create(UserCreateModel::default()).await.unwrap();
 
         user.id
+    }
+
+    pub async fn add_category(&self, user_id: UserID) -> CategoryModel {
+        self.categories
+            .create(
+                user_id,
+                CategoryCreateModel {
+                    name: "Test Category".to_string(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap()
     }
 }
 
@@ -108,7 +128,6 @@ impl TagRepository for MockTagRepository {
             return Err(err.clone());
         }
         let mut repo = self.tags.write().await;
-        let cat_repo = self.categories.read().await;
 
         if self.users.get(user_id).await.unwrap().is_none() {
             return Err(Error::Constraint(ConstraintViolation::ForeignKey {
@@ -117,16 +136,20 @@ impl TagRepository for MockTagRepository {
             }));
         }
 
-        let (category_id, category_name) = if let Some(category_id) = create_model.category_id {
-            if let Some((category_name, _)) = cat_repo.get(&(category_id, user_id)).cloned() {
-                (Some(category_id), Some(category_name))
+        let category = if let Some(category_id) = create_model.category_id {
+            if let Some(category) = self.categories.get(category_id, user_id).await.unwrap() {
+                Some(category)
             } else {
                 return Err(Error::Constraint(ConstraintViolation::NotFound(
                     Resource::Category,
                 )));
             }
         } else {
-            (None, None)
+            None
+        };
+        let (category_id, category_name, category_position_key) = match category {
+            Some(c) => (Some(c.id), Some(c.name), Some(c.position_key)),
+            None => (None, None, None),
         };
         let created_at = get_today_date_pg();
         let tag = TagModel {
@@ -135,14 +158,14 @@ impl TagRepository for MockTagRepository {
             category_id,
             category_name,
             position_key: create_model.position_key,
-            category_position_key: Some(generate_a_z(0).to_string()),
+            category_position_key,
             updated_at: created_at,
             created_at,
             created_by: user_id,
         };
         repo.insert((tag.id, user_id), tag.clone());
 
-        Ok(repo.get(&(tag.id, user_id)).unwrap().clone())
+        Ok(repo.get(&(tag.id, user_id)).unwrap().to_owned())
     }
 
     async fn get(&self, id: TagID, user_id: UserID) -> Result<Option<TagModel>> {
@@ -151,12 +174,7 @@ impl TagRepository for MockTagRepository {
         }
         let repo = self.tags.read().await;
 
-        let tag_opt = repo.get(&(id, user_id));
-        if let Some(tag) = tag_opt {
-            Ok(Some(tag.clone()))
-        } else {
-            Ok(None)
-        }
+        Ok(repo.get(&(id, user_id)).cloned())
     }
 
     async fn update(
@@ -168,7 +186,6 @@ impl TagRepository for MockTagRepository {
         if let Some(err) = &self.error {
             return Err(err.clone());
         }
-        let cat_repo = self.categories.read().await;
         let mut repo = self.tags.write().await;
 
         let tag_opt = repo.get(&(id, user_id));
@@ -191,20 +208,22 @@ impl TagRepository for MockTagRepository {
             && category_id != tag.category_id
         {
             if let Some(id) = category_id {
-                let category_name =
-                    if let Some((category_name, _)) = cat_repo.get(&(id, user_id)).cloned() {
-                        Some(category_name)
+                let category =
+                    if let Some(category) = self.categories.get(id, user_id).await.unwrap() {
+                        category
                     } else {
                         return Err(Error::Constraint(ConstraintViolation::NotFound(
                             Resource::Category,
                         )));
                     };
 
-                tag.category_id = category_id;
-                tag.category_name = category_name;
+                tag.category_id = Some(category.id);
+                tag.category_name = Some(category.name);
+                tag.category_position_key = Some(category.position_key);
             } else {
                 tag.category_id = None;
                 tag.category_name = None;
+                tag.category_position_key = None;
             }
             changed = true;
         }
@@ -213,6 +232,7 @@ impl TagRepository for MockTagRepository {
             && position_key != tag.position_key
         {
             tag.position_key = position_key;
+            changed = true;
         }
 
         if !changed {
@@ -241,82 +261,5 @@ impl TagRepository for MockTagRepository {
         repo.remove(&(id, user_id)).unwrap();
 
         Ok(())
-    }
-
-    async fn get_category_id(&self, user_id: UserID, name: String) -> Result<Option<CategoryID>> {
-        if let Some(err) = &self.error {
-            return Err(err.clone());
-        }
-        let cat_repo = self.categories.read().await;
-
-        if let Some(((id, _), _)) = cat_repo
-            .iter()
-            .find(|((_, created_by), (cat_name, _))| &user_id == created_by && name == *cat_name)
-        {
-            Ok(Some(*id))
-        } else {
-            Ok(None)
-        }
-    }
-
-    async fn add_category(
-        &self,
-        user_id: UserID,
-        category: String,
-        position_key: String,
-    ) -> Result<CategoryID> {
-        if let Some(err) = &self.error {
-            return Err(err.clone());
-        }
-        let mut cat_repo = self.categories.write().await;
-
-        if self.users.get(user_id).await.unwrap().is_none() {
-            return Err(Error::Constraint(ConstraintViolation::ForeignKey {
-                resource: Resource::User,
-                message: "categories_created_by_fkey".to_string(),
-            }));
-        }
-
-        let id = CategoryID::new_random();
-        cat_repo.insert((id, user_id), (category, position_key));
-
-        Ok(id)
-    }
-
-    async fn reposition_category(
-        &self,
-        id: CategoryID,
-        user_id: UserID,
-        position_key: String,
-    ) -> Result<CategoryID> {
-        if let Some(err) = &self.error {
-            return Err(err.clone());
-        }
-        let mut cat_repo = self.categories.write().await;
-
-        match cat_repo.entry((id, user_id)) {
-            Entry::Occupied(mut occupied_entry) => {
-                let (category_name, _) = occupied_entry.get();
-                occupied_entry.insert((category_name.to_owned(), position_key));
-
-                Ok(id)
-            }
-            Entry::Vacant(_) => Ok(id),
-        }
-    }
-
-    async fn remove_category(&self, id: CategoryID, user_id: UserID) -> Result<()> {
-        if let Some(err) = &self.error {
-            return Err(err.clone());
-        }
-        let mut cat_repo = self.categories.write().await;
-
-        if cat_repo.remove(&(id, user_id)).is_none() {
-            Err(Error::Constraint(ConstraintViolation::NotFound(
-                Resource::Category,
-            )))
-        } else {
-            Ok(())
-        }
     }
 }

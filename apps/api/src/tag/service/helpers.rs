@@ -1,6 +1,6 @@
 use crate::{
     error::service::{
-        NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
+        NO_EMPTY_STRING, INVALID_SINGLE_LINE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
         ValidationError,
     },
     utils::service::is_valid_single_line_string,
@@ -38,7 +38,7 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
         } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_NONSPACE_WHITESPACE,
+                reason: INVALID_SINGLE_LINE,
             });
         } else if category.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -51,6 +51,12 @@ pub fn validate_query_opts(query: URLQueryOpts) -> Result<URLQueryOpts, Validati
     Ok(query)
 }
 
+fn normalize_query_opts(query: &mut URLQueryOpts) {
+    if let Some(category) = query.category.as_mut() {
+        *category = category.trim().to_owned();
+    }
+}
+
 pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, ValidationError> {
     let mut request = request;
     normalize_create_request(&mut request);
@@ -58,7 +64,7 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
     if !is_valid_single_line_string(&request.label) {
         return Err(ValidationError::InvalidValue {
             field: "label",
-            reason: NO_NONSPACE_WHITESPACE,
+            reason: INVALID_SINGLE_LINE,
         });
     } else if request.label.len() > 100 {
         return Err(ValidationError::InvalidValue {
@@ -76,7 +82,7 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
         } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_NONSPACE_WHITESPACE,
+                reason: INVALID_SINGLE_LINE,
             });
         } else if category.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -89,15 +95,23 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
     Ok(request)
 }
 
+fn normalize_create_request(request: &mut CreateRequest) {
+    request.label = request.label.trim().to_owned();
+
+    if let Some(category) = request.category.as_mut() {
+        *category = category.trim().to_owned();
+    }
+}
+
 pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, ValidationError> {
     let mut request = request;
     normalize_update_request(&mut request);
 
-    if let Some(ref label) = request.label {
+    if let Some(label) = &request.label {
         if !is_valid_single_line_string(label) {
             return Err(ValidationError::InvalidValue {
                 field: "label",
-                reason: NO_NONSPACE_WHITESPACE,
+                reason: INVALID_SINGLE_LINE,
             });
         } else if label.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -116,7 +130,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
         } else if !is_valid_single_line_string(category) {
             return Err(ValidationError::InvalidValue {
                 field: "category",
-                reason: NO_NONSPACE_WHITESPACE,
+                reason: INVALID_SINGLE_LINE,
             });
         } else if category.len() > 100 {
             return Err(ValidationError::InvalidValue {
@@ -127,20 +141,6 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
     }
 
     Ok(request)
-}
-
-fn normalize_query_opts(query: &mut URLQueryOpts) {
-    if let Some(category) = query.category.as_mut() {
-        *category = category.trim().to_owned();
-    }
-}
-
-fn normalize_create_request(request: &mut CreateRequest) {
-    request.label = request.label.trim().to_owned();
-
-    if let Some(category) = request.category.as_mut() {
-        *category = category.trim().to_owned();
-    }
 }
 
 fn normalize_update_request(request: &mut UpdateRequest) {

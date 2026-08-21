@@ -11,7 +11,7 @@ use crate::{
 };
 
 use super::types::{
-    CategoryID, TagID, TagModel,
+    TagID, TagModel,
     repo::{CreateModel, QueryOpts, UpdateModel},
 };
 
@@ -27,26 +27,6 @@ pub trait TagRepository: Send + Sync + Clone + 'static {
         update_model: UpdateModel,
     ) -> Result<TagModel>;
     async fn delete(&self, id: TagID, user_id: UserID) -> Result<()>;
-
-    async fn get_category_id(
-        &self,
-        user_id: UserID,
-        category: String,
-    ) -> Result<Option<CategoryID>>;
-    // async fn list_categories(&self, user_id: UserID) -> Result<Vec<CategoryModel>>;
-    async fn add_category(
-        &self,
-        user_id: UserID,
-        category: String,
-        position_key: String,
-    ) -> Result<CategoryID>;
-    async fn reposition_category(
-        &self,
-        id: CategoryID,
-        user_id: UserID,
-        position_key: String,
-    ) -> Result<CategoryID>;
-    async fn remove_category(&self, id: CategoryID, user_id: UserID) -> Result<()>;
 }
 
 #[derive(Clone)]
@@ -65,7 +45,7 @@ impl PgTagRepository {
         query: Option<QueryOpts>,
     ) -> Result<Vec<TagModel>> {
         let mut builder = QueryBuilder::new(
-            "SELECT t.*, tc.category_name, tc.position_key as category_position_key
+            "SELECT t.*, tc.name as category_name, tc.position_key as category_position_key
             FROM app.tags t
             LEFT JOIN app.categories tc ON t.category_id = tc.id
             WHERE t.created_by = ",
@@ -114,7 +94,7 @@ impl PgTagRepository {
         user_id: UserID,
     ) -> Result<Option<TagModel>> {
         let tag_opt = query_as::<TagModel>(
-            "SELECT t.*, tc.category_name, tc.position_key as category_position_key FROM app.tags t
+            "SELECT t.*, tc.name as category_name, tc.position_key as category_position_key FROM app.tags t
             LEFT JOIN app.categories tc ON t.category_id = tc.id
             WHERE t.id = $1 AND t.created_by = $2",
         )
@@ -216,107 +196,6 @@ impl TagRepository for PgTagRepository {
         let mut tx = self.db.begin().await?;
 
         Self::delete_tag_row(&mut tx, id, user_id).await?;
-
-        tx.commit().await?;
-        Ok(())
-    }
-
-    async fn get_category_id(
-        &self,
-        user_id: UserID,
-        category: String,
-    ) -> Result<Option<CategoryID>> {
-        let mut conn = self.db.acquire().await?;
-
-        let id_opt = query_scalar(
-            "SELECT id FROM app.categories
-            WHERE category_name = $1 AND created_by = $2",
-        )
-        .bind(category)
-        .bind(user_id)
-        .fetch_optional(conn.as_mut())
-        .await
-        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
-
-        conn.close().await?;
-        Ok(id_opt)
-    }
-
-    // async fn list_categories(&self, user_id: UserID) -> Result<Vec<CategoryModel>> {
-    //     let mut conn = self.db.acquire().await?;
-
-    //     let categories = query_as::<CategoryModel>("")
-    //         .bind(user_id)
-    //         .fetch_all(conn.as_mut())
-    //         .await
-    //         .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
-
-    //     conn.close().await?;
-    //     Ok(categories)
-    // }
-
-    async fn add_category(
-        &self,
-        user_id: UserID,
-        category: String,
-        position_key: String,
-    ) -> Result<CategoryID> {
-        let mut tx = self.db.begin().await?;
-
-        let id = query_scalar(
-            "INSERT INTO app.categories (id, category_name, position_key, created_by)
-            VALUES ($1, $2, $3, $4) RETURNING id",
-        )
-        .bind(CategoryID::new_random())
-        .bind(category)
-        .bind(position_key)
-        .bind(user_id)
-        .fetch_one(tx.as_mut())
-        .await
-        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
-
-        tx.commit().await?;
-        Ok(id)
-    }
-
-    async fn reposition_category(
-        &self,
-        id: CategoryID,
-        user_id: UserID,
-        position_key: String,
-    ) -> Result<CategoryID> {
-        let mut tx = self.db.begin().await?;
-
-        let id = query_scalar(
-            "UPDATE app.categories SET
-            position_key = $1
-            WHERE id = $2 AND created_by = $3
-            RETURNING id",
-        )
-        .bind(position_key)
-        .bind(id)
-        .bind(user_id)
-        .fetch_one(tx.as_mut())
-        .await
-        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
-
-        tx.commit().await?;
-        Ok(id)
-    }
-
-    async fn remove_category(&self, id: CategoryID, user_id: UserID) -> Result<()> {
-        let mut tx = self.db.begin().await?;
-
-        query(
-            "DELETE FROM app.categories
-            WHERE id = $1 AND created_by = $2
-            RETURNING id",
-        )
-        .bind(id)
-        .bind(user_id)
-        .fetch_one(tx.as_mut())
-        .await
-        .map_err(|err| Error::from_sqlx(err, Resource::Category))?;
 
         tx.commit().await?;
         Ok(())

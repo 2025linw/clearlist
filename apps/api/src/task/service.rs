@@ -22,7 +22,6 @@ use crate::{
 
 use super::{
     repo::TaskRepository,
-    service::helpers::{validate_create_request, validate_query_opts, validate_update_request},
     types::{
         SortBy, Task, TaskID,
         repo::{Filter, QueryOpts, Sort},
@@ -56,7 +55,7 @@ impl<R: TaskRepository> TaskService<R> {
                 completed,
                 deleted,
                 tags,
-            } = validate_query_opts(query)?;
+            } = helpers::validate_query_opts(query)?;
 
             let mut filter = Filter::new();
             if let Some(start) = start {
@@ -179,7 +178,7 @@ impl<R: TaskRepository> TaskService<R> {
             deadline,
             tags,
             position_key,
-        } = validate_create_request(create_request)?;
+        } = helpers::validate_create_request(create_request)?;
 
         // Convert and normalized start
         let mut has_time = false;
@@ -254,7 +253,7 @@ impl<R: TaskRepository> TaskService<R> {
             deadline,
             tags,
             position_key,
-        } = validate_update_request(update_request)?;
+        } = helpers::validate_update_request(update_request)?;
 
         // Convert and normalize start date
         let mut has_time = None;

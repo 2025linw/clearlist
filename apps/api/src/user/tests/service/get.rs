@@ -7,8 +7,10 @@ use crate::{
     },
 };
 
+use super::init_test_setup;
+
 async fn init() -> (UserID, UserService<MockUserRepository>) {
-    let user_service = UserService::init(MockUserRepository::new());
+    let user_service = init_test_setup();
 
     let user = user_service
         .create(ProvisionRequest {

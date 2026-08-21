@@ -25,7 +25,7 @@ use crate::{
     },
     tests::{
         helpers::get_today_date_pg,
-        mocks::{MockDB, MockTagRepository, MockUserRepository},
+        mocks::{MockDB, MockTagRepository, MockUserRepository, category::MockCategoryRepository},
     },
     user::{
         repo::UserRepository,
@@ -50,7 +50,8 @@ pub struct MockTaskRepository {
 impl MockTaskRepository {
     pub fn new() -> Self {
         let user_repo = MockUserRepository::new();
-        let tag_repo = MockTagRepository::init(user_repo.clone());
+        let category_repo = MockCategoryRepository::init(user_repo.clone());
+        let tag_repo = MockTagRepository::init(user_repo.clone(), category_repo.clone());
 
         Self {
             tasks: Arc::new(RwLock::new(HashMap::new())),

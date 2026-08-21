@@ -6,15 +6,16 @@ use axum::{
 };
 
 use crate::{
-    GenericAppState, tag::repo::TagRepository, task::repo::TaskRepository,
-    user::repo::UserRepository,
+    GenericAppState, category::repo::CategoryRepository, tag::repo::TagRepository,
+    task::repo::TaskRepository, user::repo::UserRepository,
 };
 
-pub fn create_router<U, T, Ta>() -> Router<GenericAppState<U, T, Ta>>
+pub fn create_router<U, T, Ta, C>() -> Router<GenericAppState<U, T, Ta, C>>
 where
     U: UserRepository,
     T: TaskRepository,
     Ta: TagRepository,
+    C: CategoryRepository,
 {
     Router::new()
         .route(

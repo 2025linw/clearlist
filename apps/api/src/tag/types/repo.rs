@@ -1,6 +1,6 @@
 use sqlx::QueryBuilder;
 
-use crate::{tag::types::CategoryID, types::pagination::SQLPagination};
+use crate::{category::types::CategoryID, types::pagination::SQLPagination};
 
 #[derive(Debug, Default, Clone)]
 pub struct QueryOpts {

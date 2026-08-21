@@ -9,7 +9,10 @@ use tokio::net::TcpListener;
 
 use crate::{
     Config, GenericAppState,
-    tests::mocks::{MockAppState, MockTagRepository, MockTaskRepository, MockUserRepository},
+    tests::mocks::{
+        MockAppState, MockTagRepository, MockTaskRepository, MockUserRepository,
+        category::MockCategoryRepository,
+    },
 };
 
 use auth::start_server as start_auth_server;
@@ -28,22 +31,20 @@ pub fn get_test_user_info() -> &'static serde_json::Value {
     })
 }
 
-// pub const TEST_USER_INFO: serde_json::Value = json!({
-//     "email": "testuser@email.com",
-//     "password": "testpass",
-//     "name": "Test User",
-// });
-
 pub struct TestServerIP {
     pub api_addr: SocketAddr,
     pub auth_addr: SocketAddr,
 }
 
-pub async fn start_test_servers(
-    create_router: fn() -> Router<
-        GenericAppState<MockUserRepository, MockTaskRepository, MockTagRepository>,
+type CreateRouterFn = fn() -> Router<
+    GenericAppState<
+        MockUserRepository,
+        MockTaskRepository,
+        MockTagRepository,
+        MockCategoryRepository,
     >,
-) -> TestServerIP {
+>;
+pub async fn start_test_servers(create_router: CreateRouterFn) -> TestServerIP {
     let api_listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let api_addr = api_listener.local_addr().unwrap();
 

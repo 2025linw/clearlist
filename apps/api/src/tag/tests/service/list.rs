@@ -1,21 +1,29 @@
 use chrono_tz::Tz;
 
 use crate::{
+    category::types::repo::CreateModel as CategoryCreateModel,
     error::service::{
-        Error, NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
+        Error, INVALID_SINGLE_LINE, NO_EMPTY_STRING, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
         ValidationError,
     },
     tag::{
-        repo::TagRepository,
         service::TagService,
         types::{repo::QueryOpts, route::URLQueryOpts},
     },
-    tests::{helpers::generate_a_z, mocks::MockTagRepository, test_data::NORMALIZATION_TEST_INPUT},
+    tests::{
+        mocks::{MockTagRepository, category::MockCategoryRepository},
+        test_data::NORMALIZATION_TEST_INPUT,
+    },
     types::extract::UserContext,
 };
 
-async fn init() -> (UserContext, TagService<MockTagRepository>) {
-    let tag_service = TagService::init(MockTagRepository::new());
+use super::init_test_setup;
+
+async fn init() -> (
+    UserContext,
+    TagService<MockTagRepository, MockCategoryRepository>,
+) {
+    let tag_service = init_test_setup();
 
     let user_context = UserContext {
         id: tag_service.repo.add_user().await,
@@ -44,7 +52,10 @@ mod error {
 
     #[test]
     async fn repo_backend_error() {
-        let tag_service = TagService::init(MockTagRepository::new_backend_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_backend_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,
@@ -59,7 +70,10 @@ mod error {
 
     #[test]
     async fn repo_programming_error() {
-        let tag_service = TagService::init(MockTagRepository::new_internal_error());
+        let tag_service = TagService::init(
+            MockTagRepository::new_internal_error(),
+            MockCategoryRepository::new(),
+        );
         let user_context = UserContext {
             id: tag_service.repo.add_user().await,
             tz: Tz::America__Chicago,
@@ -181,6 +195,8 @@ mod pagination {
 }
 
 mod filter {
+    use crate::category::repo::CategoryRepository;
+
     use super::*;
     use tokio::test;
 
@@ -200,12 +216,14 @@ mod filter {
     async fn normalize_category() {
         let (user_context, tag_service) = init().await;
 
-        let test_category_id = tag_service
-            .repo
-            .add_category(
+        let test_category = tag_service
+            .category_repo
+            .create(
                 user_context.id,
-                "Test Text".to_string(),
-                generate_a_z(0).to_string(),
+                CategoryCreateModel {
+                    name: "Test Text".to_string(),
+                    ..Default::default()
+                },
             )
             .await
             .unwrap();
@@ -225,8 +243,9 @@ mod filter {
                 .category
                 .unwrap();
             assert_eq!(
-                filter_category_id, test_category_id,
-                "case: {name} - expected: {test_category_id} (found: {filter_category_id})",
+                filter_category_id, test_category.id,
+                "case: {name} - expected: {} (found: {filter_category_id})",
+                test_category.id
             )
         }
     }
@@ -267,7 +286,7 @@ mod filter {
                 err,
                 Error::Validation(ValidationError::InvalidValue {
                     field: "category",
-                    reason: NO_NONSPACE_WHITESPACE
+                    reason: INVALID_SINGLE_LINE
                 })
             ))
         }

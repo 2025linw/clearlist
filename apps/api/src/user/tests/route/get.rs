@@ -56,15 +56,4 @@ mod error {
         let body = res.json::<ErrorResponse>().await.unwrap();
         assert_eq!(body.status, StatusCode::UNAUTHORIZED);
     }
-
-    #[test]
-    async fn not_exists() {
-        let client = init().await;
-
-        let res = client.get(true).await;
-        assert_eq!(res.status(), StatusCode::NOT_FOUND);
-
-        let body = res.json::<ErrorResponse>().await.unwrap();
-        assert_eq!(body.status, StatusCode::NOT_FOUND);
-    }
 }

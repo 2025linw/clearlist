@@ -1,31 +1,34 @@
 use sqlx::PgPool;
 
 use crate::{
+    category::{
+        repo::PgCategoryRepository,
+        types::{CategoryID, CategoryModel},
+    },
     tag::{
         repo::{PgTagRepository, TagRepository},
         types::{
-            CategoryID, TagModel,
+            TagModel,
             repo::{CreateModel, Filter, QueryOpts},
         },
     },
     tests::helpers::{
-        create_test_user, generate_a_z,
-        tag::{
-            default_tag, seed_tags, seed_tags_with_category, tag_with_priority_category,
-            tag_with_workflow_category,
-        },
+        create_test_category, create_test_user, generate_a_z,
+        tag::{default_tag, seed_tags, seed_tags_with_category, tag_with_category},
     },
     types::pagination::SQLPagination,
     user::{repo::PgUserRepository, types::UserID},
 };
 
-async fn init(pool: PgPool) -> (UserID, PgTagRepository) {
+async fn init(pool: PgPool) -> (UserID, CategoryModel, PgTagRepository) {
     let user_repo = PgUserRepository::init(pool.clone());
+    let category_repo = PgCategoryRepository::init(pool.clone());
     let tag_repo = PgTagRepository::init(pool.clone());
 
     let user = create_test_user(&user_repo).await;
+    let category = create_test_category(&category_repo, user.id).await;
 
-    (user.id, tag_repo)
+    (user.id, category, tag_repo)
 }
 
 mod success {
@@ -34,7 +37,7 @@ mod success {
 
     #[test]
     async fn success(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         seed_tags(&tag_repo, 25, user_id, default_tag).await;
 
@@ -44,18 +47,14 @@ mod success {
 
     #[test]
     async fn verify_output(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, category, tag_repo) = init(pool).await;
 
-        let category_id = tag_repo
-            .add_category(user_id, "Testing".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
         tag_repo
             .create(
                 user_id,
                 CreateModel {
                     label: "Test Tag".to_string(),
-                    category_id: Some(category_id),
+                    category_id: Some(category.id),
                     position_key: generate_a_z(0).to_string(),
                 },
             )
@@ -64,8 +63,8 @@ mod success {
 
         let tag = tag_repo.list(user_id, None).await.unwrap().remove(0);
         assert!(tag.label.starts_with("Test Tag"));
-        assert_eq!(tag.category_id.unwrap(), category_id);
-        assert_eq!(tag.category_name.unwrap(), "Testing");
+        assert_eq!(tag.category_id.unwrap(), category.id);
+        assert_eq!(tag.category_name.unwrap(), "Test Category");
         assert_eq!(tag.position_key, generate_a_z(0).to_string());
     }
 }
@@ -82,53 +81,19 @@ mod filter {
 
     #[test]
     async fn filter_category(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
-
-        let workflow_category_id = tag_repo
-            .add_category(user_id, "Workflow".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
-        let priority_category_id = tag_repo
-            .add_category(user_id, "Priority".to_string(), generate_a_z(1).to_string())
-            .await
-            .unwrap();
+        let (user_id, category, tag_repo) = init(pool).await;
 
         seed_tags(&tag_repo, 5, user_id, default_tag).await;
-        seed_tags_with_category(
-            &tag_repo,
-            5,
-            user_id,
-            workflow_category_id,
-            tag_with_workflow_category,
-        )
-        .await;
-        seed_tags_with_category(
-            &tag_repo,
-            5,
-            user_id,
-            priority_category_id,
-            tag_with_priority_category,
-        )
-        .await;
+        seed_tags_with_category(&tag_repo, 5, user_id, category.id, tag_with_category).await;
 
-        let cases = vec![
-            CategoryCase {
-                name: "Workflow category",
-                category_id: workflow_category_id,
-                check: |tags| {
-                    tags.iter()
-                        .all(|tag| matches!(tag.category_name.as_deref(), Some("Workflow")))
-                },
+        let cases = vec![CategoryCase {
+            name: "With category",
+            category_id: category.id,
+            check: |tags| {
+                tags.iter()
+                    .all(|tag| matches!(tag.category_name.as_deref(), Some("Test Category")))
             },
-            CategoryCase {
-                name: "Priority category",
-                category_id: priority_category_id,
-                check: |tags| {
-                    tags.iter()
-                        .all(|tag| matches!(tag.category_name.as_deref(), Some("Priority")))
-                },
-            },
-        ];
+        }];
 
         for case in cases {
             let CategoryCase {
@@ -158,16 +123,7 @@ mod sort {
     #[test]
     async fn sorts_by_category_pos_then_tag_pos(pool: PgPool) {
         // Default tag sort is category position first then tag position
-        let (user_id, tag_repo) = init(pool).await;
-
-        let test1_category_id = tag_repo
-            .add_category(user_id, "Test1".to_string(), generate_a_z(0).to_string())
-            .await
-            .unwrap();
-        let test2_category_id = tag_repo
-            .add_category(user_id, "Test2".to_string(), generate_a_z(1).to_string())
-            .await
-            .unwrap();
+        let (user_id, category, tag_repo) = init(pool).await;
 
         for i in 0..5 {
             tag_repo
@@ -187,21 +143,8 @@ mod sort {
                 .create(
                     user_id,
                     CreateModel {
-                        label: format!("Test1 Category {i}"),
-                        category_id: Some(test1_category_id),
-                        position_key: generate_a_z(i).to_string(),
-                    },
-                )
-                .await
-                .unwrap();
-        }
-        for i in 0..5 {
-            tag_repo
-                .create(
-                    user_id,
-                    CreateModel {
-                        label: format!("Test2 Category {i}"),
-                        category_id: Some(test2_category_id),
+                        label: format!("Categorized {i}"),
+                        category_id: Some(category.id),
                         position_key: generate_a_z(i).to_string(),
                     },
                 )
@@ -214,13 +157,13 @@ mod sort {
             let a_key = (
                 a.category_id
                     .as_ref()
-                    .map(|id| if id == &test1_category_id { 0 } else { 1 }),
+                    .map(|id| if id == &category.id { 0 } else { 1 }),
                 &a.position_key,
             );
             let b_key = (
                 b.category_id
                     .as_ref()
-                    .map(|id| if id == &test1_category_id { 0 } else { 1 }),
+                    .map(|id| if id == &category.id { 0 } else { 1 }),
                 &b.position_key,
             );
 
@@ -235,7 +178,7 @@ mod pagination {
 
     #[test]
     async fn pagination_limit(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         seed_tags(&tag_repo, 25, user_id, default_tag).await;
 
@@ -257,7 +200,7 @@ mod pagination {
 
     #[test]
     async fn pagination_offset(pool: PgPool) {
-        let (user_id, tag_repo) = init(pool).await;
+        let (user_id, _, tag_repo) = init(pool).await;
 
         seed_tags(&tag_repo, 25, user_id, default_tag).await;
 

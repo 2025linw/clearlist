@@ -1,7 +1,6 @@
 use crate::{
     error::service::{
-        NO_NONMULTILINE_WHITESPACE, NO_NONSPACE_WHITESPACE, NO_ZERO_LIMIT, NO_ZERO_PAGE,
-        ValidationError,
+        INVALID_MULTILINE, INVALID_SINGLE_LINE, NO_ZERO_LIMIT, NO_ZERO_PAGE, ValidationError,
     },
     tag::types::TagID,
     utils::service::{dedupe_array, is_valid_multiline_string, is_valid_single_line_string},
@@ -40,7 +39,7 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
     if !is_valid_single_line_string(&request.title) {
         return Err(ValidationError::InvalidValue {
             field: "title",
-            reason: NO_NONSPACE_WHITESPACE,
+            reason: INVALID_SINGLE_LINE,
         });
     }
 
@@ -49,7 +48,7 @@ pub fn validate_create_request(request: CreateRequest) -> Result<CreateRequest, 
     {
         return Err(ValidationError::InvalidValue {
             field: "notes",
-            reason: NO_NONMULTILINE_WHITESPACE,
+            reason: INVALID_MULTILINE,
         });
     }
 
@@ -65,7 +64,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
     {
         return Err(ValidationError::InvalidValue {
             field: "title",
-            reason: NO_NONSPACE_WHITESPACE,
+            reason: INVALID_SINGLE_LINE,
         });
     }
 
@@ -74,7 +73,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
     {
         return Err(ValidationError::InvalidValue {
             field: "notes",
-            reason: NO_NONMULTILINE_WHITESPACE,
+            reason: INVALID_MULTILINE,
         });
     }
 

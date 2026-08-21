@@ -10,8 +10,10 @@ use crate::{
     user::types::UserID,
 };
 
+use super::init_test_setup;
+
 async fn init() -> (UserContext, TaskID, TagID, TaskService<MockTaskRepository>) {
-    let task_service = TaskService::init(MockTaskRepository::new());
+    let task_service = init_test_setup();
 
     let user_context = UserContext {
         id: task_service.repo.add_user().await,

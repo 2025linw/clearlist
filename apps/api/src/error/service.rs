@@ -74,7 +74,7 @@ pub const NO_ZERO_PAGE: &str = "page must be greater than 0";
 pub const RANGE_OVERSPECIFIED: &str = "date range is overspecified";
 
 // Text Error Reasons
-pub const NO_NONSPACE_WHITESPACE: &str = "must not contain non-space whitespace characters";
-pub const NO_NONMULTILINE_WHITESPACE: &str = "must not contain non-multiline whitespace characters";
+pub const INVALID_SINGLE_LINE: &str = "must not contain non-space whitespace characters";
+pub const INVALID_MULTILINE: &str = "must not contain non-multiline whitespace characters";
 pub const NO_EMPTY_STRING: &str = "must not be empty string";
 pub const TOO_LONG: &str = "must not exceed max length";

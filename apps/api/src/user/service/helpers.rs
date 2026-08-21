@@ -1,11 +1,11 @@
 use crate::{
-    error::service::{NO_EMPTY_STRING, NO_NONSPACE_WHITESPACE, ValidationError},
+    error::service::{NO_EMPTY_STRING, INVALID_SINGLE_LINE, ValidationError},
     utils::service::is_valid_single_line_string,
 };
 
 use super::{ProvisionRequest, UpdateRequest};
 
-pub fn validate_provision_request(
+pub fn validate_create_request(
     request: ProvisionRequest,
 ) -> Result<ProvisionRequest, ValidationError> {
     let mut request = request;
@@ -19,7 +19,7 @@ pub fn validate_provision_request(
     } else if !is_valid_single_line_string(&request.display_name) {
         return Err(ValidationError::InvalidValue {
             field: "display_name",
-            reason: NO_NONSPACE_WHITESPACE,
+            reason: INVALID_SINGLE_LINE,
         });
     }
 
@@ -39,7 +39,7 @@ pub fn validate_update_request(request: UpdateRequest) -> Result<UpdateRequest, 
         } else if !is_valid_single_line_string(display_name) {
             return Err(ValidationError::InvalidValue {
                 field: "display_name",
-                reason: NO_NONSPACE_WHITESPACE,
+                reason: INVALID_SINGLE_LINE,
             });
         }
     }

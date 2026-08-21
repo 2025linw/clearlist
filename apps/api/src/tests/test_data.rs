@@ -9,13 +9,13 @@ pub const NORMALIZATION_TEST_INPUT: [(&str, &str, &str); 4] = [
     ("combination", "\t   Test Text   \n", "Test Text"),
 ];
 
-pub const CONTAINS_WHITESPACE_TEST_INPUT: [(&str, &str); 3] = [
+pub const SINGLE_LINE_TEST_INPUT: [(&str, &str); 3] = [
     ("contains newline", "Test\nText"),
     ("contains tab", "Test\tText"),
     ("combindation", "Test\n\tText"),
 ];
 
-pub const CONTAINS_MULTILINE_TEST_INPUT: [(&str, &str); 6] = [
+pub const MULTILINE_TEST_INPUT: [(&str, &str); 6] = [
     ("multiline 1", "Test\x0BText"), // \v
     ("multiline 2", "Test\x0CText"), // \f
     ("multiline 3", "Test\rText"),
