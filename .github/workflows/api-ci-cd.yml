@@ -58,23 +58,16 @@ jobs:
         run: cargo check --locked -p clearlist-api
 
       - name: Run clippy
+        if: github.event_name != 'pull_request' || github.base_ref != 'main'
         run: cargo clippy -p clearlist-api -- -D warnings
 
-      - name: Bootstrap and run database migration
-        env:
-          PGHOST: localhost
-          PGDATABASE: testdb
-          PGUSER: test
-          PGPASSWORD: test
-          MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
-        run: |
-          psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
-          cargo run -p clearlist-api migrate
+      - name: Run clippy (strict)
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::print_stdout -D clippy::print_stderr
 
       - name: Run test
         env:
-          MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
-          DATABASE_URL: postgresql://cl_api:cl_api@localhost/testdb
+          DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
   build:

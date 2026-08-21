@@ -8,7 +8,10 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 
-use clearlist_api::{AppState, Config, DatabaseConn, create_app, run_migration};
+use clearlist_api::{
+    Config, PgAppState, create_app,
+    utils::db::{connect_env, run_migration},
+};
 
 // TODO: add anyhow
 
@@ -44,7 +47,7 @@ async fn main() {
                 };
 
                 if let Err(e) = run_migration(&mut conn).await {
-                    eprintln!("Error occured running migration: {}", e);
+                    eprintln!("Error occured running migration: {e}");
 
                     std::process::exit(1);
                 }
@@ -84,22 +87,16 @@ async fn main() {
 
     // Setup Database Connection Pool
     debug!("Setting up database connection");
-    let db_conn = if let Ok(conn) = DatabaseConn::connect_env().await {
-        conn
+    let pool = if let Ok(pool) = connect_env().await {
+        pool
     } else {
         eprintln!("Failed to connect to database");
 
         std::process::exit(1);
     };
 
-    if !db_conn.is_active().await {
-        eprintln!("database connection is not active");
-
-        std::process::exit(1);
-    }
-
     // Setup app state
-    let app_state = AppState::init(db_conn, config);
+    let app_state = PgAppState::init(pool, config);
 
     // Setup route logging
     let trace_layer = TraceLayer::new_for_http()
