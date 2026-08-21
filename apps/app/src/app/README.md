@@ -4,6 +4,6 @@
 
 `index.tsx`: App entrypoint
 
-## Route: `(auth)`
+## Route: `(public)`
 
-## Route: `(app)`
+## Route: `(page)`

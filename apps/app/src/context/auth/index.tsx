@@ -15,7 +15,7 @@ import { useNotificationContext } from '@/context/error';
 import { apiFetch } from '@/lib/api-client';
 import { authClient } from '@/lib/auth-client';
 
-import { ApiContextType, AuthContextType } from './types';
+import { ApiContextType, AuthContextType, LoginInfo } from './types';
 
 const AuthContext = createContext<AuthContextType>({
   loaded: false,
@@ -23,8 +23,8 @@ const AuthContext = createContext<AuthContextType>({
   hasSession: false,
 });
 const ApiContext = createContext<ApiContextType>({
-  createAccount: async () => {},
-  login: async () => {},
+  createAccount: async (_: LoginInfo) => false,
+  login: async (_: LoginInfo) => false,
   logout: async () => {},
 });
 
@@ -90,16 +90,20 @@ export function Provider({ children }: PropsWithChildren) {
       if (error) {
         showError('Unable to create new account');
 
-        return;
+        return false;
       }
 
-      await apiFetch(API_URL + '/api/me');
+      const res = await apiFetch(API_URL + '/api/me');
+      if (res.status !== 200) {
+        throw false;
+      }
 
       setUser({
         loaded: true,
         currentSession: data.token!,
         hasSession: true,
       });
+      return true;
     },
     [showError],
   );
@@ -113,16 +117,20 @@ export function Provider({ children }: PropsWithChildren) {
       if (error) {
         showError('Unable to login to account');
 
-        return;
+        return false;
       }
 
-      await apiFetch(API_URL + '/api/me');
+      const res = await apiFetch(API_URL + '/api/me');
+      if (res.status !== 200) {
+        throw false;
+      }
 
       setUser({
         loaded: true,
         currentSession: data.token!,
         hasSession: true,
       });
+      return true;
     },
     [showError],
   );

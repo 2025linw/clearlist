@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
+import Icon from '@/components/icon';
 import Button from '@/components/primitives/button';
 import Typography from '@/components/primitives/typography';
 
@@ -36,12 +37,17 @@ export default function Layout({
     >
       {(canGoBack || props.headerText || props.headerIcon) && (
         <View style={styles.header}>
-          <View style={styles.headerEle}>
+          <View style={styles.headerItem}>
             {canGoBack && (
               <Button
-                iconName="arrow-back-circle"
-                iconSize={40}
-                iconColor={theme.palette.navigation}
+                scheme="tertiary"
+                icon={
+                  <Icon
+                    name="arrow-back-circle"
+                    color={theme.palette.navigation}
+                    size={40}
+                  />
+                }
                 onPress={() => router.back()}
               />
             )}
@@ -51,12 +57,17 @@ export default function Layout({
             <Typography variant="h1">{props.headerText}</Typography>
           )}
 
-          <View style={styles.headerEle}>
+          <View style={styles.headerItem}>
             {hasOptions && (
               <Button
-                iconName="ellipsis-horizontal-circle"
-                iconSize={40}
-                iconColor={theme.palette.primary}
+                scheme="tertiary"
+                icon={
+                  <Icon
+                    name="ellipsis-horizontal-circle"
+                    color={theme.palette.primary}
+                    size={40}
+                  />
+                }
                 onPress={() => router.back()}
               />
             )}
@@ -84,8 +95,9 @@ function buildStyles(theme: Theme) {
       alignItems: 'center',
       gap: 10,
     },
-    headerEle: {
-      width: 40,
+    headerItem: {
+      width: 60,
+      height: 60,
 
       alignItems: 'center',
       justifyContent: 'center',

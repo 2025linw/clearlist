@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useSessionApi } from '@/context/auth';
@@ -22,7 +22,7 @@ export default function LoginForm(props: Props) {
   const styles = buildStyles(theme);
   const router = useRouter();
 
-  const { createAccount, login } = useSessionApi();
+  const { createAccount, login: loginApi } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
@@ -30,6 +30,34 @@ export default function LoginForm(props: Props) {
   const [email, setEmail] = useState('will@email.com');
   const [password, setPassword] = useState('testpass');
   const [isPasswordFocused, setPasswordFocused] = useState(false);
+
+  const login = useCallback(
+    (info: { email: string; password: string }) => {
+      loginApi(info).then(
+        (success) => {
+          if (success) router.replace('/');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, loginApi, setErrorText],
+  );
+
+  const register = useCallback(
+    (info: { email: string; password: string }) => {
+      createAccount(info).then(
+        (success) => {
+          if (success) router.replace('/');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, createAccount, setErrorText],
+  );
 
   return (
     <View style={styles.container}>
@@ -70,7 +98,6 @@ export default function LoginForm(props: Props) {
         </View>
 
         <Button
-          text={props.type === 'login' ? 'Login' : 'Register'}
           scheme="primary"
           disabled={isLoading}
           onPress={async () => {
@@ -79,31 +106,30 @@ export default function LoginForm(props: Props) {
 
             try {
               if (props.type === 'login') {
-                await login({ email, password });
+                login({ email, password });
               } else {
-                await createAccount({ email, password });
+                register({ email, password });
               }
-
-              router.replace('/');
             } catch (e) {
               setErrorText(`${JSON.stringify(e)}`);
             } finally {
               setLoading(false);
             }
           }}
-        />
+        >
+          {props.type === 'login' ? 'Login' : 'Register'}
+        </Button>
       </View>
 
       <Button
-        text={
-          props.type === 'login'
-            ? "Don't have an account? Register"
-            : 'Have an account? Login'
-        }
         onPress={() =>
           router.replace(props.type === 'login' ? '/register' : '/login')
         }
-      />
+      >
+        {props.type === 'login'
+          ? "Don't have an account? Register"
+          : 'Have an account? Login'}
+      </Button>
 
       <View style={styles.msgBox}>
         <Typography palette="danger">{errorText}</Typography>

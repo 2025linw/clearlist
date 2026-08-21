@@ -10,6 +10,7 @@ import * as TaskHook from '@/hooks/use-tasks';
 import { categoryQueryMap, toYYYYMMDD } from '@/services/helpers';
 import { Category } from '@/services/types';
 
+import Icon from '@/components/icon';
 import Layout from '@/components/layout';
 import DateSelectModal from '@/components/modals/date-select-modal';
 import Button from '@/components/primitives/button';
@@ -157,10 +158,15 @@ export default function ListScreen(props: Props) {
         />
 
         <Button
-          text="Add Task"
-          iconName="add-circle"
           scheme="primary"
           style={styles.addButton}
+          icon={
+            <Icon
+              name="add-circle"
+              color="white"
+              size={30}
+            />
+          }
           onPress={() => {
             createTask.mutate(
               {
@@ -178,7 +184,9 @@ export default function ListScreen(props: Props) {
               },
             );
           }}
-        />
+        >
+          Add Task
+        </Button>
       </Layout>
 
       <DateSelectModal

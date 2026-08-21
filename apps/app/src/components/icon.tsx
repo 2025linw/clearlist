@@ -5,11 +5,11 @@ import { StyleSheet } from 'react-native';
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
-type Props = ComponentProps<typeof Ionicons>;
-export type IconName = Props['name'];
-export type IconColor = Props['color'];
+export type IconProps = ComponentProps<typeof Ionicons>;
+export type IconName = IconProps['name'];
+export type IconColor = IconProps['color'];
 
-export default function Icon({ style, size, color, ...props }: Props) {
+export default function Icon({ style, size, color, ...props }: IconProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
 

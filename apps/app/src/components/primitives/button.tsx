@@ -1,68 +1,52 @@
+import { ReactElement } from 'react';
 import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
-import Icon, { IconColor, IconName } from '@/components/icon';
+import Icon, { IconProps } from '@/components/icon';
 import Typography from '@/components/primitives/typography';
-
-type ButtonContent =
-  | { text: string; iconName?: IconName }
-  | { text?: string; iconName: IconName };
 
 type ButtonSchemes = keyof Omit<
   Theme['components']['Button']['scheme'],
   'disabled'
 >;
 
-export type ButtonProps = PressableProps &
-  ButtonContent & {
-    iconSize?: number;
-    iconColor?: IconColor;
-    scheme?: ButtonSchemes;
-  };
+export type ButtonProps = PressableProps & {
+  icon?: ReactElement<IconProps>;
+  children?: string;
+  scheme?: ButtonSchemes;
+};
 
 export default function Button({
-  text,
   scheme = 'default',
-  iconName,
-  iconSize,
-  iconColor,
+  icon,
+  children,
   disabled,
   ...pressableProps
 }: ButtonProps) {
   const theme = useTheme();
   const styles = buildStyles(theme, disabled ? 'disabled' : scheme);
 
-  const isOnlyIcon = iconName !== undefined && text === undefined;
-
   return (
     <Pressable
       {...pressableProps}
       disabled={disabled}
       style={({ pressed }) => [
-        isOnlyIcon ? styles.iconOnlyContainer : styles.container,
+        styles.container,
         pressed && styles.pressedStyle,
         pressableProps.style,
       ]}
     >
-      {iconName && (
-        <Icon
-          name={iconName}
-          size={iconSize || theme.components.Button.icon.size}
-          color={iconColor}
-        />
-      )}
+      {icon}
 
-      {text && (
-        <View style={styles.typographyContainer}>
-          <Typography
-            variant="button"
-            style={styles.typography}
-          >
-            {text}
-          </Typography>
-        </View>
+      {children && (
+        <Typography
+          variant="button"
+          style={styles.typography}
+        >
+          {children}
+        </Typography>
       )}
     </Pressable>
   );
@@ -72,16 +56,16 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
   const componentStyle = theme.components.Button;
 
   return StyleSheet.create({
-    iconOnlyContainer: {},
     container: {
-      paddingHorizontal: theme.spacings.lg,
+      padding: theme.spacings.lg,
 
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: theme.rounded.base,
       gap: theme.spacings.lg,
 
       backgroundColor: componentStyle.scheme[scheme].backgroundColor,
+      borderWidth: 1,
+      borderRadius: theme.rounded.base,
       borderColor: componentStyle.scheme[scheme].borderColor,
     },
     pressedStyle: {},
@@ -98,19 +82,13 @@ export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
     <View style={{ gap: 16 }}>
-      <Button text="Default" />
-      <Button
-        text="Primary"
-        scheme="primary"
-      />
-      <Button
-        text="Danger  "
-        scheme="danger"
-      />
-      <Button
-        text="Disabled"
-        disabled
-      />
+      <Button>Default</Button>
+      <Button scheme="primary">Primary</Button>
+      <Button scheme="secondary">Secondary</Button>
+      <Button scheme="tertiary">Tertiary</Button>
+      <Button scheme="danger">Danger</Button>
+      <Button disabled>Disabled</Button>
+      <Button icon={<Icon name="home-outline" />} />
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

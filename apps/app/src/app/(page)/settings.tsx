@@ -24,23 +24,26 @@ export default function SettingsPage() {
       <FormField label="Mode">
         <View style={styles.buttonRow}>
           <Button
-            text="System"
             scheme={themeMode === 'system' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('system')}
-          />
+          >
+            System
+          </Button>
           <Button
-            text="Light"
             scheme={themeMode === 'light' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('light')}
-          />
+          >
+            Light
+          </Button>
           <Button
-            text="Dark"
             scheme={themeMode === 'dark' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('dark')}
-          />
+          >
+            Dark
+          </Button>
         </View>
       </FormField>
 
@@ -48,27 +51,25 @@ export default function SettingsPage() {
         <>
           <HorizontalDivider />
 
+          <Button onPress={() => router.navigate('/settings/typography-debug')}>
+            Debug (Text)
+          </Button>
+          <Button onPress={() => router.navigate('/settings/button-debug')}>
+            Debug (Button)
+          </Button>
           <Button
-            text="Debug (Text)"
-            onPress={() => router.navigate('/settings/typography-debug')}
-          />
-          <Button
-            text="Debug (Button)"
-            onPress={() => router.navigate('/settings/button-debug')}
-          />
-          <Button
-            text="Debug (Notification)"
             onPress={() => router.navigate('/settings/notification-debug')}
-          />
+          >
+            Debug (Notification)
+          </Button>
         </>
       )}
 
       <HorizontalDivider />
 
-      <Button
-        text="Logout"
-        onPress={() => logout().finally(() => router.navigate('/login'))}
-      />
+      <Button onPress={() => logout().finally(() => router.navigate('/login'))}>
+        Logout
+      </Button>
     </Layout>
   ) : (
     <Layout>

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import Icon from '@/components/icon';
 // import { useNotificationContext } from '@/context/error';
 
 import Layout from '@/components/layout';
@@ -14,57 +15,92 @@ export default function Index() {
     <Layout style={styles.container}>
       <View>
         <Button
-          text="Inbox"
-          iconName="file-tray"
-          iconColor="skyblue"
+          icon={
+            <Icon
+              name="file-tray"
+              color="skyblue"
+            />
+          }
           onPress={() => router.navigate('/lists/inbox')}
-        />
+        >
+          Inbox
+        </Button>
 
         <HorizontalDivider />
 
         <Button
-          text="Today"
-          iconName="today"
-          iconColor="#EAB308"
+          icon={
+            <Icon
+              name="today"
+              color="#EAB308"
+            />
+          }
           onPress={() => router.navigate('/lists/today')}
-        />
+        >
+          Today
+        </Button>
         <Button
-          text="Upcoming"
-          iconName="calendar"
-          iconColor="red"
+          icon={
+            <Icon
+              name="calendar"
+              color="red"
+            />
+          }
           onPress={() => router.navigate('/lists/upcoming')}
-        />
+        >
+          Upcoming
+        </Button>
         <Button
-          text="Deadline"
-          iconName="flag"
-          iconColor="red"
+          icon={
+            <Icon
+              name="flag"
+              color="red"
+            />
+          }
           onPress={() => router.navigate('/lists/deadline')}
-        />
+        >
+          Deadline
+        </Button>
 
         <HorizontalDivider />
 
         <Button
-          text="Logbook"
-          iconName="checkmark-circle"
-          iconColor="green"
+          icon={
+            <Icon
+              name="checkmark-circle"
+              color="green"
+            />
+          }
           onPress={() => router.navigate('/lists/logbook')}
-        />
+        >
+          Logbook
+        </Button>
         <Button
-          text="Trash"
-          iconName="trash-bin"
-          iconColor="gray"
+          icon={
+            <Icon
+              name="trash-bin"
+              color="gray"
+            />
+          }
           onPress={() => router.navigate('/lists/trash')}
-        />
+        >
+          Trash
+        </Button>
 
         <HorizontalDivider />
       </View>
 
       <Button
-        text="Settings"
-        iconName="settings"
-        iconColor="gray"
+        icon={
+          <Icon
+            name="settings"
+            color="gray"
+          />
+        }
         onPress={() => router.navigate('/settings')}
-      />
+      >
+        Settings
+      </Button>
     </Layout>
   );
 }

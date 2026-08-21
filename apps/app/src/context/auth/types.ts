@@ -1,3 +1,5 @@
+export type LoginInfo = { email: string; password: string };
+
 export type AuthContextType = {
   loaded: boolean;
 
@@ -6,7 +8,7 @@ export type AuthContextType = {
 };
 
 export type ApiContextType = {
-  createAccount: (params: { email: string; password: string }) => Promise<void>;
-  login: (params: { email: string; password: string }) => Promise<void>;
+  createAccount: (params: LoginInfo) => Promise<boolean>;
+  login: (params: LoginInfo) => Promise<boolean>;
   logout: () => Promise<void>;
 };

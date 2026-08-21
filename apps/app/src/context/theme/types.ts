@@ -226,6 +226,16 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
             borderColor: palette.primary,
             color: '#fff',
           },
+          secondary: {
+            backgroundColor: palette.background,
+            borderColor: palette.primary,
+            color: palette.primary,
+          },
+          tertiary: {
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+            color: palette.primary,
+          },
           default: {
             backgroundColor: palette.surface,
             borderColor: palette.border,
