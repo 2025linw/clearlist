@@ -44,7 +44,6 @@ where
                     .get(session.user_id)
                     .await
                     .map_err(|err| {
-                        eprintln!("{err}");
                         Error::InternalServerError("unable to get user data".to_string())
                     })?;
 
@@ -168,7 +167,6 @@ where
         }
 
         let user_session = res.json::<IntermediateFormat>().await.map_err(|err| {
-            eprintln!("{err}");
             Error::InternalServerError("unable to process response from auth".to_string())
         })?;
 

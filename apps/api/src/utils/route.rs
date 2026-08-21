@@ -3,6 +3,7 @@ use chrono::Utc;
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 use subtle::ConstantTimeEq;
+use tracing::error;
 
 use crate::error::route::Error;
 
@@ -27,7 +28,7 @@ pub fn verify_webhook_signature(
         .get(WEBHOOK_ID)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
-            eprintln!("failed to get webhook id header");
+            error!("failed to get webhook id header");
             Error::Unauthenticated
         })?;
 
@@ -35,7 +36,7 @@ pub fn verify_webhook_signature(
         .get(WEBHOOK_TIMESTAMP)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
-            eprintln!("failed to get timestamp header");
+            error!("failed to get webhook timestamp header");
             Error::Unauthenticated
         })?;
 
@@ -43,17 +44,17 @@ pub fn verify_webhook_signature(
         .get(WEBHOOK_SIGNATURE)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
-            eprintln!("failed to get webhook signature header");
+            error!("failed to get webhook signature header");
             Error::Unauthenticated
         })?;
 
     let timestamp_value: i64 = timestamp.parse().map_err(|err| {
-        eprintln!("timestamp header was not number: {err}");
+        error!("timestamp header was not a number: {err}");
         Error::Unauthenticated
     })?;
     let now = Utc::now().timestamp();
     if (now - timestamp_value).abs() > MAX_TIMESTAMP_AGE {
-        eprintln!("webhook token exprired");
+        error!("webhook token exprired");
         return Err(Error::Unauthenticated);
     }
 
@@ -65,17 +66,17 @@ pub fn verify_webhook_signature(
     );
 
     let signature = signature.strip_prefix("v1=").ok_or_else(|| {
-        eprintln!("signature should have version prefix");
+        error!("signature should have version prefix");
         Error::Unauthenticated
     })?;
 
     let provided = hex::decode(signature).map_err(|_| {
-        eprintln!("unable to decode signature");
+        error!("unable to decode signature");
         Error::Unauthenticated
     })?;
 
     if provided.len() != expected.len() || !bool::from(provided.ct_eq(expected.as_slice())) {
-        eprintln!("signature did not match");
+        error!("signature did not match");
         return Err(Error::Unauthenticated);
     }
 

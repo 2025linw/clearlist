@@ -1,3 +1,6 @@
+// this is allowed as eprintln is useful when running binary
+#![allow(clippy::print_stderr)]
+
 use std::{env, net::SocketAddr};
 
 use axum::http::{HeaderValue, Method, header};

@@ -63,7 +63,6 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
                             return Ok(Vec::new());
                         }
 
-                        eprintln!("{err}");
                         return Err(err.into());
                     }
                 }
@@ -122,7 +121,6 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
                         return Err(Error::NotFound(Resource::Category));
                     }
 
-                    eprintln!("{err}");
                     return Err(err.into());
                 }
             }
@@ -186,7 +184,6 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
                             return Err(Error::NotFound(Resource::Category));
                         }
 
-                        eprintln!("{err}");
                         return Err(err.into());
                     }
                 }
