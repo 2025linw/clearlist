@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use chrono_tz::Tz;
 use reqwest::header::COOKIE;
 use serde::Deserialize;
+use tracing::error;
 use uuid::Uuid;
 
 use crate::{
@@ -44,6 +45,7 @@ where
                     .get(session.user_id)
                     .await
                     .map_err(|err| {
+                        error!("user not found: {err}");
                         Error::InternalServerError("unable to get user data".to_string())
                     })?;
 
@@ -167,6 +169,7 @@ where
         }
 
         let user_session = res.json::<IntermediateFormat>().await.map_err(|err| {
+            error!("failed to process response from server: {err}");
             Error::InternalServerError("unable to process response from auth".to_string())
         })?;
 
