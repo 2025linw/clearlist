@@ -41,9 +41,9 @@ impl From<RepoError> for Error {
                     }
                 }
                 ConstraintViolation::Unique { .. } => Self::Conflict,
-                ConstraintViolation::Check { resource, message } => {
-                    unimplemented!("nothing uses check right now: {resource}, {message}")
-                }
+                ConstraintViolation::Check { resource, message } => Self::Internal(format!(
+                    "encountered check violation: {resource} - '{message}'"
+                )),
                 ConstraintViolation::SoftDeleted(resource) => Self::NotFound(resource.clone()),
                 ConstraintViolation::NotFound(resource) => Self::NotFound(resource.clone()),
             },

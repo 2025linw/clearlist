@@ -93,7 +93,7 @@ impl From<sqlx::Error> for Error {
             | sqlx::Error::WorkerCrashed
             | sqlx::Error::InvalidSavePointStatement
             | sqlx::Error::BeginFailed => Self::Internal(value.to_string()),
-            _ => unimplemented!("this should be handled in other ways: {}", value),
+            err => Self::Internal(format!("Unhandled error: {err}")),
         }
     }
 }

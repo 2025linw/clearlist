@@ -1,5 +1,6 @@
 // this is allowed as eprintln is useful when running binary
 #![allow(clippy::print_stderr)]
+#![allow(clippy::print_stdout)]
 
 use std::{env, net::SocketAddr};
 
