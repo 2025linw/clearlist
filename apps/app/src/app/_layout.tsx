@@ -16,7 +16,7 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={StyleSheet.absoluteFill}>
+    <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
@@ -46,3 +46,9 @@ function AppInner() {
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});

@@ -1,21 +1,28 @@
 import { Redirect, Slot } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/context/auth';
 
-import Sidebar from '@/components/sidebar';
+import Sidebar from '@/components/navigation/sidebar';
 
 export default function WebRootLayout() {
   const { hasSession } = useSession();
+
+  const [sidebarWidth, setSidebarWidth] = useState(240);
+
   if (!hasSession) {
     return <Redirect href="/login" />;
   }
 
   return (
     <View style={style.container}>
-      <Sidebar style={style.sidenav} />
+      <Sidebar
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
+      />
 
-      <View style={style.main}>
+      <View style={style.content}>
         <Slot />
       </View>
     </View>
@@ -28,10 +35,7 @@ const style = StyleSheet.create({
 
     flexDirection: 'row',
   },
-  sidenav: {
-    width: '20%',
-  },
-  main: {
-    width: '80%',
+  content: {
+    flex: 1,
   },
 });

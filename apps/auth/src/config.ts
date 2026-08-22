@@ -1,8 +1,14 @@
 import 'dotenv/config';
 
-export const trustedOrigins =
-  process.env['NODE_ENV'] === 'development'
-    ? ['https://todo.localhost:8081', 'clearlist://']
-    : ['https://todo.saphynet.io', 'clearlist://'];
+export const port = process.env['SRV_PORT']!;
 
-export const port = process.env['SRV_PORT'];
+export const apiUrl = process.env['API_URL']!;
+export const databaseUrl = process.env['DATABASE_URL']!;
+
+export const webhookSecret = process.env['WEBHOOK_SECRET']!;
+
+export const trustedOrigins = [
+  'https://todo.localhost:8081',
+  'https://todo.saphydev.com',
+  'clearlist://',
+];

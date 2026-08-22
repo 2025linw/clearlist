@@ -70,11 +70,12 @@ async fn main() {
     if web {
         let addr: SocketAddr = format!("0.0.0.0:{port}").parse().unwrap();
         let config =
-            RustlsConfig::from_pem_file("certs/todo.localhost.pem", "certs/todo.localhost-key.pem")
+            RustlsConfig::from_pem_file("certs/todo.localhost.pem", "certs/todo.localhost.key")
                 .await
                 .expect("certs should exist and be loaded");
 
         println!("Starting proxy server for web development on port {port}");
+        println!("Connect on http://todo.localhost:8081");
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
             .await

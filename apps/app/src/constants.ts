@@ -1,22 +1,13 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-const envAPIURL = process.env.EXPO_PUBLIC_API_URL;
-export const API_URL = (() => {
-  if (envAPIURL) return envAPIURL;
+const IS_DEV = __DEV__;
 
-  if (!__DEV__) {
-    throw new Error('Missing EXPO_PUBLIC_API_URL');
-  }
+const hostUri = Constants.expoConfig?.hostUri;
+const hostIp = hostUri?.split(':')[0];
 
-  if (Platform.OS === 'web') {
-    return 'https://todo.localhost:8081';
-  }
-
-  const hostIp = Constants.expoConfig?.hostUri?.split(':')[0];
-  if (!hostIp) {
-    throw new Error('Unable to determine Expo host IP');
-  }
-
-  return `http://${hostIp}:8080`;
-})();
+export const API_URL = !IS_DEV
+  ? 'https://todo.saphydev.com'
+  : Platform.OS === 'web'
+    ? 'https://todo.localhost:8081'
+    : `http://${hostIp}:8443`;

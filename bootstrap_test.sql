@@ -1,10 +1,6 @@
 -- THIS IS ONLY TESTING BOOTSTRAP, DO NOT USE IN PRODUCTION
-
-
--- Create schemas
 CREATE SCHEMA IF NOT EXISTS app;
 CREATE SCHEMA IF NOT EXISTS auth;
-
 
 -- Migration user
 CREATE ROLE cl_migrate WITH LOGIN PASSWORD 'cl_migrate' NOSUPERUSER NOCREATEDB NOCREATEROLE;
@@ -25,7 +21,7 @@ GRANT USAGE ON SCHEMA app TO cl_rw;
 GRANT USAGE ON SCHEMA app TO cl_ro;
 
 
--- Create users
+-- Create database users
 CREATE ROLE cl_api WITH LOGIN PASSWORD 'cl_api';
 GRANT cl_rw TO cl_api;
 ALTER ROLE cl_api SET search_path TO app;

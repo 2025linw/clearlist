@@ -44,6 +44,7 @@ export default function Button({
         <Typography
           variant="button"
           style={styles.typography}
+          selectable={false}
         >
           {children}
         </Typography>
@@ -74,6 +75,7 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
     },
     typography: {
       color: componentStyle.scheme[scheme].color,
+      userSelect: 'none',
     },
   });
 }
