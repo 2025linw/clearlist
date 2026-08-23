@@ -3,7 +3,7 @@ use ts_rs::TS;
 
 use crate::{
     tag::types::TagID,
-    types::{field::Start, order::SortOrder, query::DateFilter},
+    types::{order::SortOrder, query::DateFilter, start::Start},
 };
 
 use super::SortBy;

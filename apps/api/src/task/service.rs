@@ -11,13 +11,7 @@ use crate::{
         service::helpers::validate_set_tags,
         types::repo::{CreateModel, UpdateModel},
     },
-    types::{
-        extract::UserContext,
-        field::{DateBound, DateFilter, Start},
-        order::SortOrder,
-        pagination::SQLPagination,
-        query::DateFilter as DateFilterQuery,
-    },
+    types::{extract::UserContext, order::SortOrder, repo::Pagination, start::Start},
 };
 
 use super::{
@@ -39,109 +33,49 @@ impl<R: TaskRepository> TaskService<R> {
         Self { repo }
     }
 
-    pub async fn list(
-        &self,
-        user_context: UserContext,
-        query: Option<URLQueryOpts>,
-    ) -> Result<Vec<Task>> {
-        let query = if let Some(query) = query {
-            let URLQueryOpts {
-                page,
-                limit,
-                sort_by,
-                sort_order,
-                start,
-                deadline,
-                completed,
-                deleted,
-                tags,
-            } = helpers::validate_query_opts(query)?;
+    pub async fn list(&self, user_context: UserContext, query: URLQueryOpts) -> Result<Vec<Task>> {
+        let URLQueryOpts {
+            page,
+            limit,
+            sort_by,
+            sort_order,
+            start,
+            deadline,
+            completed,
+            deleted,
+            tags,
+        } = helpers::validate_query_opts(query)?;
 
-            let mut filter = Filter::new();
-            if let Some(start) = start {
-                let start = match start {
-                    DateFilterQuery::Has(bool) => DateFilter::Exists(bool),
-                    DateFilterQuery::Exact(start) => {
-                        DateFilter::On(start.into_datetime_utc_with_tz(user_context.tz))
-                    }
-                    DateFilterQuery::BracketInterval(bracket_interval) => DateFilter::try_from(
-                        bracket_interval.into_datetime_utc_with_tz(user_context.tz),
-                    )?,
-                    DateFilterQuery::ISO8601Interval(range) => match range {
-                        [Start::Date(_), Start::Date(_)] => {
-                            let [start, end] = range;
+        let mut filter = Filter::new();
+        if let Some(start) = start {
+            filter.start(start.try_into_with_tz(user_context.tz)?);
+        }
+        if let Some(deadline) = deadline {
+            filter.deadline(deadline.try_into_with_tz(user_context.tz)?);
+        }
+        filter.completed(completed.unwrap_or(false));
+        filter.deleted(deleted.unwrap_or(false));
+        if let Some(tags) = tags {
+            filter.tags(tags);
+        }
 
-                            DateFilter::Range(
-                                DateBound::Inclusive(
-                                    start.into_datetime_utc_with_tz(user_context.tz),
-                                ),
-                                DateBound::Exclusive(
-                                    end.into_datetime_utc_with_tz(user_context.tz),
-                                ),
-                            )
-                        }
-                        [Start::DateTime(start), Start::DateTime(end)] => DateFilter::Range(
-                            DateBound::Inclusive(start),
-                            DateBound::Exclusive(end),
-                        ),
-                        _ => {
-                            return Err(Error::Validation(
-                                crate::error::service::ValidationError::InvalidValue {
-                                    field: "start",
-                                    reason: "start and end must be the same date format",
-                                },
-                            ));
-                        }
-                    },
-                };
+        let sort = Sort::new(
+            sort_by.or(Some(SortBy::Updated)),
+            sort_order.unwrap_or(SortOrder::Descending),
+        );
 
-                filter.start(start);
-            }
-            if let Some(deadline) = deadline {
-                filter.deadline(deadline.try_into()?);
-            }
-            if let Some(completed) = completed {
-                filter.completed(completed);
-            }
-            if let Some(deleted) = deleted {
-                filter.deleted(deleted);
-            }
-            if let Some(tags) = tags {
-                filter.tags(tags);
-            }
+        let page = page.unwrap_or(1);
+        let limit = limit.unwrap_or(25).min(150);
+        let offset = limit * (page - 1);
+        let mut pagination = Pagination::new();
+        pagination.limit(limit);
+        pagination.offset(offset);
 
-            let sort = Sort::new(sort_by, sort_order.unwrap_or(SortOrder::Descending));
-
-            let page = page.unwrap_or(1);
-            let limit = limit.unwrap_or(25).min(150);
-            let offset = limit * (page - 1);
-            let mut pagination = SQLPagination::new();
-            pagination.limit(limit);
-            pagination.offset(offset);
-
-            QueryOpts {
-                filter,
-                sort,
-                pagination,
-            }
-        } else {
-            let mut filter = Filter::new();
-            filter.completed(false);
-            filter.deleted(false);
-
-            let sort = Sort::new(Some(SortBy::Updated), SortOrder::Descending);
-
-            let mut pagination = SQLPagination::new();
-            pagination.limit(25);
-            pagination.offset(0);
-
-            QueryOpts {
-                filter,
-                sort,
-                pagination,
-            }
+        let query = QueryOpts {
+            filter,
+            sort,
+            pagination,
         };
-
         let tasks = self
             .repo
             .list(user_context.id, Some(query))

@@ -9,12 +9,12 @@ use uuid::Uuid;
 
 use crate::{
     tag::types::{Tag, TagModel},
-    types::field::Start,
+    types::start::Start,
     user::types::UserID,
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
 )]
 #[sqlx(transparent)]
 #[ts(export, export_to = "task/TaskID.ts")]
@@ -80,13 +80,16 @@ pub struct TaskModel {
     pub created_by: UserID,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "task/Task.ts")]
 pub struct Task {
     pub id: TaskID,
 
     pub title: String,
     pub notes: Option<String>,
+    #[ts(type = "string | null")]
     pub start: Option<Start>,
     pub deadline: Option<chrono::NaiveDate>,
     pub tags: Vec<Tag>,

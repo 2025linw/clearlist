@@ -38,7 +38,7 @@ use crate::{
         route::create_router as create_task_router,
         service::TaskService,
     },
-    types::response::Response,
+    types::route::Response,
     user::{
         repo::{PgUserRepository, UserRepository},
         route::create_router as create_user_router,

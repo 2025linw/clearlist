@@ -1,38 +1,38 @@
+use chrono_tz::Tz;
+
 use crate::{
     error::service::{RANGE_OVERSPECIFIED, ValidationError},
     types::{
-        field::{DateBound, DateFilter as DateFilterField},
-        query::{BracketInterval, DateFilter as DateFilterQuery, QueryDate},
+        query::QueryDate,
+        repo::{DateBound, DateFilter as RepoDateFilter},
     },
 };
 
-impl<T> TryFrom<DateFilterQuery<T>> for DateFilterField<T>
+use super::{BracketInterval, DateFilter};
+
+impl<T> DateFilter<T>
 where
     T: QueryDate,
 {
-    type Error = ValidationError;
-
-    fn try_from(value: DateFilterQuery<T>) -> Result<Self, Self::Error> {
-        match value {
-            DateFilterQuery::Has(bool) => Ok(Self::Exists(bool)),
-            DateFilterQuery::Exact(date) => Ok(Self::On(date)),
-            DateFilterQuery::BracketInterval(bracket_interval) => bracket_interval.try_into(),
-            DateFilterQuery::ISO8601Interval([start, end]) => Ok(DateFilterField::Range(
-                DateBound::Inclusive(start),
-                DateBound::Exclusive(end),
+    pub fn try_into_with_tz(self, tz: Tz) -> Result<RepoDateFilter<T::Inner>, ValidationError> {
+        match self {
+            Self::Has(bool) => Ok(RepoDateFilter::Exists(bool)),
+            Self::Exact(date) => Ok(RepoDateFilter::On(date.to_inner_with_tz(tz))),
+            Self::BracketInterval(bracket_interval) => bracket_interval.try_into_with_tz(tz),
+            Self::ISO8601Interval([start, end]) => Ok(RepoDateFilter::Range(
+                DateBound::Inclusive(start.to_inner_with_tz(tz)),
+                DateBound::Exclusive(end.to_inner_with_tz(tz)),
             )),
         }
     }
 }
 
-impl<T> TryFrom<BracketInterval<T>> for DateFilterField<T>
+impl<T> BracketInterval<T>
 where
     T: QueryDate,
 {
-    type Error = ValidationError;
-
-    fn try_from(value: BracketInterval<T>) -> Result<Self, Self::Error> {
-        match value {
+    pub fn try_into_with_tz(self, tz: Tz) -> Result<RepoDateFilter<T::Inner>, ValidationError> {
+        match self {
             // ne only
             BracketInterval {
                 ne: Some(date),
@@ -40,7 +40,7 @@ where
                 lte: None,
                 gt: None,
                 gte: None,
-            } => Ok(DateFilterField::NotOn(date)),
+            } => Ok(RepoDateFilter::NotOn(date.to_inner_with_tz(tz))),
 
             // invalid: ne with anything else
             BracketInterval {
@@ -82,16 +82,18 @@ where
             } => {
                 let start = gt
                     .map(DateBound::Exclusive)
-                    .or_else(|| gte.map(DateBound::Inclusive));
+                    .or_else(|| gte.map(DateBound::Inclusive))
+                    .map(|bound| bound.map(|date| date.to_inner_with_tz(tz)));
 
                 let end = lt
                     .map(DateBound::Exclusive)
-                    .or_else(|| lte.map(DateBound::Inclusive));
+                    .or_else(|| lte.map(DateBound::Inclusive))
+                    .map(|bound| bound.map(|date| date.to_inner_with_tz(tz)));
 
                 match (start, end) {
-                    (Some(start), Some(end)) => Ok(DateFilterField::Range(start, end)),
-                    (Some(start), None) => Ok(DateFilterField::StartRange(start)),
-                    (None, Some(end)) => Ok(DateFilterField::EndRange(end)),
+                    (Some(start), Some(end)) => Ok(RepoDateFilter::Range(start, end)),
+                    (Some(start), None) => Ok(RepoDateFilter::StartRange(start)),
+                    (None, Some(end)) => Ok(RepoDateFilter::EndRange(end)),
                     (None, None) => unreachable!(),
                 }
             }

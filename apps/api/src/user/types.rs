@@ -47,13 +47,17 @@ pub struct UserModel {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "user/User.ts")]
 pub struct User {
     pub id: UserID,
 
     pub display_name: String,
 
+    #[ts(type = "string | null")]
     pub preferred_timezone: Option<Tz>,
+    #[ts(type = "string | null")]
     pub completed_task_retention: Option<CompletedTaskRetention>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,

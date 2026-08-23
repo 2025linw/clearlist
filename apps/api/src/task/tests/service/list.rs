@@ -38,7 +38,9 @@ mod success {
     async fn success() {
         let (user_context, task_service) = init().await;
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
     }
 }
@@ -55,7 +57,9 @@ mod error {
             tz: task_service.repo.tz(),
         };
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(err, Error::Internal(_)));
@@ -70,7 +74,9 @@ mod error {
             tz: task_service.repo.tz(),
         };
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(err, Error::Internal(_)));
@@ -91,7 +97,7 @@ mod pagination {
             limit: Some(25),
             ..Default::default()
         };
-        let res = task_service.list(user_context, Some(query)).await;
+        let res = task_service.list(user_context, query).await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -109,7 +115,9 @@ mod pagination {
     async fn default_pagination() {
         let (user_context, task_service) = init().await;
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -131,7 +139,7 @@ mod pagination {
             limit: Some(200),
             ..Default::default()
         };
-        let res = task_service.list(user_context, Some(query)).await;
+        let res = task_service.list(user_context, query).await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -153,7 +161,7 @@ mod pagination {
             limit: Some(0),
             ..Default::default()
         };
-        let res = task_service.list(user_context, Some(query)).await;
+        let res = task_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -174,7 +182,7 @@ mod pagination {
             page: Some(0),
             ..Default::default()
         };
-        let res = task_service.list(user_context, Some(query)).await;
+        let res = task_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -196,7 +204,9 @@ mod sort {
     async fn default_sort() {
         let (user_context, task_service) = init().await;
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -228,7 +238,7 @@ mod sort {
                     sort_order: Some(sort_order.clone()),
                     ..Default::default()
                 };
-                task_service.list(user_context, Some(query)).await.unwrap();
+                task_service.list(user_context, query).await.unwrap();
 
                 let last_query = task_service.repo.get_last_filter().await;
 
@@ -254,7 +264,9 @@ mod filter {
     async fn default_filters() {
         let (user_context, task_service) = init().await;
 
-        let res = task_service.list(user_context, None).await;
+        let res = task_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -279,7 +291,7 @@ mod filter {
                 completed: Some(input),
                 ..Default::default()
             };
-            let res = task_service.list(user_context, Some(query)).await;
+            let res = task_service.list(user_context, query).await;
             assert!(res.is_ok());
 
             let last_query = task_service.repo.get_last_filter().await;
@@ -307,7 +319,7 @@ mod filter {
                 deleted: Some(input),
                 ..Default::default()
             };
-            let res = task_service.list(user_context, Some(query)).await;
+            let res = task_service.list(user_context, query).await;
             assert!(res.is_ok());
 
             let last_query = task_service.repo.get_last_filter().await;
@@ -335,7 +347,7 @@ mod filter {
             tags: Some(vec![tag_id, tag_id, tag_id]),
             ..Default::default()
         };
-        let res = task_service.list(user_context, Some(query)).await;
+        let res = task_service.list(user_context, query).await;
         assert!(res.is_ok());
 
         let last_query = task_service.repo.get_last_filter().await;
@@ -362,16 +374,19 @@ mod filter {
                 ..Default::default()
             };
 
-            let res = task_service.list(user_context, Some(query)).await;
+            let res = task_service.list(user_context, query).await;
             assert!(res.is_err());
             if let Err(err) = res {
-                assert!(matches!(
-                    err,
-                    Error::Validation(ValidationError::InvalidValue {
-                        field: "start",
-                        reason: RANGE_OVERSPECIFIED,
-                    })
-                ))
+                assert!(
+                    matches!(
+                        err,
+                        Error::Validation(ValidationError::InvalidValue {
+                            field: "start",
+                            reason: RANGE_OVERSPECIFIED,
+                        }),
+                    ),
+                    "found: {err}"
+                )
             }
         }
     }
@@ -387,7 +402,7 @@ mod filter {
                 ..Default::default()
             };
 
-            let res = task_service.list(user_context, Some(query)).await;
+            let res = task_service.list(user_context, query).await;
             assert!(res.is_err());
             if let Err(err) = res {
                 assert!(matches!(

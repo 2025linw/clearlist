@@ -82,3 +82,15 @@ pub enum DateBound<T> {
     Exclusive(T),
     Inclusive(T),
 }
+
+impl<T> DateBound<T> {
+    pub fn map<U, F>(self, f: F) -> DateBound<U>
+    where
+        F: FnOnce(T) -> U,
+    {
+        match self {
+            Self::Exclusive(x) => DateBound::Exclusive(f(x)),
+            Self::Inclusive(x) => DateBound::Inclusive(f(x)),
+        }
+    }
+}

@@ -21,9 +21,8 @@ use crate::{
         },
     },
     types::{
-        field::{DateBound, DateFilter},
         order::SortOrder,
-        pagination::SQLPagination,
+        repo::{DateBound, DateFilter, Pagination},
     },
     user::{repo::PgUserRepository, types::UserID},
 };
@@ -530,7 +529,7 @@ mod pagination {
 
         seed_tasks(&task_repo, 25, user_id, None, default_task).await;
 
-        let mut pagination = SQLPagination::new();
+        let mut pagination = Pagination::new();
         pagination.limit(5);
 
         let tasks = task_repo
@@ -558,7 +557,7 @@ mod pagination {
             .unwrap();
 
         for offset in 1..=10 {
-            let mut pagination = SQLPagination::new();
+            let mut pagination = Pagination::new();
             pagination.offset(offset);
 
             let tasks = task_repo

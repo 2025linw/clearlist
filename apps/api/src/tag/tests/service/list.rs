@@ -41,7 +41,9 @@ mod success {
     async fn success() {
         let (user_context, tag_service) = init().await;
 
-        let res = tag_service.list(user_context, None).await;
+        let res = tag_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
     }
 }
@@ -61,7 +63,9 @@ mod error {
             tz: Tz::America__Chicago,
         };
 
-        let res = tag_service.list(user_context, None).await;
+        let res = tag_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(err, Error::Internal(_)));
@@ -79,7 +83,9 @@ mod error {
             tz: Tz::America__Chicago,
         };
 
-        let res = tag_service.list(user_context, None).await;
+        let res = tag_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(err, Error::Internal(_)));
@@ -100,7 +106,7 @@ mod pagination {
             limit: Some(25),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_ok());
 
         let last_query = tag_service.repo.get_last_filter().await;
@@ -117,7 +123,9 @@ mod pagination {
     async fn default_pagination() {
         let (user_context, tag_service) = init().await;
 
-        let res = tag_service.list(user_context, None).await;
+        let res = tag_service
+            .list(user_context, URLQueryOpts::default())
+            .await;
         assert!(res.is_ok());
 
         let last_query = tag_service.repo.get_last_filter().await;
@@ -138,7 +146,7 @@ mod pagination {
             limit: Some(200),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_ok());
 
         let last_query = tag_service.repo.get_last_filter().await;
@@ -159,7 +167,7 @@ mod pagination {
             limit: Some(0),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -180,7 +188,7 @@ mod pagination {
             page: Some(0),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -205,10 +213,10 @@ mod filter {
         let (user_context, tag_service) = init().await;
 
         let query = URLQueryOpts {
-            category: Some("Nonexistent Category".to_string()),
+            category: Some("URLQueryOpts::default()xistent Category".to_string()),
             ..Default::default()
         };
-        let tags = tag_service.list(user_context, Some(query)).await.unwrap();
+        let tags = tag_service.list(user_context, query).await.unwrap();
         assert_eq!(tags.len(), 0);
     }
 
@@ -233,7 +241,7 @@ mod filter {
                 category: Some(input.to_string()),
                 ..Default::default()
             };
-            tag_service.list(user_context, Some(query)).await.unwrap();
+            tag_service.list(user_context, query).await.unwrap();
 
             let filter_category_id = tag_service
                 .repo
@@ -258,7 +266,7 @@ mod filter {
             category: Some("".to_string()),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -279,7 +287,7 @@ mod filter {
             category: Some("Test\n\tCategory".to_string()),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(
@@ -304,7 +312,7 @@ mod filter {
             category: Some(too_long_category),
             ..Default::default()
         };
-        let res = tag_service.list(user_context, Some(query)).await;
+        let res = tag_service.list(user_context, query).await;
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(

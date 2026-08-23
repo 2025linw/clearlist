@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
 )]
 #[sqlx(transparent)]
 #[ts(export, export_to = "tag/TagID.ts")]
@@ -53,8 +53,10 @@ pub struct TagModel {
     pub created_by: UserID,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "tag/Tag.ts")]
 pub struct Tag {
     pub id: TagID,
 
