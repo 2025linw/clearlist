@@ -69,7 +69,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: |
-          psql -v ON_ERROR_STOP=1 -f ./apps/api/bootstrap.test.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f ./apps/api/bootstrap.test.sql
           cargo test --locked -p clearlist-api
 
   build:
