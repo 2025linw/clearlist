@@ -3,7 +3,7 @@ use ts_rs::TS;
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, rename = "CategoryCreate")]
+#[ts(export, export_to = "category/CreateRequest.ts")]
 pub struct CreateRequest {
     pub name: String,
 
@@ -12,7 +12,7 @@ pub struct CreateRequest {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, rename = "CategoryUpdate")]
+#[ts(export, export_to = "category/UpdateRequest.ts")]
 pub struct UpdateRequest {
     pub name: Option<String>,
 

@@ -75,7 +75,7 @@ async fn main() {
                 .expect("certs should exist and be loaded");
 
         println!("Starting proxy server for web development on port {port}");
-        println!("Connect on http://todo.localhost:8081");
+        println!("Connect on https://todo.localhost:8081");
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
             .await

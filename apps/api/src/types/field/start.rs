@@ -3,13 +3,11 @@ use std::str::FromStr;
 use chrono::{DateTime, SecondsFormat, Utc};
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::error::service::{Error, ValidationError};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(untagged)]
-#[ts(export, rename = "Start")]
 pub enum Start {
     Date(chrono::NaiveDate),
     DateTime(chrono::DateTime<chrono::Utc>),

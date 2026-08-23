@@ -68,7 +68,9 @@ jobs:
       - name: Run test
         env:
           DATABASE_URL: postgresql://test:test@localhost/testdb
-        run: cargo test --locked -p clearlist-api
+        run: |
+          psql -v ON_ERROR_STOP=1 -f ./apps/api/bootstrap.test.sql
+          cargo test --locked -p clearlist-api
 
   build:
     name: Build

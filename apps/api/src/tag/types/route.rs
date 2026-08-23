@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use ts_rs::TS;
 
 #[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -10,8 +11,9 @@ pub struct URLQueryOpts {
     pub category: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "tag/CreateRequest.ts")]
 pub struct CreateRequest {
     pub label: String,
     pub category: Option<String>,
@@ -19,10 +21,12 @@ pub struct CreateRequest {
     pub position_key: String,
 }
 
-#[derive(Debug, Default, Clone, Deserialize)]
+#[derive(Debug, Default, Clone, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "tag/UpdateRequest.ts")]
 pub struct UpdateRequest {
     pub label: Option<String>,
+    #[ts(type = "string | null")]
     pub category: Option<Option<String>>,
 
     pub position_key: Option<String>,

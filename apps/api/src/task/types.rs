@@ -4,6 +4,7 @@ pub mod route;
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
@@ -13,9 +14,10 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS
 )]
 #[sqlx(transparent)]
+#[ts(export, export_to = "task/TaskID.ts")]
 pub struct TaskID(Uuid);
 
 impl TaskID {

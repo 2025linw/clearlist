@@ -4,14 +4,16 @@ pub mod route;
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type, postgres::types::PgInterval};
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::types::field::CompletedTaskRetention;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
 )]
 #[sqlx(transparent)]
+#[ts(export, export_to = "user/UserID.ts")]
 pub struct UserID(pub Uuid);
 
 impl UserID {

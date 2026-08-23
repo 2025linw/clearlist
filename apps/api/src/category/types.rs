@@ -3,12 +3,14 @@ pub mod route;
 
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::{FromRow, Type};
+use ts_rs::TS;
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS
 )]
 #[sqlx(transparent)]
+#[ts(export, export_to = "category/CategoryID.ts")]
 pub struct CategoryID(Uuid);
 
 impl CategoryID {
