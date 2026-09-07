@@ -3,6 +3,8 @@
  */
 import { ColorValue, Platform } from 'react-native';
 
+import { spacings } from './spacing';
+
 export type ThemeContextType = {
   loaded: boolean;
 
@@ -181,15 +183,6 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
     full: 9999,
   };
 
-  const boxMultiplier = 4;
-  const spacings = {
-    xs: boxMultiplier / 4,
-    sm: boxMultiplier / 2,
-    base: boxMultiplier,
-    lg: boxMultiplier * 2,
-    xl: boxMultiplier * 4,
-  };
-
   const zHeight = {
     base: 0,
 
@@ -208,14 +201,12 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
   return {
     darkMode: darkMode === 'dark',
 
-    boxMultiplier,
-
     navigation,
 
     palette,
     rounded,
     shadows,
-    spacings,
+    spacings: spacings,
     zHeight,
 
     components: {
@@ -258,7 +249,7 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
           },
         },
         icon: {
-          size: typographyVariants.button.fontSize,
+          size: typographyVariants.button.fontSize + 4,
         },
       },
       Typography: {

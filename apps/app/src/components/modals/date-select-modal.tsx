@@ -7,14 +7,17 @@ import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 import { getTodayDate, toDate } from '@/services/helpers';
 
-type Props = {
+type DateSelectModalProps = {
   visible?: boolean;
   initialDate?: string;
   onDateSelect?: (date: Date) => void;
   dismiss?: () => void;
 };
 
-export default function DateSelectModal({ initialDate, ...props }: Props) {
+export default function DateSelectModal({
+  initialDate,
+  ...props
+}: DateSelectModalProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
   const defaultStyles = useDefaultStyles();
@@ -55,7 +58,7 @@ function buildStyles(theme: Theme) {
     overlay: {
       flex: 1,
 
-      paddingHorizontal: theme.spacings.xl,
+      paddingHorizontal: theme.spacings.x6,
 
       display: 'flex',
       flexDirection: 'column',
@@ -64,7 +67,7 @@ function buildStyles(theme: Theme) {
     },
     container: {
       borderRadius: theme.rounded.lg,
-      padding: theme.spacings.lg,
+      padding: theme.spacings.x4,
 
       backgroundColor: theme.palette.surface,
     },

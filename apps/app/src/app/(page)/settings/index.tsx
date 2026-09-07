@@ -2,9 +2,10 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useSession, useSessionApi } from '@/context/auth';
-import { useThemeMode } from '@/context/theme';
+import { useColorTheme, useThemeMode } from '@/context/theme';
 
 import FormField from '@/components/forms/form-field';
+import Icon from '@/components/icon';
 import Layout from '@/components/layout';
 import Button from '@/components/primitives/button';
 import HorizontalDivider from '@/components/primitives/horizontal-divider';
@@ -14,6 +15,8 @@ export default function SettingsPage() {
   const router = useRouter();
   const { logout } = useSessionApi();
   const { hasSession } = useSession();
+
+  const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
 
   return hasSession ? (
@@ -21,9 +24,33 @@ export default function SettingsPage() {
       headerText={'Settings'}
       showBackButton={true}
     >
+      <FormField label="Theme">
+        <View style={styles.buttonRow}>
+          <Button
+            scheme={colorTheme === 'default' ? 'primary' : 'default'}
+            style={styles.button}
+            onPress={() => setColorTheme('default')}
+          >
+            Default
+          </Button>
+          <Button
+            scheme={colorTheme === 'pink' ? 'primary' : 'default'}
+            style={styles.button}
+            onPress={() => setColorTheme('pink')}
+          >
+            Pink
+          </Button>
+        </View>
+      </FormField>
       <FormField label="Mode">
         <View style={styles.buttonRow}>
           <Button
+            icon={
+              <Icon
+                name="laptop-outline"
+                color="white"
+              />
+            }
             scheme={themeMode === 'system' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('system')}
@@ -31,6 +58,7 @@ export default function SettingsPage() {
             System
           </Button>
           <Button
+            icon={<Icon name="sunny" />}
             scheme={themeMode === 'light' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('light')}
@@ -38,6 +66,7 @@ export default function SettingsPage() {
             Light
           </Button>
           <Button
+            icon={<Icon name="moon" />}
             scheme={themeMode === 'dark' ? 'primary' : 'default'}
             style={styles.button}
             onPress={() => setThemeMode('dark')}
@@ -56,6 +85,9 @@ export default function SettingsPage() {
           </Button>
           <Button onPress={() => router.navigate('/settings/button-debug')}>
             Debug (Button)
+          </Button>
+          <Button onPress={() => router.navigate('/settings/spacing-debug')}>
+            Debug (Spacing)
           </Button>
           <Button
             onPress={() => router.navigate('/settings/notification-debug')}

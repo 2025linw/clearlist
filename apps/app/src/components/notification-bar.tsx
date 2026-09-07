@@ -2,9 +2,9 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import Typography from '@/components/primitives/typography';
 
-type Props = { visible: boolean; message: string; onClose?: () => void };
+type NotificationBarProps = { visible: boolean; message: string; onClose?: () => void };
 
-export default function NotificationBar({ visible, message, onClose }: Props) {
+export default function NotificationBar({ visible, message, onClose }: NotificationBarProps) {
   if (!visible) return;
 
   return (

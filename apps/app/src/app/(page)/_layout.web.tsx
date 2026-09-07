@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/context/auth';
 
-import Sidebar from '@/components/navigation/sidebar';
+import ListNavigator from '@/components/navigation/list-navigator';
 
 export default function WebRootLayout() {
   const { hasSession } = useSession();
@@ -17,7 +17,8 @@ export default function WebRootLayout() {
 
   return (
     <View style={style.container}>
-      <Sidebar
+      <ListNavigator
+        mode="desktop"
         width={sidebarWidth}
         onWidthChange={setSidebarWidth}
       />

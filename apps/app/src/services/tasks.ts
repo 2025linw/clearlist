@@ -1,4 +1,4 @@
-import { TaskDTO } from '@clearlist/types';
+import { task } from '@clearlist/types';
 
 import { API_URL } from '@/constants';
 
@@ -8,7 +8,7 @@ import { apiFetch } from '@/lib/api-client';
 
 import { TaskQuery, TaskQueryResponse, TaskResponse } from './types';
 
-export async function create(task: TaskDTO): Promise<TaskResponse> {
+export async function create(task: task.CreateRequest): Promise<TaskResponse> {
   const res = await apiFetch(API_URL + '/api/tasks', {
     method: 'POST',
     headers: {
@@ -38,10 +38,13 @@ export async function list(query: TaskQuery = {}): Promise<TaskQueryResponse> {
 
 export async function update({
   id,
-  ...task
-}: TaskDTO & { id: string }): Promise<TaskResponse> {
+  update: task,
+}: {
+  id: string;
+  update: task.UpdateRequest;
+}): Promise<TaskResponse> {
   const res = await apiFetch(API_URL + `/api/tasks/${id}`, {
-    method: 'PUT',
+    method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },

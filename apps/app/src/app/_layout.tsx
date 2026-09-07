@@ -42,7 +42,8 @@ function AppInner() {
       SplashScreen.hide();
     }
   }, [themeLoaded, authLoaded]);
-  if (!themeLoaded) return null;
+
+  if (!(themeLoaded && authLoaded)) return null;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

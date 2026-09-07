@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-import { Task, TaskDTO } from '@clearlist/types';
+import { task } from '@clearlist/types';
 
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
@@ -10,11 +11,11 @@ import Button from '@/components/primitives/button';
 import Slot from '@/components/primitives/slot';
 import EditableTypography from '@/components/text/editable-typography';
 
-type TaskItemProp = {
-  task: Task;
+type TaskCardProps = {
+  task: task.Task;
   expanded?: boolean;
   onToggle?: () => void;
-  onTaskUpdate?: (patch: Partial<TaskDTO>) => void;
+  onTaskUpdate?: (patch: Partial<task.UpdateRequest>) => void;
   onTaskComplete?: () => void;
   onTaskReopen?: () => void;
   onPressStartDate?: () => void;
@@ -22,12 +23,12 @@ type TaskItemProp = {
   onPressTags?: () => void;
 };
 
-export default function TaskItem({
+export default function TaskCard({
   task,
   expanded,
   onToggle,
   ...props
-}: TaskItemProp) {
+}: TaskCardProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
 
@@ -36,7 +37,11 @@ export default function TaskItem({
       style={[styles.container, expanded ? styles.expandedContainer : null]}
       onPress={() => onToggle?.()}
     >
-      <View style={styles.mainRow}>
+      <Animated.View
+        style={styles.mainRow}
+        entering={FadeIn}
+        exiting={FadeOut}
+      >
         <Pressable
           onPress={task.completedAt ? props.onTaskReopen : props.onTaskComplete}
         >
@@ -57,7 +62,7 @@ export default function TaskItem({
           style={styles.titleTypography}
           containerStyle={styles.titleTypography}
         />
-      </View>
+      </Animated.View>
 
       {expanded && (
         <>
@@ -78,18 +83,30 @@ export default function TaskItem({
 
           <View style={styles.buttonSet}>
             <Button
-              iconName="calendar-outline"
-              iconSize={22}
+              icon={
+                <Icon
+                  name="calendar-outline"
+                  size={22}
+                />
+              }
               onPress={props.onPressStartDate}
             />
             <Button
-              iconName="flag-outline"
-              iconSize={22}
+              icon={
+                <Icon
+                  name="flag-outline"
+                  size={22}
+                />
+              }
               onPress={props.onPressDeadline}
             />
             <Button
-              iconName="pricetag-outline"
-              iconSize={22}
+              icon={
+                <Icon
+                  name="pricetag-outline"
+                  size={22}
+                />
+              }
             />
           </View>
         </>
@@ -102,13 +119,13 @@ function buildStyles(theme: Theme) {
   return StyleSheet.create({
     container: {
       borderRadius: theme.rounded.lg,
-      padding: theme.spacings.xl,
+      padding: theme.spacings.x3,
 
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'stretch',
-      gap: theme.spacings.lg,
+      gap: theme.spacings.x4,
     },
     expandedContainer: {
       backgroundColor: theme.palette.surface,
@@ -120,7 +137,7 @@ function buildStyles(theme: Theme) {
       flexDirection: 'row',
       justifyContent: 'flex-start',
       alignItems: 'center',
-      gap: theme.spacings.lg,
+      gap: theme.spacings.x4,
     },
     titleTypography: {
       flex: 1,
@@ -130,7 +147,7 @@ function buildStyles(theme: Theme) {
     fieldPanel: {
       display: 'flex',
       flexDirection: 'row',
-      gap: theme.spacings.lg,
+      gap: theme.spacings.x4,
     },
     inputPanel: {
       flex: 1,
@@ -139,14 +156,14 @@ function buildStyles(theme: Theme) {
       flexDirection: 'column',
       justifyContent: 'flex-start',
       alignItems: 'stretch',
-      gap: theme.spacings.xl,
+      gap: theme.spacings.x4,
     },
     buttonSet: {
       display: 'flex',
       flexDirection: 'row',
       justifyContent: 'flex-end',
       alignItems: 'center',
-      gap: theme.spacings.xl,
+      gap: theme.spacings.x4,
     },
   });
 }

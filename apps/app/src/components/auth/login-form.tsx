@@ -13,11 +13,11 @@ import Typography from '@/components/primitives/typography';
 
 export type State = 'login' | 'register';
 
-type Props = {
+type LoginFormProps = {
   type: State;
 };
 
-export default function LoginForm(props: Props) {
+export default function LoginForm(props: LoginFormProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
   const router = useRouter();
@@ -142,20 +142,20 @@ function buildStyles(theme: Theme) {
   return StyleSheet.create({
     container: {
       width: '100%',
-      padding: theme.spacings.base,
+      padding: theme.spacings.x4,
 
       justifyContent: 'space-between',
     },
     loginBox: {
       borderRadius: theme.rounded.lg,
-      padding: theme.spacings.xl,
+      padding: theme.spacings.x4,
 
-      gap: theme.spacings.xl,
+      gap: theme.spacings.x3,
 
       backgroundColor: theme.palette.subtle,
     },
     inputContainer: {
-      padding: theme.spacings.lg,
+      padding: theme.spacings.x2,
 
       justifyContent: 'center',
       alignItems: 'center',

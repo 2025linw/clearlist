@@ -10,7 +10,7 @@ import {
 import TextInput from '@/components/primitives/text-input';
 import Typography from '@/components/primitives/typography';
 
-type Props = {
+type EditableTypographyProps = {
   value?: string;
   onSave?: (value: string) => void;
   placeholder?: string;
@@ -25,7 +25,7 @@ export default function EditableTypography({
   onSave,
   placeholder,
   ...props
-}: Props) {
+}: EditableTypographyProps) {
   const [text, setText] = useState(value || '');
   const [editing, setEditing] = useState(false);
 

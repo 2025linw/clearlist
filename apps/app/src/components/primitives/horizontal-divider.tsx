@@ -6,15 +6,19 @@ export default function HorizontalDivider() {
   const theme = useTheme();
 
   return (
-    <View style={[styles.line, { backgroundColor: theme.palette.border }]} />
+    <View style={styles.container}>
+      <View style={[styles.line, { backgroundColor: theme.palette.border }]} />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    // TODO: use theme spacing
+    paddingHorizontal: 3,
+    paddingVertical: 5,
+  },
   line: {
     height: StyleSheet.hairlineWidth,
-    width: '100%',
-
-    marginVertical: 5,
   },
 });

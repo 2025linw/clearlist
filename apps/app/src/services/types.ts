@@ -1,4 +1,4 @@
-import { Tag, Task } from '@clearlist/types';
+import { tag, task } from '@clearlist/types';
 
 export enum Cmp {
   Equal = '=',
@@ -41,23 +41,23 @@ type Response = {
 };
 
 export type TaskResponse = Response & {
-  data: Task;
+  data: task.Task;
 };
 
 export type TaskQueryResponse = Response & {
   data: {
     count: number;
-    tasks: Task[];
+    tasks: task.Task[];
   };
 };
 
 export type TagResponse = Response & {
-  data: Tag;
+  data: tag.Tag;
 };
 
 export type TagQueryResponse = Response & {
   data: {
     count: number;
-    tags: Tag[];
+    tags: tag.Tag[];
   };
 };

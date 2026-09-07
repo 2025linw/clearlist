@@ -27,10 +27,10 @@ export async function apiFetch(
 ): Promise<Response> {
   const headers = init?.headers ? new Headers(init.headers) : new Headers();
   if (Platform.OS !== 'web') {
-    const cookie = authClient.getCookie();
+    const cookie = await authClient.getCookie();
 
     if (cookie) {
-      headers.set('Cookie', cookie);
+      headers.set('cookie', cookie);
     }
   }
 

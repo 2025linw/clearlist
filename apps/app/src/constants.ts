@@ -10,4 +10,4 @@ export const API_URL = !IS_DEV
   ? 'https://todo.saphydev.com'
   : Platform.OS === 'web'
     ? 'https://todo.localhost:8081'
-    : `http://${hostIp}:8443`;
+    : `http://${hostIp}:8080`;

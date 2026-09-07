@@ -3,11 +3,11 @@ import { StyleSheet } from 'react-native';
 import LoginForm, { State } from '@/components/auth/login-form';
 import Layout from '@/components/layout';
 
-type Props = {
+type LoginScreenProps = {
   type: State;
 };
 
-export default function LoginScreen(props: Props) {
+export default function LoginScreen(props: LoginScreenProps) {
   return (
     <Layout
       headerText={props.type === 'login' ? 'Login' : 'Register'}

@@ -59,18 +59,11 @@ export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
     <View style={{ gap: 16 }}>
-      <Button
-        text="Notification"
-        onPress={() => showNotification('This is a notification')}
-      />
-      <Button
-        text="Warning"
-        onPress={() => showWarning('This is a warning')}
-      />
-      <Button
-        text="Error"
-        onPress={() => showError('This is an error')}
-      />
+      <Button onPress={() => showNotification('This is a notification')}>
+        Notification
+      </Button>
+      <Button onPress={() => showWarning('This is a warning')}>Warning</Button>
+      <Button onPress={() => showError('This is an error')}>Error</Button>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

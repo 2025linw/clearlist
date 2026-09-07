@@ -11,13 +11,13 @@ import Typography from '@/components/primitives/typography';
 
 // TODO: Add label orientation (top or left (default))
 
-export type Props = PropsWithChildren<{
+export type FormFieldProps = PropsWithChildren<{
   label?: string;
   labelStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
 }>;
 
-export default function FormField({ children, ...props }: Props) {
+export default function FormField({ children, ...props }: FormFieldProps) {
   return (
     <View style={styles.container}>
       {props.label && (

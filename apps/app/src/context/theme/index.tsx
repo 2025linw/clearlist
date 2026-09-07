@@ -9,12 +9,12 @@ const ThemeContext = createContext<ThemeContextType>(
   {} as unknown as ThemeContextType,
 ); // TODO: fix this jank?
 
-type Props = PropsWithChildren<{
+type ProviderProps = PropsWithChildren<{
   theme?: ThemeMode;
   onThemeVariantChange?: (_v: ColorTheme) => void; // TODO: is this needed?
 }>;
 
-export function Provider({ children, ...props }: Props) {
+export function Provider({ children, ...props }: ProviderProps) {
   const {
     value: themeMode,
     setValue: _setThemeMode,
@@ -88,18 +88,6 @@ export function useTheme() {
   return theme;
 }
 
-export function useThemeMode() {
-  const { themeMode, setThemeMode } = useThemeContext();
-
-  return [themeMode, setThemeMode] as const;
-}
-
-export function useResetThemeMode() {
-  const { resetThemeMode } = useThemeContext();
-
-  return resetThemeMode;
-}
-
 export function useColorTheme() {
   const { colorTheme, setColorTheme } = useThemeContext();
 
@@ -110,4 +98,16 @@ export function useResetColorTheme() {
   const { resetColorTheme } = useThemeContext();
 
   return resetColorTheme;
+}
+
+export function useThemeMode() {
+  const { themeMode, setThemeMode } = useThemeContext();
+
+  return [themeMode, setThemeMode] as const;
+}
+
+export function useResetThemeMode() {
+  const { resetThemeMode } = useThemeContext();
+
+  return resetThemeMode;
 }

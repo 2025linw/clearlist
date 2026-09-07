@@ -1,5 +1,6 @@
 import { Category } from '@/services/types';
 
+import Icon from '@/components/icon';
 import ListScreen from '@/screens/list/base-list-screen';
 
 export default function UpcomingScreen() {
@@ -7,6 +8,12 @@ export default function UpcomingScreen() {
     <ListScreen
       listName="Upcoming"
       category={Category.Upcoming}
+      listIcon={
+        <Icon
+          name="calendar"
+          color="red"
+        />
+      }
     />
   );
 }

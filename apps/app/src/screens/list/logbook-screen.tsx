@@ -1,5 +1,6 @@
 import { Category } from '@/services/types';
 
+import Icon from '@/components/icon';
 import ListScreen from '@/screens/list/base-list-screen';
 
 export default function DeadlineScreen() {
@@ -7,6 +8,12 @@ export default function DeadlineScreen() {
     <ListScreen
       listName="Logbook"
       category={Category.Logged}
+      listIcon={
+        <Icon
+          name="checkmark-circle"
+          color="green"
+        />
+      }
     />
   );
 }

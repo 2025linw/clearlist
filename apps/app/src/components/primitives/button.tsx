@@ -1,4 +1,4 @@
-import { ReactElement } from 'react';
+import { ReactElement, cloneElement } from 'react';
 import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/context/theme';
@@ -20,22 +20,29 @@ export type ButtonProps = PressableProps & {
 
 export default function Button({
   scheme = 'default',
-  icon,
   children,
   disabled,
-  ...pressableProps
+  style,
+  ...props
 }: ButtonProps) {
   const theme = useTheme();
   const styles = buildStyles(theme, disabled ? 'disabled' : scheme);
 
+  let icon = undefined;
+  if (props.icon) {
+    icon = cloneElement(props.icon, {
+      size: props.icon.props.size ?? styles.icon.fontSize,
+    });
+  }
+
   return (
     <Pressable
-      {...pressableProps}
+      {...props}
       disabled={disabled}
       style={({ pressed }) => [
         styles.container,
         pressed && styles.pressedStyle,
-        pressableProps.style,
+        style,
       ]}
     >
       {icon}
@@ -58,11 +65,11 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
 
   return StyleSheet.create({
     container: {
-      padding: theme.spacings.lg,
+      padding: theme.spacings.x2,
 
       flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacings.lg,
+      gap: theme.spacings.x2,
 
       backgroundColor: componentStyle.scheme[scheme].backgroundColor,
       borderWidth: 1,
@@ -70,12 +77,12 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
       borderColor: componentStyle.scheme[scheme].borderColor,
     },
     pressedStyle: {},
-    typographyContainer: {
-      paddingVertical: theme.spacings.lg,
-    },
     typography: {
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
+    },
+    icon: {
+      fontSize: componentStyle.icon.size,
     },
   });
 }
@@ -83,7 +90,7 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
 export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: 16, alignItems: 'flex-start' }}>
       <Button>Default</Button>
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>

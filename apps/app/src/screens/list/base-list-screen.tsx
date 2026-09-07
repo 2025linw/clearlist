@@ -1,7 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
-import { FlatList, StyleSheet } from 'react-native';
+import { ReactElement, useCallback, useRef, useState } from 'react';
+import { StyleSheet } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
-import { TaskDTO } from '@clearlist/types';
+import { task } from '@clearlist/types';
 
 import { useNotificationContext } from '@/context/error';
 import { useTheme } from '@/context/theme';
@@ -10,21 +12,31 @@ import * as TaskHook from '@/hooks/use-tasks';
 import { categoryQueryMap, toYYYYMMDD } from '@/services/helpers';
 import { Category } from '@/services/types';
 
-import Icon from '@/components/icon';
+import Icon, { IconProps } from '@/components/icon';
 import Layout from '@/components/layout';
 import DateSelectModal from '@/components/modals/date-select-modal';
 import Button from '@/components/primitives/button';
-import TaskItem from '@/components/task-item';
+import TaskCard from '@/components/task-card';
 
-type Props = {
+const nullDraft: task.UpdateRequest = {
+  title: null,
+  notes: null,
+  start: null,
+  deadline: null,
+  tags: null,
+  positionKey: null,
+};
+
+type ListScreenProps = {
   listName: string;
+  listIcon?: ReactElement<IconProps>;
   category: Category;
 };
 
-export default function ListScreen(props: Props) {
+export default function ListScreen(props: ListScreenProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
-  const { showError } = useNotificationContext();
+  // const { showError } = useNotificationContext();
 
   const searchQuery = categoryQueryMap[props.category];
 
@@ -34,9 +46,10 @@ export default function ListScreen(props: Props) {
   const completeTask = TaskHook.useCompleteTask();
   const reopenTask = TaskHook.useReopenTask();
 
-  const isFirstRender = useRef(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<TaskDTO | null>(null);
+  const [expandedTask, setExpandedTask] = useState<{
+    id: string;
+    draft: task.UpdateRequest;
+  } | null>(null);
   const [dateModalMode, setDateModalMode] = useState<
     'start' | 'deadline' | null
   >(null);
@@ -44,57 +57,60 @@ export default function ListScreen(props: Props) {
     undefined,
   );
 
-  function expandTask(id: string) {
-    const activeTask = queryTasks.data?.data.tasks.find(
-      (task) => task.id === id,
+  function hasChanges(update: task.UpdateRequest) {
+    return (
+      update.title ||
+      update.notes ||
+      update.start ||
+      update.deadline ||
+      update.tags ||
+      update.positionKey
     );
-    if (!activeTask) {
-      showError(`A task with id ${id} does not exist on this page`);
+  }
 
-      return;
+  function onToggle(id: string) {
+    if (!expandedTask) return;
+    if (expandedTask.id === id) return;
+
+    const expandedId = expandedTask.id;
+    const draft = expandedTask.draft;
+    if (expandedId && draft && hasChanges(draft)) {
+      updateTask.mutate({
+        id: expandedId,
+        update: draft,
+      });
     }
 
-    isFirstRender.current = true;
-    setExpandedId(id);
-    setDraft({
-      title: activeTask.title,
-      notes: activeTask.notes,
-      start: activeTask.start,
-      startPrecision: activeTask.startPrecision,
-      deadline: activeTask.deadline,
-      tags: activeTask.tags.map((tag) => tag.id),
+    setExpandedTask({
+      id,
+      draft: nullDraft,
     });
   }
 
-  function collapseTask() {
-    if (!expandedId || !draft) return;
+  function dismissExpanded() {
+    if (!expandedTask) return;
 
-    updateTask.mutate({
-      id: expandedId,
-      ...draft,
-    });
-
-    setDraft(null);
-    setExpandedId(null);
+    setExpandedTask(null);
   }
+  const dismissTasks = Gesture.Tap().onStart(dismissExpanded);
 
   const saveTimeoutRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(
     new Map(),
   );
   const scheduleSave = useCallback(
-    (draft: TaskDTO & { id: string }) => {
-      const existing = saveTimeoutRef.current.get(draft.id);
+    ({ id, draft }: { id: string; draft: task.UpdateRequest }) => {
+      const existing = saveTimeoutRef.current.get(id);
       if (existing) {
         clearTimeout(existing);
       }
 
       const timeout = setTimeout(() => {
-        updateTask.mutate(draft);
+        updateTask.mutate({ id, update: draft });
 
-        saveTimeoutRef.current.delete(draft.id);
+        saveTimeoutRef.current.delete(id);
       }, 1200);
 
-      saveTimeoutRef.current.set(draft.id, timeout);
+      saveTimeoutRef.current.set(id, timeout);
     },
     [updateTask],
   );
@@ -102,106 +118,104 @@ export default function ListScreen(props: Props) {
   const setModalInitDate = useCallback(
     (mode: 'start' | 'deadline') => {
       if (mode === 'start') {
-        setDateModalDate(draft?.start || undefined);
+        setDateModalDate(expandedTask?.draft?.start || undefined);
       } else if (mode === 'deadline') {
-        setDateModalDate(draft?.deadline || undefined);
+        setDateModalDate(expandedTask?.draft?.deadline || undefined);
       }
     },
-    [draft?.start, draft?.deadline],
+    [expandedTask?.draft?.start, expandedTask?.draft?.deadline],
   );
 
   return (
     <>
-      <Layout
-        headerText={props.listName}
-        showBackButton
-      >
-        <FlatList
-          data={queryTasks.data?.data.tasks}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <TaskItem
-              task={item}
-              expanded={expandedId === item.id}
-              onToggle={() => {
-                if (expandedId === item.id) return;
-                if (expandedId !== null) {
-                  collapseTask();
-                  return;
-                }
-
-                expandTask(item.id);
-              }}
-              onTaskUpdate={(patch) => {
-                const newDraft = {
-                  ...draft,
-                  ...patch,
-                } as TaskDTO;
-                setDraft(newDraft);
-
-                scheduleSave({ id: expandedId!, ...newDraft });
-              }}
-              onTaskComplete={() => completeTask.mutate(item.id)}
-              onTaskReopen={() => reopenTask.mutate(item.id)}
-              onPressStartDate={() => {
-                setDateModalMode('start');
-                setModalInitDate('start');
-              }}
-              onPressDeadline={() => {
-                setDateModalMode('deadline');
-                setModalInitDate('deadline');
-              }}
-            />
-          )}
-          style={styles.container}
-          showsVerticalScrollIndicator={false}
-        />
-
-        <Button
-          scheme="primary"
-          style={styles.addButton}
-          icon={
-            <Icon
-              name="add-circle"
-              color="white"
-              size={30}
-            />
-          }
-          onPress={() => {
-            createTask.mutate(
-              {
-                title: '',
-                notes: null,
-                start: null,
-                startPrecision: 'Date',
-                deadline: null,
-                tags: [],
-              },
-              {
-                onSuccess: (data) => {
-                  setExpandedId(data.data.id);
-                },
-              },
-            );
-          }}
+      <GestureDetector gesture={dismissTasks}>
+        <Layout
+          headerText={props.listName}
+          headerIcon={props.listIcon}
+          showBackButton
         >
-          Add Task
-        </Button>
-      </Layout>
+          <Animated.FlatList
+            data={queryTasks.data?.data.tasks}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TaskCard
+                task={item}
+                expanded={expandedTask?.id === item.id}
+                onToggle={() => onToggle(item.id)}
+                onTaskUpdate={(patch) => {
+                  if (!expandedTask) return;
+
+                  const newDraft = {
+                    ...expandedTask.draft,
+                    ...patch,
+                  } as task.UpdateRequest;
+                  scheduleSave(expandedTask);
+                  setExpandedTask({ ...expandedTask, draft: newDraft });
+                }}
+                onTaskComplete={() => completeTask.mutate(item.id)}
+                onTaskReopen={() => reopenTask.mutate(item.id)}
+                onPressStartDate={() => {
+                  setDateModalMode('start');
+                  setModalInitDate('start');
+                }}
+                onPressDeadline={() => {
+                  setDateModalMode('deadline');
+                  setModalInitDate('deadline');
+                }}
+              />
+            )}
+            style={styles.container}
+            showsVerticalScrollIndicator={false}
+            itemLayoutAnimation={LinearTransition.duration(200)}
+          />
+
+          <Button
+            scheme="primary"
+            style={styles.addButton}
+            icon={
+              <Icon
+                name="add-circle"
+                color="white"
+                size={30}
+              />
+            }
+            onPress={() => {
+              createTask.mutate(
+                {
+                  title: '',
+                  notes: null,
+                  start: null,
+                  deadline: null,
+                  tags: [],
+                  positionKey: 'a',
+                },
+                {
+                  onSuccess: (data) => {
+                    setExpandedTask({ id: data.data.id, draft: nullDraft });
+                  },
+                },
+              );
+            }}
+          >
+            Add Task
+          </Button>
+        </Layout>
+      </GestureDetector>
 
       <DateSelectModal
-        visible={expandedId !== null && dateModalMode !== null}
+        visible={expandedTask !== null && dateModalMode !== null}
         initialDate={dateModalDate}
         onDateSelect={(selected) => {
+          if (!expandedTask) return;
+
           const newDraft = {
-            ...draft,
+            ...expandedTask.draft,
             ...(dateModalMode === 'start'
               ? { start: selected.toISOString() }
               : { deadline: toYYYYMMDD(selected) }),
-          } as TaskDTO;
-          setDraft(newDraft);
-
-          scheduleSave({ id: expandedId!, ...newDraft });
+          } as task.UpdateRequest;
+          scheduleSave(expandedTask);
+          setExpandedTask({ ...expandedTask, draft: newDraft });
           setDateModalMode(null);
         }}
         dismiss={() => {
@@ -226,13 +240,12 @@ function buildStyles(theme: Theme) {
     addButton: {
       position: 'absolute',
       bottom: 0,
-      left: theme.spacings.xl,
-      right: theme.spacings.xl,
+      left: theme.spacings.x4,
+      right: theme.spacings.x4,
       zIndex: theme.zHeight.floating,
 
       borderRadius: theme.rounded.full,
-      padding: theme.spacings.lg,
-      paddingLeft: theme.spacings.lg + 10,
+      padding: theme.spacings.x2,
     },
   });
 }
