@@ -11,3 +11,4 @@ ctrlc = "3.5.2"
 dotenvy = "0.15.7"
 nix = "0.31.3"
 tokio = { version = "1.52.3", features = ["full"] }
+tower = "0.5.3"

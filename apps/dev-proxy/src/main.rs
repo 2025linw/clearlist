@@ -2,11 +2,12 @@ mod config;
 
 use std::{env, net::SocketAddr};
 
-use axum::Router;
+use axum::{Router, body::Body, http::{Request, header}};
 use axum_reverse_proxy::ReverseProxy;
 use axum_server::tls_rustls::RustlsConfig;
 
 use config::Config;
+use tower::ServiceBuilder;
 
 use crate::config::{AppConfig, WebConfig};
 
@@ -44,7 +45,14 @@ async fn main() {
 
         let api_proxy = ReverseProxy::new("/", &format!("localhost:{api_port}"));
         let auth_proxy = ReverseProxy::new("/", &format!("localhost:{auth_port}"));
+
         let app_proxy = ReverseProxy::new("/", &format!("localhost:{web_port}"));
+        let app_proxy = ServiceBuilder::new()
+            .map_request(|mut request: Request<Body>| {
+                request.headers_mut().remove(header::ORIGIN);
+                request
+            })
+            .service(app_proxy);
 
         Router::new()
             .route_service("/api/{*path}", api_proxy)
