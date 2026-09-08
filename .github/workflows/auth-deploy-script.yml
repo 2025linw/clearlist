@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: spellcheck scripts/deploy-auth.sh
+      - run: shellcheck scripts/deploy-auth.sh
 
   deploy-script:
     name: Deploy script
