@@ -22,7 +22,7 @@ jobs:
     name: Deploy script
     if: github.event_name == 'workflow_dispatch'
     needs: required
-    runs-on: github-runner
+    runs-on: self-hosted
 
     steps:
       - name: Checkout repository
