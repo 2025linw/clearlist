@@ -107,11 +107,19 @@ jobs:
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
+      - name: Create artifact folder
+        run: |
+          mkdir artifact
+          cp -t artifact/ target/release/clearlist-api
+
+      - name: Archive artifacts
+        run: tar -czf clearlist-api.tar.gz -C artifact/ .
+
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: clearlist-api
-          path: target/release/clearlist-api
+          path: clearlist-api.tar.gz
           retention-days: 7
 
   deploy:
@@ -120,7 +128,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
-    runs-on: ubuntu-latest
+    runs-on: github-runner
 
     steps:
       - name: Download artifact
@@ -129,28 +137,21 @@ jobs:
           name: clearlist-api
           path: artifact/
 
-      - name: Connect to tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci-cd
-
-      - name: Upload binary
+      - name: Upload archive
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: artifact/clearlist-api
+          host: ${{ secrets.API_DEPLOY_HOST }}
+          username: ${{ secrets.API_DEPLOY_USER }}
+          password: ${{ secrets.API_DEPLOY_PASS }}
+          source: artifact/clearlist-api.tar.gz
           strip_components: 1
           target: /tmp/clearlist-api/
 
       - name: Deploy server
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: ${{ secrets.API_DEPLOY_HOST }}
+          username: ${{ secrets.API_DEPLOY_USER }}
+          password: ${{ secrets.API_DEPLOY_PASS }}
           script: |
             sudo -n ${{ secrets.API_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.timestamp }} ${{ needs.build.outputs.sha }}

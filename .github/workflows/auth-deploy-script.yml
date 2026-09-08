@@ -14,32 +14,25 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo 'Yay'
+      - run: spellcheck scripts/deploy-auth.sh
 
   deploy-script:
     name: Deploy script
 
     if: github.event_name == 'workflow_dispatch'
 
-    runs-on: ubuntu-latest
+    runs-on: github-runner
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Connect to tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci-cd
-
       - name: Upload binary
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: ${{ secrets.AUTH_DEPLOY_HOST }}
+          username: ${{ secrets.AUTH_DEPLOY_USER }}
+          password: ${{ secrets.AUTH_DEPLOY_PASS }}
           source: scripts/deploy-auth.sh
           strip_components: 1
           target: /tmp/clearlist-auth/
@@ -47,9 +40,9 @@ jobs:
       - name: Install deploy script
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
+          host: ${{ secrets.AUTH_DEPLOY_HOST }}
+          username: ${{ secrets.AUTH_DEPLOY_USER }}
+          password: ${{ secrets.AUTH_DEPLOY_PASS }}
           script: |
             sudo -n mkdir -p /opt/clearlist-auth/scripts
             sudo -n install -m 755 /tmp/clearlist-auth/deploy-auth.sh /opt/clearlist-auth/scripts/deploy.sh

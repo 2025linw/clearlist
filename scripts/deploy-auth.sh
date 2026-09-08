@@ -3,11 +3,11 @@ set -eu
 
 
 readonly SERVICE_NAME="clearlist-auth.service"
-readonly ARTIFACT="/tmp/clearlist-auth/clearlist-auth.tar.gz"
-readonly DEPLOY="/tmp/clearlist-auth/clearlist-auth"
+readonly ARCHIVE="/tmp/clearlist-auth/clearlist-auth.tar.gz"
+readonly ARTIFACTS="/tmp/clearlist-auth/artifacts"
 
 readonly DEPLOY_PATH="/opt/clearlist-auth"
-readonly RELEASE_ROOT="$DEPLOY_PATH/releases"
+readonly RELEASE_DIRPATH="$DEPLOY_PATH/releases"
 readonly CURRENT_LINK="$DEPLOY_PATH/current"
 
 
@@ -22,17 +22,17 @@ timestamp="$2"
 sha="$3"
 
 
-# Setup artifact
-if [ ! -f "$ARTIFACT" ]; then
-	echo "Unable to find deployed artifact: $ARTIFACT" >&2
+# Setup ARCHIVE
+if [ ! -f "$ARCHIVE" ]; then
+	echo "Unable to find deployed ARCHIVE: $ARCHIVE" >&2
 	exit 1
 fi
 
-rm -rf "$DEPLOY"
-mkdir -p "$DEPLOY"
-tar -xzf "$ARTIFACT" -C "$DEPLOY"
+rm -rf "$ARTIFACTS"
+mkdir -p "$ARTIFACTS"
+tar -xzf "$ARCHIVE" -C "$ARTIFACTS"
 
-new_release="$RELEASE_ROOT/clearlist-auth-$version-$timestamp-$sha"
+new_release="$RELEASE_DIRPATH/clearlist-auth-$version-$timestamp-$sha"
 if [ -d "$new_release" ]; then
 	echo "Release already exists: $new_release" >&2
 	exit 1
@@ -59,14 +59,14 @@ rollback() {
 
 
 # Deploy new release
-mkdir -p "$RELEASE_ROOT"
+mkdir -p "$RELEASE_DIRPATH"
 
-systemctl stop "$SERVICE_NAME"
-
-mv "$DEPLOY" "$new_release"
+mv "$ARTIFACTS/build" "$new_release"
 ln -sfn "$new_release" "$CURRENT_LINK"
 
 cd "$DEPLOY_PATH"
+
+systemctl stop "$SERVICE_NAME"
 
 if ! node "$CURRENT_LINK/dist/scripts/migrate.js"; then
   echo "Migration failed" >&2
@@ -92,7 +92,7 @@ while ! systemctl is-active --quiet "$SERVICE_NAME"; do
 done
 
 elapsed=0
-while ! curl -fs http://127.0.0.1:9001/api/auth/ok >/dev/null 2>&1; do
+while ! curl -fs http://127.0.0.1:8081/api/auth/ok >/dev/null 2>&1; do
 	sleep "$INTERVAL"
 	elapsed=$((elapsed + INTERVAL))
 
