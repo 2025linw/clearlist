@@ -61,7 +61,6 @@ rollback() {
 # Deploy new release
 mkdir -p "$RELEASE_DIRPATH"
 
-
 mv "$ARTIFACTS/clearlist-api" "$new_release"
 chmod +x "$new_release"
 ln -sfn "$new_release" "$CURRENT_LINK"
