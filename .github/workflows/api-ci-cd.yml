@@ -123,7 +123,7 @@ jobs:
     name: CD
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
-    runs-on: github-runner
+    runs-on: self-hosted
 
     steps:
       - name: Download artifact
