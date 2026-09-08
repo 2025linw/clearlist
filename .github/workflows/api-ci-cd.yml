@@ -28,7 +28,6 @@ concurrency:
 jobs:
   ci:
     name: CI
-
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -77,15 +76,13 @@ jobs:
 
   build:
     name: Build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
       sha: ${{ steps.meta.outputs.sha }}
-
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -124,10 +121,8 @@ jobs:
 
   deploy:
     name: CD
-
-    needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
+    needs: build
     runs-on: github-runner
 
     steps:
