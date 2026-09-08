@@ -133,20 +133,21 @@ jobs:
           path: artifact/
 
       - name: Upload archive
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.API_DEPLOY_HOST }}
-          username: ${{ secrets.API_DEPLOY_USER }}
-          password: ${{ secrets.API_DEPLOY_PASS }}
-          source: artifact/clearlist-api.tar.gz
-          strip_components: 1
-          target: /tmp/clearlist-api/
+        env:
+          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          scp artifact/clearlist-api.tar.gz \
+            "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
 
       - name: Deploy server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.API_DEPLOY_HOST }}
-          username: ${{ secrets.API_DEPLOY_USER }}
-          password: ${{ secrets.API_DEPLOY_PASS }}
-          script: |
-            sudo -n ${{ secrets.API_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.timestamp }} ${{ needs.build.outputs.sha }}
+        env:
+          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+          DEPLOY_SCRIPT: ${{ secrets.API_DEPLOY_SCRIPT }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TIMESTAMP: ${{ needs.build.outputs.timestamp }}
+          SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"

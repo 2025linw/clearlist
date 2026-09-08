@@ -28,22 +28,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Upload binary
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.API_DEPLOY_HOST }}
-          username: ${{ secrets.API_DEPLOY_USER }}
-          password: ${{ secrets.API_DEPLOY_PASS }}
-          source: scripts/deploy-api.sh
-          strip_components: 1
-          target: /tmp/clearlist-api/
+      - name: Upload script
+        env:
+          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          scp scripts/deploy-api.sh \
+            "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
 
       - name: Install deploy script
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.API_DEPLOY_HOST }}
-          username: ${{ secrets.API_DEPLOY_USER }}
-          password: ${{ secrets.API_DEPLOY_PASS }}
-          script: |
-            sudo -n mkdir -p /opt/clearlist-api/scripts
-            sudo -n install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy.sh
+        env:
+          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            'mkdir -p /opt/clearlist-api/scripts &&
+            install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy.sh'
