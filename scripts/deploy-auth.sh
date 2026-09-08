@@ -61,7 +61,7 @@ rollback() {
 # Deploy new release
 mkdir -p "$RELEASE_DIRPATH"
 
-mv "$ARTIFACTS/build" "$new_release"
+mv "$ARTIFACTS/auth" "$new_release"
 ln -sfn "$new_release" "$CURRENT_LINK"
 
 cd "$DEPLOY_PATH"
