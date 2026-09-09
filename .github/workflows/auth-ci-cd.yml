@@ -6,18 +6,18 @@ on:
       - main
     paths:
       - ".github/workflows/auth-ci-cd.yml"
-      - "apps/auth/**"
       - "package.json"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
+      - "apps/auth/**"
       - "!apps/auth/**/*.md"
   pull_request:
     paths:
       - ".github/workflows/auth-ci-cd.yml"
-      - "apps/auth/**"
       - "package.json"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
+      - "apps/auth/**"
       - "!apps/auth/**/*.md"
 
 permissions:
