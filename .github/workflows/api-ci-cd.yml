@@ -6,16 +6,16 @@ on:
       - main
     paths:
       - ".github/workflows/api-ci-cd.yml"
-      - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "apps/api/**"
       - "!apps/api/**/*.md"
   pull_request:
     paths:
       - ".github/workflows/api-ci-cd.yml"
-      - "apps/api/**"
       - "Cargo.toml"
       - "Cargo.lock"
+      - "apps/api/**"
       - "!apps/api/**/*.md"
 
 permissions:
