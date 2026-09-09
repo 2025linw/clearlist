@@ -2,7 +2,11 @@ packages:
   - "apps/auth"
   - "apps/app"
   - "packages/*"
+catalog:
+  better-auth: 1.7.3
+  "@better-auth/expo": 1.7.3
 engineStrict: true
+strict-peer-dependencies: true
 injectWorkspacePackages: true
 allowBuilds:
   msgpackr-extract: true
