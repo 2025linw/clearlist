@@ -30,8 +30,4 @@ CREATE INDEX ON app.tasks (id) WHERE deleted_at IS NOT NULL;
 -- Permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON
 app.tasks
-TO cl_rw;
-
-GRANT SELECT ON
-app.tasks
-TO cl_ro;
+TO cl_api;

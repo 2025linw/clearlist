@@ -72,7 +72,7 @@ jobs:
           PGUSER: test
           PGPASSWORD: test
         run: |
-          psql -v ON_ERROR_STOP=1 -f bootstrap_test.sql
+          psql -v ON_ERROR_STOP=1 -f apps/auth/bootstrap_test.sql
 
       - name: Run test
         run: pnpm auth:test
