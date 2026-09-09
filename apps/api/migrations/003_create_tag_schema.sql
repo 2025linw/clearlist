@@ -49,9 +49,4 @@ EXECUTE FUNCTION app.check_task_not_deleted();
 GRANT SELECT, INSERT, UPDATE, DELETE ON
 app.tags,
 app.task_tags
-TO cl_rw;
-
-GRANT SELECT ON
-app.tags,
-app.task_tags
-TO cl_ro;
+TO cl_api;
