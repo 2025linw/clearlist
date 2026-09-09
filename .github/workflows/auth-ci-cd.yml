@@ -72,10 +72,12 @@ jobs:
           PGUSER: test
           PGPASSWORD: test
         run: |
-          psql -v ON_ERROR_STOP=1 -f ./apps/auth/apps/auth/bootstrap_test.sql
+          psql -v ON_ERROR_STOP=1 -f apps/auth/bootstrap_test.sql
           pnpm auth:migrate
 
       - name: Run test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost/testdb
         run: pnpm auth:test
 
   build:
