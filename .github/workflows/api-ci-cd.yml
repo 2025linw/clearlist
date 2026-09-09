@@ -71,7 +71,7 @@ jobs:
           PGHOST: localhost
           PGDATABASE: testdb
         run: |
-          psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap.test.sql
+          psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap_test.sql
 
       - name: Run test
         env:
