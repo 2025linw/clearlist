@@ -10,5 +10,5 @@ CREATE TABLE app.users (
 
 -- Permissions
 GRANT SELECT, INSERT, UPDATE, DELETE ON
-app.tasks
+app.users
 TO cl_api;
