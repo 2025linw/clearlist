@@ -67,10 +67,10 @@ jobs:
 
       - name: Bootstrap and run database migration
         env:
-          PGHOST: localhost
-          PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          PGHOST: localhost
+          PGDATABASE: testdb
         run: |
           psql -v ON_ERROR_STOP=1 -f apps/auth/bootstrap_test.sql
           pnpm auth:migrate

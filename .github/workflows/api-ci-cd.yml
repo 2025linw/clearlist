@@ -66,10 +66,10 @@ jobs:
 
       - name: Bootstrap database
         env:
-          PGHOST: localhost
-          PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          PGHOST: localhost
+          PGDATABASE: testdb
         run: |
           psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap_test.sql
 
