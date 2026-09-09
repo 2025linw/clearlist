@@ -70,8 +70,7 @@ jobs:
 
       - name: Run test
         env:
-          MIGRATION_URL: postgresql://cl_migrate:cl_migrate@localhost/testdb
-          DATABASE_URL: postgresql://cl_api:cl_api@localhost/testdb
+          DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
   build:
