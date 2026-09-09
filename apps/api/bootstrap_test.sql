@@ -9,7 +9,7 @@ CREATE SCHEMA IF NOT EXISTS app;
 CREATE ROLE cl_migrate WITH LOGIN PASSWORD 'cl_migrate' NOSUPERUSER NOCREATEDB NOCREATEROLE;
 ALTER ROLE cl_migrate SET search_path TO public;
 
-GRANT CONNECT ON DATABASE 'testdb' TO cl_migrate; -- update 'testdb' in prod
+GRANT CONNECT ON DATABASE "testdb" TO cl_migrate; -- update 'testdb' in prod
 
 GRANT ALL ON SCHEMA public TO cl_migrate;
 GRANT ALL ON SCHEMA app TO cl_migrate;
