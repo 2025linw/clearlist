@@ -10,46 +10,37 @@ on:
 jobs:
   required:
     name: CI
-
-    runs-on: ubuntu-latest
-
-    steps:
-      - run: echo 'Yay'
-
-  deploy-script:
-    name: Deploy script
-
-    if: github.event_name == 'workflow_dispatch'
-
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
 
-      - name: Connect to tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci-cd
+      - run: shellcheck scripts/deploy-auth.sh
 
-      - name: Upload binary
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: scripts/deploy-auth.sh
-          strip_components: 1
-          target: /tmp/clearlist-auth/
+  deploy-script:
+    name: Deploy script
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch'
+    needs: required
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Upload script
+        env:
+          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
+        run: |
+          scp scripts/deploy-auth.sh \
+            "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
 
       - name: Install deploy script
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
-            sudo -n mkdir -p /opt/clearlist-auth/scripts
-            sudo -n install -m 755 /tmp/clearlist-auth/deploy-auth.sh /opt/clearlist-auth/scripts/deploy.sh
+        env:
+          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            'mkdir -p /opt/clearlist-auth/scripts &&
+            install -m 755 /tmp/clearlist-auth/deploy-auth.sh /opt/clearlist-auth/scripts/deploy.sh'

@@ -64,11 +64,9 @@ impl Config {
 
     pub fn from_env() -> Self {
         let cookie_key = env::var("COOKIE_KEY").unwrap_or("better-auth.session_token".to_string());
-        let auth_server_url = Url::parse(
-            &env::var("AUTH_SERVER_URL")
-                .expect("AUTH_SERVER_URL not found in environment variables"),
-        )
-        .expect("AUTH_SERVER_URL should be a valid URL format");
+        let auth_server_url =
+            Url::parse(&env::var("AUTH_URL").expect("AUTH_URL not found in environment variables"))
+                .expect("AUTH_URL should be a valid URL format");
         let webhook_secret =
             env::var("WEBHOOK_SECRET").expect("WEBHOOK_SECRET not found in environment variables");
 

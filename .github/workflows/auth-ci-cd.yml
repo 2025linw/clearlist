@@ -6,18 +6,18 @@ on:
       - main
     paths:
       - ".github/workflows/auth-ci-cd.yml"
-      - "apps/auth/**"
       - "package.json"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
+      - "apps/auth/**"
       - "!apps/auth/**/*.md"
   pull_request:
     paths:
       - ".github/workflows/auth-ci-cd.yml"
-      - "apps/auth/**"
       - "package.json"
       - "pnpm-workspace.yaml"
       - "pnpm-lock.yaml"
+      - "apps/auth/**"
       - "!apps/auth/**/*.md"
 
 permissions:
@@ -30,7 +30,6 @@ concurrency:
 jobs:
   ci:
     name: CI
-
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -68,28 +67,28 @@ jobs:
 
       - name: Bootstrap and run database migration
         env:
-          PGHOST: localhost
-          PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          PGHOST: localhost
+          PGDATABASE: testdb
         run: |
-          psql -v ON_ERROR_STOP=1 -f ./apps/auth/bootstrap.test.sql
+          psql -v ON_ERROR_STOP=1 -f apps/auth/bootstrap_test.sql
           pnpm auth:migrate
 
       - name: Run test
+        env:
+          DATABASE_URL: postgresql://test:test@localhost/testdb
         run: pnpm auth:test
 
   build:
     name: Build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: ci
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
       sha: ${{ steps.meta.outputs.sha }}
-
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
@@ -119,8 +118,13 @@ jobs:
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Archive deployment
-        run: tar -czf clearlist-auth.tar.gz -C build/auth .
+      - name: Create artifact folder
+        run: |
+          mkdir artifact
+          cp -rt artifact/ build/auth/
+
+      - name: Archive artifacts
+        run: tar -czf clearlist-auth.tar.gz -C artifact/ .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -128,15 +132,12 @@ jobs:
           name: clearlist-auth
           path: clearlist-auth.tar.gz
           retention-days: 7
-          include-hidden-files: true
 
   deploy:
     name: CD
-
-    needs: build
+    runs-on: self-hosted
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-
-    runs-on: ubuntu-latest
+    needs: build
 
     steps:
       - name: Download artifact
@@ -145,28 +146,22 @@ jobs:
           name: clearlist-auth
           path: artifact/
 
-      - name: Connect to tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:ci-cd
-
-      - name: Upload deployment
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          source: artifact/clearlist-auth.tar.gz
-          strip_components: 1
-          target: /tmp/clearlist-auth/
+      - name: Upload archive
+        env:
+          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
+        run: |
+          scp artifact/clearlist-auth.tar.gz \
+            "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
 
       - name: Deploy server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_KEY }}
-          script: |
-            sudo -n ${{ secrets.AUTH_DEPLOY_SCRIPT }} ${{ needs.build.outputs.version }} ${{ needs.build.outputs.timestamp }} ${{ needs.build.outputs.sha }}
+        env:
+          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
+          DEPLOY_SCRIPT: ${{ secrets.AUTH_DEPLOY_SCRIPT }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TIMESTAMP: ${{ needs.build.outputs.timestamp }}
+          SHA: ${{ needs.build.outputs.sha }}
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
