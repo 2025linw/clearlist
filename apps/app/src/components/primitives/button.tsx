@@ -1,7 +1,7 @@
 import { ReactElement, cloneElement } from 'react';
 import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
 
-import { useTheme } from '@/context/theme';
+import { useTheme, useThemeMode } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
 import Icon, { IconProps } from '@/components/icon';
@@ -19,7 +19,7 @@ export type ButtonProps = PressableProps & {
 };
 
 export default function Button({
-  scheme = 'default',
+  scheme = 'primary',
   children,
   disabled,
   style,
@@ -32,6 +32,7 @@ export default function Button({
   if (props.icon) {
     icon = cloneElement(props.icon, {
       size: props.icon.props.size ?? styles.icon.fontSize,
+      color: props.icon.props.color ?? styles.typography.color,
     });
   }
 
@@ -39,10 +40,11 @@ export default function Button({
     <Pressable
       {...props}
       disabled={disabled}
-      style={({ pressed }) => [
+      style={(state) => [
         styles.container,
-        pressed && styles.pressedStyle,
-        style,
+        state.hovered && styles.hoveredStyle,
+        state.pressed && styles.pressedStyle,
+        typeof style === 'function' ? style(state) : style,
       ]}
     >
       {icon}
@@ -63,6 +65,8 @@ export default function Button({
 function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
   const componentStyle = theme.components.Button;
 
+  const schemeStyle = componentStyle.scheme[scheme];
+
   return StyleSheet.create({
     container: {
       padding: theme.spacings.x2,
@@ -71,12 +75,17 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
       alignItems: 'center',
       gap: theme.spacings.x2,
 
-      backgroundColor: componentStyle.scheme[scheme].backgroundColor,
+      backgroundColor: schemeStyle.backgroundColor,
       borderWidth: 1,
       borderRadius: theme.rounded.base,
-      borderColor: componentStyle.scheme[scheme].borderColor,
+      borderColor: schemeStyle.borderColor,
     },
-    pressedStyle: {},
+    hoveredStyle: {
+      backgroundColor: schemeStyle.hovered.backgroundColor,
+    },
+    pressedStyle: {
+      backgroundColor: schemeStyle.pressed.backgroundColor,
+    },
     typography: {
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
@@ -88,9 +97,13 @@ function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
 }
 
 export function Demo() {
+  const [themeMode, setThemeMode] = useThemeMode();
+
   return (
     /* eslint-disable react-native/no-inline-styles */
-    <View style={{ gap: 16, alignItems: 'flex-start' }}>
+    <View
+      style={[StyleSheet.absoluteFill, { gap: 16, alignItems: 'flex-start' }]}
+    >
       <Button>Default</Button>
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>
@@ -98,6 +111,13 @@ export function Demo() {
       <Button scheme="danger">Danger</Button>
       <Button disabled>Disabled</Button>
       <Button icon={<Icon name="home-outline" />} />
+
+      <Button
+        style={{ position: 'absolute', bottom: 15 }}
+        onPress={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
+      >
+        Toggle Theme
+      </Button>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

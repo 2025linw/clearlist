@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { ColorTheme, ThemeMode } from '@/context/theme/types';
+import { ColorVariantName, ThemeMode } from '@/context/theme/types';
 
 import * as Storage from '@/lib/storage';
 
 type StorageSchema = {
   systemTheme: 'system' | ThemeMode;
-  colorTheme: ColorTheme;
+  colorTheme: ColorVariantName;
 };
 const storageDefaults: StorageSchema = {
   systemTheme: 'system',

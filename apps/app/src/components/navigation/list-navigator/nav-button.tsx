@@ -1,5 +1,7 @@
 import { Href, useRouter } from 'expo-router';
 
+import { useBreakpoints } from '@/context/theme/useBreakpoints';
+
 import Icon, { IconColor, IconName } from '@/components/icon';
 import Button from '@/components/primitives/button';
 
@@ -18,6 +20,7 @@ export default function NavButton({
   ...props
 }: NavButtonProps) {
   const router = useRouter();
+  const { gtTablet } = useBreakpoints();
 
   return (
     <Button
@@ -27,7 +30,7 @@ export default function NavButton({
           color={props.iconColor || 'gray'}
         />
       }
-      onPress={() => router.replace(href)}
+      onPress={() => (gtTablet ? router.replace(href) : router.push(href))}
     >
       {expanded ? children : undefined}
     </Button>

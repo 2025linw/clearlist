@@ -31,7 +31,7 @@ export default function Layout({
   const styles = buildStyles(theme);
   const { gtTablet } = useBreakpoints();
 
-  const showBack = (showBackButton && router.canGoBack()) || !gtTablet;
+  const showBack = showBackButton && router.canGoBack() && !gtTablet;
   const hasHeader = showBack || props.headerText || props.headerIcon;
 
   let headerIcon = undefined;
@@ -54,7 +54,7 @@ export default function Layout({
               icon={
                 <Icon
                   name="arrow-back-circle"
-                  color={theme.palette.navigation}
+                  color={theme.palette.primary}
                   size={40}
                 />
               }

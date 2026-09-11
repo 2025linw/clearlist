@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router';
 
 import { useSession } from '@/context/auth';
 
-import LoginScreen from '@/screens/auth/login-screen';
+import AuthScreen from '@/screens/auth/auth-screen';
 
 export default function LoginPage() {
   const { hasSession } = useSession();
@@ -10,5 +10,5 @@ export default function LoginPage() {
     return <Redirect href="/" />;
   }
 
-  return <LoginScreen type="login" />;
+  return <AuthScreen type="login" />;
 }

@@ -27,18 +27,11 @@ export default function SettingsPage() {
       <FormField label="Theme">
         <View style={styles.buttonRow}>
           <Button
-            scheme={colorTheme === 'default' ? 'primary' : 'default'}
+            scheme={colorTheme === 'default' ? 'primary' : 'secondary'}
             style={styles.button}
             onPress={() => setColorTheme('default')}
           >
             Default
-          </Button>
-          <Button
-            scheme={colorTheme === 'pink' ? 'primary' : 'default'}
-            style={styles.button}
-            onPress={() => setColorTheme('pink')}
-          >
-            Pink
           </Button>
         </View>
       </FormField>
@@ -51,7 +44,7 @@ export default function SettingsPage() {
                 color="white"
               />
             }
-            scheme={themeMode === 'system' ? 'primary' : 'default'}
+            scheme={themeMode === 'system' ? 'primary' : 'secondary'}
             style={styles.button}
             onPress={() => setThemeMode('system')}
           >
@@ -59,7 +52,7 @@ export default function SettingsPage() {
           </Button>
           <Button
             icon={<Icon name="sunny" />}
-            scheme={themeMode === 'light' ? 'primary' : 'default'}
+            scheme={themeMode === 'light' ? 'primary' : 'secondary'}
             style={styles.button}
             onPress={() => setThemeMode('light')}
           >
@@ -67,7 +60,7 @@ export default function SettingsPage() {
           </Button>
           <Button
             icon={<Icon name="moon" />}
-            scheme={themeMode === 'dark' ? 'primary' : 'default'}
+            scheme={themeMode === 'dark' ? 'primary' : 'secondary'}
             style={styles.button}
             onPress={() => setThemeMode('dark')}
           >

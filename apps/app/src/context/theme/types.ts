@@ -1,8 +1,13 @@
 /*
  * This theming was inspired from: https://github.com/tilap/expo-minimal-boilerplate/blob/main/src/contexts/theme/buildTheme.ts
  */
+import color from 'color';
+
 import { ColorValue, Platform } from 'react-native';
 
+import { Colors } from '@/context/theme/colors/types';
+
+import { ColorVariant, colors, main } from './colors';
 import { spacings } from './spacing';
 
 export type ThemeContextType = {
@@ -14,14 +19,13 @@ export type ThemeContextType = {
   setThemeMode: (_: 'system' | ThemeMode) => void;
   resetThemeMode: () => void;
 
-  colorTheme: ColorTheme;
-  setColorTheme: (_: ColorTheme) => void;
+  colorTheme: ColorVariantName;
+  setColorTheme: (_: ColorVariantName) => void;
   resetColorTheme: () => void;
 };
 
 export type Palette = {
   primary: ColorValue;
-  navigation: ColorValue;
 
   background: ColorValue;
   surface: ColorValue;
@@ -31,49 +35,36 @@ export type Palette = {
   subtle: ColorValue;
 
   success: ColorValue;
-
+  info: ColorValue;
+  warning: ColorValue;
+  error: ColorValue;
   danger: ColorValue;
 };
 
-export type ColorTheme = 'default' | 'pink';
-const variants: Record<ColorTheme, Pick<Palette, 'primary' | 'navigation'>> = {
-  default: {
-    primary: '#2B396D',
-    navigation: '#2B396D',
-  },
-  pink: {
-    primary: '#ffd1dc',
-    navigation: '#ffd1dc',
-  },
+export type ColorVariantName = 'default';
+const variants: Record<ColorVariantName, ColorVariant> = {
+  default: main.colors,
 };
 
 export type ThemeMode = 'light' | 'dark';
-const palettes: Record<ThemeMode, Omit<Palette, 'primary' | 'navigation'>> = {
-  light: {
-    background: '#E4E4E4',
-    surface: '#FAFAFA',
-    border: '#D1D1D6',
+function buildPalette(themeColors: Colors): Palette {
+  return {
+    primary: themeColors.primary['primary-9'],
 
-    text: '#0B0B0B',
-    subtle: '#6E6E73',
+    background: themeColors.secondary['secondary-1'],
+    surface: themeColors.secondary['secondary-2'],
+    border: themeColors.secondary['secondary-6'],
 
-    success: '#34C759',
+    text: themeColors.secondary['secondary-12'],
+    subtle: themeColors.secondary['secondary-11'],
 
-    danger: '#EE3333',
-  },
-  dark: {
-    background: '#0B0B0B',
-    surface: '#1C1C1E',
-    border: '#2C2C2E',
-
-    text: '#E4E4E4',
-    subtle: '#8E8E93',
-
-    success: '#30D158',
-
-    danger: '#FF453A',
-  },
-};
+    success: colors.green['green-9'],
+    info: colors.blue['blue-9'],
+    warning: colors.yellow['yellow-9'],
+    danger: colors.red['red-9'],
+    error: colors.red['red-9'],
+  };
+}
 
 const typographyVariants = {
   h1: {
@@ -140,17 +131,15 @@ const shadows = {
   },
 };
 
-export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
-  const palette: Palette = {
-    ...variants[variant],
-    ...palettes[darkMode],
-  };
+export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
+  const themeColors = variants[variant][theme];
+  const palette: Palette = buildPalette(themeColors);
 
   const navigation: ReactNavigation.Theme = {
-    dark: darkMode === 'dark',
+    dark: theme === 'dark',
     colors: {
       primary: palette.primary as string,
-      background: palette.navigation as string,
+      background: palette.primary as string,
       card: palette.surface as string,
       text: palette.text as string,
       border: palette.surface as string,
@@ -199,7 +188,7 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
   };
 
   return {
-    darkMode: darkMode === 'dark',
+    darkMode: theme === 'dark',
 
     navigation,
 
@@ -214,38 +203,95 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
         scheme: {
           primary: {
             backgroundColor: palette.primary,
-            borderColor: palette.primary,
+            borderColor: 'transparent',
             color: '#fff',
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-10'],
+            },
+            pressed: {
+              backgroundColor: color(themeColors.primary['primary-10'])
+                .darken(0.08)
+                .saturate(0.1)
+                .hex(),
+            },
           },
           secondary: {
-            backgroundColor: palette.background,
+            backgroundColor: themeColors.primary['primary-3'],
             borderColor: palette.primary,
             color: palette.primary,
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-4'],
+            },
+            pressed: {
+              backgroundColor: themeColors.primary['primary-5'],
+            },
           },
           tertiary: {
             backgroundColor: 'transparent',
             borderColor: 'transparent',
             color: palette.primary,
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-3'],
+            },
+            pressed: {
+              backgroundColor: color(themeColors.primary['primary-4'])
+                .darken(0.08)
+                .saturate(0.1)
+                .hex(),
+            },
           },
-          default: {
-            backgroundColor: palette.surface,
-            borderColor: palette.border,
-            color: palette.text,
-          },
+          // default: {
+          //   backgroundColor: palette.surface,
+          //   borderColor: palette.border,
+          //   color: palette.text,
+          // },
           disabled: {
             backgroundColor: palette.surface,
             borderColor: palette.border,
             color: palette.subtle,
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-10'],
+            },
+            pressed: {
+              backgroundColor: color(themeColors.primary['primary-10'])
+                .darken(0.08)
+                .saturate(0.1)
+                .hex(),
+            },
           },
           success: {
             backgroundColor: palette.success,
             borderColor: palette.border,
             color: palette.text,
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-10'],
+            },
+            pressed: {
+              backgroundColor: color(themeColors.primary['primary-10'])
+                .darken(0.08)
+                .saturate(0.1)
+                .hex(),
+            },
           },
           danger: {
             backgroundColor: palette.danger,
             borderColor: palette.danger,
             color: '#fff',
+
+            hovered: {
+              backgroundColor: themeColors.primary['primary-10'],
+            },
+            pressed: {
+              backgroundColor: color(palette.danger)
+                .darken(0.08)
+                .saturate(0.1)
+                .hex(),
+            },
           },
         },
         icon: {
@@ -255,7 +301,7 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
       Typography: {
         palette: {
           primary: { color: palette.primary },
-          navigation: { color: palette.navigation },
+          navigation: { color: palette.primary },
 
           text: { color: palette.text },
           subtle: { color: palette.subtle },

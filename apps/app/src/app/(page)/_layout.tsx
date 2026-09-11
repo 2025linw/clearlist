@@ -31,6 +31,7 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
+              gestureEnabled: false,
               animation: 'none',
             }}
           />
