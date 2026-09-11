@@ -57,28 +57,32 @@ jobs:
         run: cargo check --locked -p clearlist-api
 
       - name: Run clippy
+        if: github.event_name != 'pull_request' || github.base_ref != 'main'
         run: cargo clippy -p clearlist-api -- -D warnings
+
+      - name: Run clippy (strict)
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::print_stdout -D clippy::print_stderr
 
       - name: Bootstrap database
         env:
-          PGHOST: localhost
-          PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          PGHOST: localhost
+          PGDATABASE: testdb
         run: |
           psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap_test.sql
 
       - name: Run test
         env:
-          MIGRATION_URL: postgresql://test:test@localhost/testdb
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
   build:
     name: Build
+    runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
-    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
@@ -121,9 +125,9 @@ jobs:
 
   deploy:
     name: CD
+    runs-on: self-hosted
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
-    runs-on: self-hosted
 
     steps:
       - name: Download artifact

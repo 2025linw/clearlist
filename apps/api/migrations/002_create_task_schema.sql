@@ -8,26 +8,27 @@ CREATE TABLE app.tasks (
     has_time bool NOT NULL DEFAULT false,
     deadline date,
 
+    position_key text NOT NULL,
     completed_at timestamp with time zone,
     deleted_at timestamp with time zone,
 
-    created_at timestamp with time zone NOT NULL default CURRENT_TIMESTAMP,
     updated_at timestamp with time zone NOT NULL default CURRENT_TIMESTAMP,
-
+    created_at timestamp with time zone NOT NULL default CURRENT_TIMESTAMP,
     created_by uuid NOT NULL,
 
     FOREIGN KEY (created_by) REFERENCES app.users (id)
 );
 
--- Create index for Task owner ids
+-- Create index for owner ids
 CREATE INDEX idx_tasks_owner
 ON app.tasks (created_by)
 WHERE deleted_at IS NULL;
 
--- Create indexes for deleted Tasks
-CREATE INDEX ON app.tasks (id) WHERE deleted_at IS NOT NULL;
+-- Create index for deleted tasks
+CREATE INDEX idx_deleted_tasks
+ON app.tasks (id)
+WHERE deleted_at IS NOT NULL;
 
--- Permissions
-GRANT SELECT, INSERT, UPDATE, DELETE ON
-app.tasks
-TO cl_api;
+-- Create index for position key
+CREATE INDEX idx_tasks_position
+ON app.tasks(position_key);
