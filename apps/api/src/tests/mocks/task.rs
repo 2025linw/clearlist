@@ -177,7 +177,7 @@ impl TaskRepository for MockTaskRepository {
             id: TaskID::new_random(),
             title: create_model.title,
             notes: create_model.notes,
-            start_dt: create_model.start,
+            start: create_model.start,
             has_time: create_model.has_time,
             deadline: create_model.deadline,
             position_key: create_model.position_key,
@@ -246,9 +246,9 @@ impl TaskRepository for MockTaskRepository {
             changed = true;
         }
         if let Some(start) = update_model.start
-            && start != task.start_dt
+            && start != task.start
         {
-            task.start_dt = start;
+            task.start = start;
             changed = true;
         }
         if let Some(has_time) = update_model.has_time

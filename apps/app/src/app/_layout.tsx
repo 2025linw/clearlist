@@ -1,44 +1,55 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Provider as AuthProvider } from '@/context/auth';
+import { Provider as AuthProvider, useSession } from '@/context/auth';
+import { Provider as ErrorProvider } from '@/context/error';
 import { Provider as ThemeProvider, useThemeContext } from '@/context/theme';
 
 SplashScreen.preventAutoHideAsync();
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.rootContainer}>
+    <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppInner />
-          </AuthProvider>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <ErrorProvider>
+              <AuthProvider>
+                <AppInner />
+              </AuthProvider>
+            </ErrorProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
 
 function AppInner() {
-  const { loaded } = useThemeContext();
+  const { loaded: authLoaded } = useSession();
+  const { loaded: themeLoaded } = useThemeContext();
 
+  // Check when
   useEffect(() => {
-    if (loaded) {
+    if (themeLoaded && authLoaded) {
       SplashScreen.hide();
     }
-  }, [loaded]);
+  }, [themeLoaded, authLoaded]);
 
-  if (!loaded) return null;
+  if (!(themeLoaded && authLoaded)) return null;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }
 
 const styles = StyleSheet.create({
-  rootContainer: {
+  root: {
     flex: 1,
   },
 });

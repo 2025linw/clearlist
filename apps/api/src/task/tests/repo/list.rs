@@ -21,9 +21,8 @@ use crate::{
         },
     },
     types::{
-        field::{DateBound, DateFilter},
         order::SortOrder,
-        pagination::SQLPagination,
+        repo::{DateBound, DateFilter, Pagination},
     },
     user::{repo::PgUserRepository, types::UserID},
 };
@@ -74,7 +73,7 @@ mod success {
         let task = task_repo.list(user_id, None).await.unwrap().remove(0);
         assert_eq!(task.title, "Test Task");
         assert_eq!(task.notes.unwrap(), "Notes for 'Test Task'");
-        assert_eq!(task.start_dt.unwrap(), today);
+        assert_eq!(task.start.unwrap(), today);
         assert!(task.has_time);
         assert_eq!(task.deadline.unwrap(), today.date_naive());
         assert_eq!(task.position_key, generate_a_z(0).to_string());
@@ -103,7 +102,7 @@ mod filter {
                 date_filter: DateFilter::StartRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     tasks.iter().all(|task| {
-                        task.start_dt.unwrap()
+                        task.start.unwrap()
                             > DateTime::parse_from_rfc3339("2026-01-15T12:00:00Z")
                                 .unwrap()
                                 .to_utc()
@@ -115,7 +114,7 @@ mod filter {
                 date_filter: DateFilter::StartRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     tasks.iter().all(|task| {
-                        task.start_dt.unwrap()
+                        task.start.unwrap()
                             >= DateTime::parse_from_rfc3339("2026-01-15T12:00:00Z")
                                 .unwrap()
                                 .to_utc()
@@ -127,7 +126,7 @@ mod filter {
                 date_filter: DateFilter::EndRange(DateBound::Exclusive(date_bound)),
                 check: |tasks| {
                     tasks.iter().all(|task| {
-                        task.start_dt.unwrap()
+                        task.start.unwrap()
                             < DateTime::parse_from_rfc3339("2026-01-15T12:00:00Z")
                                 .unwrap()
                                 .to_utc()
@@ -139,7 +138,7 @@ mod filter {
                 date_filter: DateFilter::EndRange(DateBound::Inclusive(date_bound)),
                 check: |tasks| {
                     tasks.iter().all(|task| {
-                        task.start_dt.unwrap()
+                        task.start.unwrap()
                             <= DateTime::parse_from_rfc3339("2026-01-15T12:00:00Z")
                                 .unwrap()
                                 .to_utc()
@@ -428,7 +427,7 @@ mod sort {
                 check: |tasks| {
                     is_task_ordered(
                         tasks,
-                        |task| nulls_last_key(task.start_dt, SortOrder::Ascending),
+                        |task| nulls_last_key(task.start, SortOrder::Ascending),
                         SortOrder::Ascending,
                     )
                 },
@@ -440,7 +439,7 @@ mod sort {
                 check: |tasks| {
                     is_task_ordered(
                         tasks,
-                        |task| nulls_last_key(task.start_dt, SortOrder::Descending),
+                        |task| nulls_last_key(task.start, SortOrder::Descending),
                         SortOrder::Descending,
                     )
                 },
@@ -530,7 +529,7 @@ mod pagination {
 
         seed_tasks(&task_repo, 25, user_id, None, default_task).await;
 
-        let mut pagination = SQLPagination::new();
+        let mut pagination = Pagination::new();
         pagination.limit(5);
 
         let tasks = task_repo
@@ -558,7 +557,7 @@ mod pagination {
             .unwrap();
 
         for offset in 1..=10 {
-            let mut pagination = SQLPagination::new();
+            let mut pagination = Pagination::new();
             pagination.offset(offset);
 
             let tasks = task_repo

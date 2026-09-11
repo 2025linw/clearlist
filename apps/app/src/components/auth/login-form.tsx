@@ -1,26 +1,28 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useSessionApi } from '@/context/auth';
 import { useTheme } from '@/context/theme';
+import { Theme } from '@/context/theme/types';
 
 import FormField from '@/components/forms/form-field';
 import Button from '@/components/primitives/button';
 import TextInput from '@/components/primitives/text-input';
 import Typography from '@/components/primitives/typography';
-import Box from '@/components/styling/box';
 
 export type State = 'login' | 'register';
 
-type Props = {
+type LoginFormProps = {
   type: State;
 };
 
-export default function LoginForm(props: Props) {
-  const router = useRouter();
+export default function LoginForm(props: LoginFormProps) {
   const theme = useTheme();
-  const { createAccount, login } = useSessionApi();
+  const styles = buildStyles(theme);
+  const router = useRouter();
+
+  const { createAccount, login: loginApi } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState('');
@@ -29,9 +31,37 @@ export default function LoginForm(props: Props) {
   const [password, setPassword] = useState('testpass');
   const [isPasswordFocused, setPasswordFocused] = useState(false);
 
+  const login = useCallback(
+    (info: { email: string; password: string }) => {
+      loginApi(info).then(
+        (success) => {
+          if (success) router.replace('/');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, loginApi, setErrorText],
+  );
+
+  const register = useCallback(
+    (info: { email: string; password: string }) => {
+      createAccount(info).then(
+        (success) => {
+          if (success) router.replace('/');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, createAccount, setErrorText],
+  );
+
   return (
     <View style={styles.container}>
-      <Box style={[styles.loginBox, { backgroundColor: theme.palette.subtle }]}>
+      <View style={styles.loginBox}>
         <View style={styles.inputContainer}>
           <FormField
             label={'Email'}
@@ -67,43 +97,39 @@ export default function LoginForm(props: Props) {
           </FormField>
         </View>
 
-        <View style={styles.loginField}>
-          <Button
-            text={props.type === 'login' ? 'Login' : 'Register'}
-            scheme="primary"
-            disabled={isLoading}
-            onPress={async () => {
-              if (isLoading) return;
-              setLoading(true);
+        <Button
+          scheme="primary"
+          disabled={isLoading}
+          onPress={async () => {
+            if (isLoading) return;
+            setLoading(true);
 
-              try {
-                if (props.type === 'login') {
-                  await login({ email, password });
-                } else {
-                  await createAccount({ email, password });
-                }
-
-                router.replace('/');
-              } catch (e) {
-                setErrorText(`${JSON.stringify(e)}`);
-              } finally {
-                setLoading(false);
+            try {
+              if (props.type === 'login') {
+                login({ email, password });
+              } else {
+                register({ email, password });
               }
-            }}
-          />
-        </View>
-      </Box>
+            } catch (e) {
+              setErrorText(`${JSON.stringify(e)}`);
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          {props.type === 'login' ? 'Login' : 'Register'}
+        </Button>
+      </View>
 
       <Button
-        text={
-          props.type === 'login'
-            ? "Don't have an account? Register"
-            : 'Have an account? Login'
-        }
         onPress={() =>
           router.replace(props.type === 'login' ? '/register' : '/login')
         }
-      />
+      >
+        {props.type === 'login'
+          ? "Don't have an account? Register"
+          : 'Have an account? Login'}
+      </Button>
 
       <View style={styles.msgBox}>
         <Typography palette="danger">{errorText}</Typography>
@@ -112,27 +138,36 @@ export default function LoginForm(props: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    padding: 25,
+function buildStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+      padding: theme.spacings.x4,
 
-    justifyContent: 'space-between',
-  },
-  loginBox: {
-    padding: 25,
-  },
-  inputContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    loginBox: {
+      borderRadius: theme.rounded.lg,
+      padding: theme.spacings.x4,
 
-    gap: 10,
-  },
-  loginField: {
-    padding: 5,
-    gap: 10,
-  },
-  msgBox: {
-    height: '10%',
-  },
-});
+      gap: theme.spacings.x3,
+
+      backgroundColor: theme.palette.subtle,
+    },
+    inputContainer: {
+      padding: theme.spacings.x2,
+
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 10,
+    },
+    loginField: {
+      padding: 5,
+
+      gap: 10,
+    },
+    msgBox: {
+      height: '10%',
+    },
+  });
+}

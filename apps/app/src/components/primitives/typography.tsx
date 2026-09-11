@@ -1,11 +1,11 @@
-import { StyleProp, Text, TextStyle, View } from 'react-native';
+import { StyleProp, Text, TextProps, TextStyle, View } from 'react-native';
 
 import { useTheme } from '@/context/theme';
 import { Theme, TypographyVariants } from '@/context/theme/types';
 
 type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
 
-type TypographyProps = {
+type TypographyProps = TextProps & {
   children: string;
   palette?: TypographyPalettes;
   variant?: TypographyVariants;

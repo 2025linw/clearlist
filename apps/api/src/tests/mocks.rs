@@ -12,7 +12,9 @@ pub use task::MockTaskRepository;
 pub use user::MockUserRepository;
 
 use crate::{
-    Config, GenericAppState, category::service::CategoryService, tag::service::TagService, task::service::TaskService, tests::mocks::category::MockCategoryRepository, user::service::UserService,
+    Config, GenericAppState, category::service::CategoryService, tag::service::TagService,
+    task::service::TaskService, tests::mocks::category::MockCategoryRepository,
+    user::service::UserService,
 };
 
 pub type MockDB<K, V> = Arc<RwLock<HashMap<K, V>>>;

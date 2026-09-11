@@ -82,9 +82,9 @@ jobs:
 
   build:
     name: Build
+    runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
-    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
@@ -123,7 +123,7 @@ jobs:
           mkdir artifact
           cp -rt artifact/ build/auth/
 
-      - name: Archive deployment
+      - name: Archive artifacts
         run: tar -czf clearlist-auth.tar.gz -C artifact/ .
 
       - name: Upload artifact
@@ -135,9 +135,9 @@ jobs:
 
   deploy:
     name: CD
+    runs-on: self-hosted
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
-    runs-on: self-hosted
 
     steps:
       - name: Download artifact

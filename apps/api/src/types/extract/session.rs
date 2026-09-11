@@ -139,9 +139,11 @@ where
         state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         let cookies = CookieJar::from_headers(&parts.headers);
-        let session_id = cookies
-            .get(&state.config.cookie_key)
-            .ok_or(Error::Unauthenticated)?;
+        let session_id = cookies.get(&state.config.cookie_key).ok_or_else(|| {
+            error!("cookie key was missing from config");
+
+            Error::Unauthenticated
+        })?;
 
         let auth_req = reqwest::Client::new()
             .get(
@@ -150,19 +152,25 @@ where
                     .auth_server_url
                     .clone()
                     .join("/api/auth/get-session")
-                    .map_err(|_| {
+                    .map_err(|err| {
+                        error!("failed to create auth server URL path: {err}");
+
                         Error::InternalServerError("unable to reach auth server".to_string())
                     })?,
             )
             .header(COOKIE, session_id.to_string());
 
-        let res = auth_req.send().await.map_err(|_| {
+        let res = auth_req.send().await.map_err(|err| {
+            error!("failed to send request to auth server: {err}");
+
             Error::InternalServerError("unable to get response from auth server".to_string())
         })?;
 
         if res.status() == StatusCode::UNAUTHORIZED {
             return Err(Unauthenticated);
         } else if !res.status().is_success() {
+            error!("request responded with failure");
+
             return Err(Error::InternalServerError(
                 "request on auth server failed".to_string(),
             ));
@@ -170,6 +178,7 @@ where
 
         let user_session = res.json::<IntermediateFormat>().await.map_err(|err| {
             error!("failed to process response from server: {err}");
+
             Error::InternalServerError("unable to process response from auth".to_string())
         })?;
 

@@ -3,6 +3,7 @@ pub mod route;
 
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
+use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
@@ -11,9 +12,10 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
 )]
 #[sqlx(transparent)]
+#[ts(export, export_to = "tag/TagID.ts")]
 pub struct TagID(Uuid);
 
 impl TagID {
@@ -51,8 +53,10 @@ pub struct TagModel {
     pub created_by: UserID,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "tag/Tag.ts")]
 pub struct Tag {
     pub id: TagID,
 

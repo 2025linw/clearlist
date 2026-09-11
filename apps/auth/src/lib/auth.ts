@@ -26,6 +26,8 @@ export const auth = betterAuth({
         const session = ctx.context.newSession;
         if (!session) return;
 
+        const secret = config.webhookSecret;
+
         const body = JSON.stringify({
           id: session.user.id,
           displayName: session.user.name,
@@ -37,7 +39,7 @@ export const auth = betterAuth({
 
         const payload = `${webhookId}.${timestamp}.${body}`;
 
-        const signature = createHmac('sha256', config.webhookSecret)
+        const signature = createHmac('sha256', secret)
           .update(payload)
           .digest('hex');
 

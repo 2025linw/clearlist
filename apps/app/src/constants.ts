@@ -9,5 +9,5 @@ const hostIp = hostUri?.split(':')[0];
 export const API_URL = !IS_DEV
   ? 'https://todo.saphydev.com'
   : Platform.OS === 'web'
-    ? 'https://todo.localhost:8443'
-    : `http://${hostIp}:8443`;
+    ? 'https://todo.localhost:8081'
+    : `http://${hostIp}:8080`;

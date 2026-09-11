@@ -1,10 +1,11 @@
-mod helper;
+pub mod convert;
 
-use chrono::{DateTime, Utc};
+mod deserialize_helpers;
+
 use chrono_tz::Tz;
 use serde::Deserialize;
 
-use crate::types::field::Start;
+use crate::types::start::Start;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
@@ -13,7 +14,7 @@ where
     T: QueryDate,
 {
     /// Existence Filter
-    #[serde(deserialize_with = "helper::deserialize_bool")]
+    #[serde(deserialize_with = "deserialize_helpers::deserialize_bool")]
     Has(bool),
 
     /// Exact Filter, has to match exactly
@@ -23,7 +24,7 @@ where
     BracketInterval(BracketInterval<T>),
 
     /// Filter created by ISO8601 Interval format (<start>/<end>) === [start, end)
-    #[serde(deserialize_with = "helper::deserialize_iso8601daterange")]
+    #[serde(deserialize_with = "deserialize_helpers::deserialize_iso8601daterange")]
     ISO8601Interval(ISO8601Interval<T>),
 }
 
@@ -39,31 +40,41 @@ pub struct BracketInterval<T> {
     pub gte: Option<T>,
 }
 
-impl BracketInterval<Start> {
-    pub fn into_datetime_utc_with_tz(self, tz: Tz) -> BracketInterval<DateTime<Utc>> {
-        BracketInterval {
-            ne: self.ne.map(|start| start.into_datetime_utc_with_tz(tz)),
-            lt: self.lt.map(|start| start.into_datetime_utc_with_tz(tz)),
-            lte: self.lte.map(|start| start.into_datetime_utc_with_tz(tz)),
-            gt: self.gt.map(|start| start.into_datetime_utc_with_tz(tz)),
-            gte: self.gte.map(|start| start.into_datetime_utc_with_tz(tz)),
-        }
-    }
-}
-
 pub type ISO8601Interval<T> = [T; 2];
 
 /// Trait to mark a type as a queryable date with DateQueryFilter
 pub trait QueryDate: std::str::FromStr<Err: std::fmt::Display> + Sized {
+    type Inner;
+
     const FIELD: &str;
+
+    fn to_inner(&self) -> Self::Inner;
+
+    fn to_inner_with_tz(&self, _: Tz) -> Self::Inner {
+        self.to_inner()
+    }
 }
 
 impl QueryDate for chrono::NaiveDate {
+    type Inner = chrono::NaiveDate;
+
     const FIELD: &str = "deadline";
+
+    fn to_inner(&self) -> Self::Inner {
+        *self
+    }
 }
-impl QueryDate for chrono::DateTime<chrono::Utc> {
-    const FIELD: &str = "start";
-}
+
 impl QueryDate for Start {
+    type Inner = chrono::DateTime<chrono::Utc>;
+
     const FIELD: &str = "start";
+
+    fn to_inner(&self) -> Self::Inner {
+        self.into_datetime_utc_with_tz(Tz::UTC)
+    }
+
+    fn to_inner_with_tz(&self, tz: Tz) -> Self::Inner {
+        self.into_datetime_utc_with_tz(tz)
+    }
 }
