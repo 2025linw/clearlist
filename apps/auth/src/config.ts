@@ -8,7 +8,9 @@ export const databaseUrl = process.env['DATABASE_URL']!;
 export const webhookSecret = process.env['WEBHOOK_SECRET']!;
 
 export const trustedOrigins = [
-  'https://todo.localhost:8081',
   'https://todo.saphydev.com',
   'clearlist://',
+  ...(process.env.NODE_ENV === 'development'
+    ? ['https://todo.localhost:8081']
+    : []),
 ];
