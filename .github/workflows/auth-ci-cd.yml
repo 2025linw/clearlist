@@ -148,6 +148,7 @@ jobs:
           SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
           SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
         run: |
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p /tmp/clearlist-auth"
           scp artifact/clearlist-auth.tar.gz \
             "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
 
