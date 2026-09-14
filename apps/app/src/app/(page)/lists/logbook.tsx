@@ -1,5 +1,19 @@
-import LogbookScreen from '@/screens/list/logbook-screen';
+import { Category } from '@/services/types';
 
-export default function LogbookPage() {
-  return <LogbookScreen />;
+import Icon from '@/components/icon';
+import ListScreen from '@/screens/list-screen';
+
+export default function DeadlinePage() {
+  return (
+    <ListScreen
+      listName="Logbook"
+      category={Category.Logged}
+      listIcon={
+        <Icon
+          name="checkmark-circle"
+          color="green"
+        />
+      }
+    />
+  );
 }

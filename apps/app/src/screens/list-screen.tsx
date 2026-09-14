@@ -16,7 +16,7 @@ import Icon, { IconProps } from '@/components/icon';
 import Layout from '@/components/layout';
 import DateSelectModal from '@/components/modals/date-select-modal';
 import Button from '@/components/primitives/button';
-import TaskCard from '@/components/task-card';
+import TaskCard from '@/components/task-list/card';
 
 const nullDraft: task.UpdateRequest = {
   title: null,

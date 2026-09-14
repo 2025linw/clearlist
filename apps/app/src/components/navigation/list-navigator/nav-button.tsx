@@ -24,6 +24,7 @@ export default function NavButton({
 
   return (
     <Button
+      scheme="tertiary"
       icon={
         <Icon
           name={props.iconName || 'list-outline'}
