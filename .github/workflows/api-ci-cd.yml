@@ -141,6 +141,7 @@ jobs:
           SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
           SSH_USER: ${{ secrets.API_DEPLOY_USER }}
         run: |
+          ssh "$SSH_USER@$SSH_HOST" "mkdir -p /tmp/clearlist-api"
           scp artifact/clearlist-api.tar.gz \
             "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
 
