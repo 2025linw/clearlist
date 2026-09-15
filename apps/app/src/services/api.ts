@@ -8,26 +8,28 @@ import { authClient } from '@/lib/auth-client';
 
 import { BaseResponse, TagResponse, TaskResponse } from './types';
 
-function apiFetch(
+export function apiFetch(
   input: string,
-  { headers, ...init }: RequestInit = {},
+  { method, headers, ...init }: RequestInit = {},
 ): Promise<Response> {
   if (Platform.OS === 'web') {
     return fetch(input, {
-      ...init,
+      method,
       credentials: 'include',
       headers,
+      ...init,
     });
   }
 
   const cookie = authClient.getCookie();
   return fetch(input, {
-    ...init,
+    method,
     credentials: 'omit',
     headers: {
       cookie,
       ...headers,
     },
+    ...init,
   });
 }
 

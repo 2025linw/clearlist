@@ -22,7 +22,7 @@ timestamp="$2"
 sha="$3"
 
 
-# Setup ARCHIVE
+# Setup archive
 if [ ! -f "$ARCHIVE" ]; then
 	echo "Unable to find deployed ARCHIVE: $ARCHIVE" >&2
 	exit 1

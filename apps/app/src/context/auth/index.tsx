@@ -8,6 +8,10 @@ import {
   useState,
 } from 'react';
 
+import { API_URL } from '@/constants';
+
+import { apiFetch } from '@/services/api';
+
 import { authClient } from '@/lib/auth-client';
 
 import { ApiContextType, AuthContextType } from './types';
@@ -75,6 +79,8 @@ export function Provider({ children }: PropsWithChildren) {
         throw error;
       }
 
+      await apiFetch(API_URL + '/api/me');
+
       setUser({
         currentSession: data.token!,
         hasSession: true,
@@ -94,6 +100,8 @@ export function Provider({ children }: PropsWithChildren) {
 
       throw error;
     }
+
+    await apiFetch(API_URL + '/api/me');
 
     setUser({
       currentSession: data.token!,

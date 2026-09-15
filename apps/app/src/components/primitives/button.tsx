@@ -9,9 +9,11 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/context/theme';
-import { ButtonSchemes, Theme } from '@/context/theme/types';
+import { Theme } from '@/context/theme/types';
 
 import Typography from '@/components/primitives/typography';
+
+type ButtonSchemes = keyof Omit<Theme['components']['Button'], 'disabled'>;
 
 export type ButtonProps = PressableProps & {
   text: string;
@@ -56,10 +58,13 @@ type ButtonStyle = {
   typography: TextStyle;
   leftIcon: ViewStyle;
 };
+
 function buildStyle(
   theme: Theme,
   scheme: ButtonSchemes | 'disabled',
 ): ButtonStyle {
+  const componentStyle = theme.components.Button;
+
   return StyleSheet.create({
     container: {
       flexDirection: 'row',
@@ -68,11 +73,11 @@ function buildStyle(
       paddingVertical: theme.spacings.lg,
       paddingHorizontal: theme.spacings.xl,
 
-      backgroundColor: theme.components.Button[scheme].backgroundColor,
-      borderColor: theme.components.Button[scheme].borderColor,
+      backgroundColor: componentStyle[scheme].backgroundColor,
+      borderColor: componentStyle[scheme].borderColor,
     },
     typography: {
-      color: theme.components.Button[scheme].color,
+      color: componentStyle[scheme].color,
     },
     leftIcon: {
       marginRight: theme.spacings.base,

@@ -7,4 +7,4 @@
  *
  * This will serialize and deserialize to and from a 'YYYY-MM-DD` date string or ISO8601 datetime string
  */
-export type Start = string | string;
+export type Start = { "type": "On", "value": string } | { "type": "At", "value": string };

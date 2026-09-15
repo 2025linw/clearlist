@@ -229,15 +229,12 @@ export function buildTheme(variant: ColorTheme, darkMode: ThemeMode) {
         },
         variants: typographyVariants,
       },
+      TextInput: {
+        input: { color: palette.text },
+        placeholder: { color: palette.subtle },
+      },
     },
   } as const;
 }
 
 export type Theme = ReturnType<typeof buildTheme>;
-
-export type ButtonSchemes = keyof Omit<
-  Theme['components']['Button'],
-  'disabled'
->;
-export type TypographyPalettes =
-  keyof Theme['components']['Typography']['palette'];

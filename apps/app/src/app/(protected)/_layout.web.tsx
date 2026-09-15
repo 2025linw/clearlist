@@ -7,7 +7,6 @@ import Sidebar from '@/components/sidebar';
 
 export default function RootLayout() {
   const { hasSession } = useSession();
-
   if (!hasSession) {
     return <Redirect href="/login" />;
   }
