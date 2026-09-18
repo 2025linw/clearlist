@@ -14,61 +14,68 @@ impl<'a, T: 'a> DateFilter<T>
 where
     T: Copy + sqlx::Type<sqlx::Postgres> + sqlx::Encode<'a, sqlx::Postgres>,
 {
-    pub fn add_to_builder(&self, builder: &mut QueryBuilder<'a, sqlx::Postgres>) {
+    pub fn add_to_builder(
+        &self,
+        builder: &mut QueryBuilder<'a, sqlx::Postgres>,
+        field_name: &'static str,
+    ) {
         match self {
             DateFilter::Exists(exists) => {
                 if *exists {
-                    builder.push("start IS NOT NULL");
+                    builder.push(format!("{field_name} IS NOT NULL"));
                 } else {
-                    builder.push("start IS NULL");
+                    builder.push(format!("{field_name} IS NULL"));
                 }
             }
             DateFilter::On(dt) => {
-                builder.push("start = ");
+                builder.push(format!("{field_name} = "));
                 builder.push_bind(*dt);
             }
             DateFilter::NotOn(dt) => {
-                builder.push("start <> ");
+                builder.push(format!("{field_name} <> "));
                 builder.push_bind(*dt);
             }
             DateFilter::StartRange(date_bound) => match date_bound {
                 DateBound::Exclusive(dt) => {
-                    builder.push("start > ");
+                    builder.push(format!("{field_name} > "));
                     builder.push_bind(*dt);
                 }
                 DateBound::Inclusive(dt) => {
-                    builder.push("start >= ");
+                    builder.push(format!("{field_name} >= "));
                     builder.push_bind(*dt);
                 }
             },
             DateFilter::EndRange(date_bound) => match date_bound {
                 DateBound::Exclusive(dt) => {
-                    builder.push("start < ");
+                    builder.push(format!("{field_name} < "));
                     builder.push_bind(*dt);
                 }
                 DateBound::Inclusive(dt) => {
-                    builder.push("start <= ");
+                    builder.push(format!("{field_name} <= "));
                     builder.push_bind(*dt);
                 }
             },
             DateFilter::Range(start_bound, end_bound) => {
                 match start_bound {
                     DateBound::Exclusive(dt) => {
-                        builder.push("start > ");
+                        builder.push(format!("{field_name} > "));
                         builder.push_bind(*dt);
                     }
                     DateBound::Inclusive(dt) => {
-                        builder.push("start >= ");
+                        builder.push(format!("{field_name} >= "));
                         builder.push_bind(*dt);
                     }
                 }
+
+                builder.push(" AND ");
+
                 match end_bound {
                     DateBound::Exclusive(dt) => {
-                        builder.push("start < ");
+                        builder.push(format!("{field_name} < "));
                         builder.push_bind(*dt);
                     }
                     DateBound::Inclusive(dt) => {
-                        builder.push("start <= ");
+                        builder.push(format!("{field_name} <= "));
                         builder.push_bind(*dt);
                     }
                 }

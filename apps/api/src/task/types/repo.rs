@@ -24,11 +24,11 @@ impl QueryOpts {
         // Filter
         if let Some(filter) = self.filter.start {
             builder.push(" AND ");
-            filter.add_to_builder(builder);
+            filter.add_to_builder(builder, "start");
         }
         if let Some(filter) = self.filter.deadline {
             builder.push(" AND ");
-            filter.add_to_builder(builder);
+            filter.add_to_builder(builder, "deadline");
         }
         if let Some(completed) = self.filter.completed {
             builder.push(" AND ");
