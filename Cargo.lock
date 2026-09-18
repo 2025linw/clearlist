@@ -417,6 +417,7 @@ dependencies = [
  "dotenvy",
  "nix",
  "tokio",
+ "tower",
 ]
 
 [[package]]

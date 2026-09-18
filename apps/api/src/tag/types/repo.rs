@@ -1,11 +1,11 @@
 use sqlx::QueryBuilder;
 
-use crate::{category::types::CategoryID, types::pagination::SQLPagination};
+use crate::{category::types::CategoryID, types::repo::Pagination};
 
 #[derive(Debug, Default, Clone)]
 pub struct QueryOpts {
     pub filter: Filter,
-    pub pagination: SQLPagination,
+    pub pagination: Pagination,
 }
 
 impl QueryOpts {

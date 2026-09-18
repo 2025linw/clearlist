@@ -19,7 +19,7 @@ export default {
     '^@clearlist/(.*)',
     '^@/(types|constants)',
     '^@/(services|context|hooks)',
-    '^@/(components|screens)',
+    '^(@/components|@/screens/(.*))',
     '^@/(.*)',
     '^[../]',
     '^[./]',

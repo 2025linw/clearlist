@@ -10,45 +10,41 @@ import {
 
 import { API_URL } from '@/constants';
 
-import { apiFetch } from '@/services/api';
+import { useNotificationContext } from '@/context/error';
 
+import { apiFetch } from '@/lib/api-client';
 import { authClient } from '@/lib/auth-client';
 
-import { ApiContextType, AuthContextType } from './types';
+import { ApiContextType, AuthContextType, LoginInfo } from './types';
 
 const AuthContext = createContext<AuthContextType>({
+  loaded: false,
   currentSession: undefined,
   hasSession: false,
 });
 const ApiContext = createContext<ApiContextType>({
-  createAccount: async () => {},
-  login: async () => {},
+  createAccount: async (_: LoginInfo) => false,
+  login: async (_: LoginInfo) => false,
   logout: async () => {},
 });
 
 export function Provider({ children }: PropsWithChildren) {
+  const { showError } = useNotificationContext();
+
   const [user, setUser] = useState<AuthContextType>({
+    loaded: false,
     currentSession: undefined,
-    hasSession: undefined,
+    hasSession: false,
   });
 
   useEffect(() => {
     const getSession = async () => {
       const { data, error } = await authClient.getSession();
       if (error) {
-        console.error(error);
+        showError('Unable to connect to authentication service');
 
         setUser({
-          currentSession: undefined,
-          hasSession: false,
-        });
-
-        throw error;
-      }
-
-      if (!data) {
-        // if there isn't an existing session or session expired
-        setUser({
+          loaded: true,
           currentSession: undefined,
           hasSession: false,
         });
@@ -56,14 +52,33 @@ export function Provider({ children }: PropsWithChildren) {
         return;
       }
 
+      if (!data) {
+        showError('Your session has expired');
+
+        setUser({
+          loaded: true,
+          currentSession: undefined,
+          hasSession: false,
+        });
+
+        return;
+      }
+
+      try {
+        await apiFetch(API_URL + '/api/me');
+      } catch {
+        showError('Unable to get user information');
+      }
+
       setUser({
+        loaded: true,
         currentSession: data.session.token,
         hasSession: true,
       });
     };
 
     getSession();
-  }, []);
+  }, [showError]);
 
   const createAccount = useCallback<ApiContextType['createAccount']>(
     async (params) => {
@@ -72,57 +87,68 @@ export function Provider({ children }: PropsWithChildren) {
         password: params.password,
         name: params.email.split('@')[0],
       });
-
       if (error) {
-        console.error(error);
+        showError('Unable to create new account');
 
-        throw error;
+        return false;
       }
 
-      await apiFetch(API_URL + '/api/me');
+      const res = await apiFetch(API_URL + '/api/me');
+      if (res.status !== 200) {
+        throw false;
+      }
 
       setUser({
+        loaded: true,
         currentSession: data.token!,
         hasSession: true,
       });
+      return true;
     },
-    [],
+    [showError],
   );
 
-  const login = useCallback<ApiContextType['login']>(async (params) => {
-    const { data, error } = await authClient.signIn.email({
-      email: params.email,
-      password: params.password,
-    });
+  const login = useCallback<ApiContextType['login']>(
+    async (params) => {
+      const { data, error } = await authClient.signIn.email({
+        email: params.email,
+        password: params.password,
+      });
+      if (error) {
+        showError('Unable to login to account');
 
-    if (error) {
-      console.error(error);
+        return false;
+      }
 
-      throw error;
-    }
+      const res = await apiFetch(API_URL + '/api/me');
+      if (res.status !== 200) {
+        throw false;
+      }
 
-    await apiFetch(API_URL + '/api/me');
-
-    setUser({
-      currentSession: data.token!,
-      hasSession: true,
-    });
-  }, []);
+      setUser({
+        loaded: true,
+        currentSession: data.token!,
+        hasSession: true,
+      });
+      return true;
+    },
+    [showError],
+  );
 
   const logout = useCallback<ApiContextType['logout']>(async () => {
     const { error } = await authClient.signOut();
-
     if (error) {
-      console.error(error);
+      showError('Unable to logout of account');
 
-      throw error;
+      return;
     }
 
     setUser({
+      loaded: true,
       currentSession: undefined,
       hasSession: false,
     });
-  }, []);
+  }, [showError]);
 
   const api = useMemo(
     () => ({

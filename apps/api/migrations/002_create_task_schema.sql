@@ -4,7 +4,7 @@ CREATE TABLE app.tasks (
 
     title varchar(255) NOT NULL,
     notes text,
-    start_dt timestamp with time zone,
+    start timestamp with time zone,
     has_time bool NOT NULL DEFAULT false,
     deadline date,
 

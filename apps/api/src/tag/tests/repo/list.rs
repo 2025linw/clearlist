@@ -16,7 +16,7 @@ use crate::{
         create_test_category, create_test_user, generate_a_z,
         tag::{default_tag, seed_tags, seed_tags_with_category, tag_with_category},
     },
-    types::pagination::SQLPagination,
+    types::repo::Pagination,
     user::{repo::PgUserRepository, types::UserID},
 };
 
@@ -182,7 +182,7 @@ mod pagination {
 
         seed_tags(&tag_repo, 25, user_id, default_tag).await;
 
-        let mut pagination = SQLPagination::new();
+        let mut pagination = Pagination::new();
         pagination.limit(5);
 
         let tags = tag_repo
@@ -210,7 +210,7 @@ mod pagination {
             .unwrap();
 
         for offset in 1..=10 {
-            let mut pagination = SQLPagination::new();
+            let mut pagination = Pagination::new();
             pagination.offset(offset);
 
             let tags = tag_repo

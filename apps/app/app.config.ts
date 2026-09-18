@@ -11,7 +11,7 @@ export default (): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: 'com.saphy.clearlist',
+    bundleIdentifier: 'com.saphydev.clearlist',
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -21,7 +21,7 @@ export default (): ExpoConfig => ({
     },
   },
   android: {
-    package: 'com.saphy.clearlist',
+    package: 'com.saphydev.clearlist',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -35,6 +35,7 @@ export default (): ExpoConfig => ({
     favicon: './assets/images/favicon.png',
   },
   plugins: [
+    'expo-status-bar',
     'expo-router',
     [
       'expo-splash-screen',
@@ -48,7 +49,6 @@ export default (): ExpoConfig => ({
         },
       },
     ],
-    'expo-secure-store',
     [
       'expo-font',
       {
@@ -96,6 +96,7 @@ export default (): ExpoConfig => ({
       },
     ],
     '@react-native-vector-icons/ionicons',
+    'expo-secure-store',
     'expo-image',
     'expo-web-browser',
   ],

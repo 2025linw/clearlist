@@ -63,7 +63,7 @@ mod success {
         } = create_model;
         assert_eq!(task.title, title);
         assert_eq!(task.notes, notes);
-        assert_eq!(task.start_dt, start);
+        assert_eq!(task.start, start);
         assert_eq!(task.has_time, has_time);
         assert_eq!(task.deadline, deadline);
         assert_eq!(task.position_key, position_key);

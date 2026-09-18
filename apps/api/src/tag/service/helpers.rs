@@ -1,6 +1,6 @@
 use crate::{
     error::service::{
-        NO_EMPTY_STRING, INVALID_SINGLE_LINE, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
+        INVALID_SINGLE_LINE, NO_EMPTY_STRING, NO_ZERO_LIMIT, NO_ZERO_PAGE, TOO_LONG,
         ValidationError,
     },
     utils::service::is_valid_single_line_string,

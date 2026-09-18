@@ -116,7 +116,10 @@ mod name {
                 category_name, expected,
                 "case: {name} - expected: {expected} (found: {category_name})",
             );
-            category_service.delete(category.id, user_context).await.unwrap();
+            category_service
+                .delete(category.id, user_context)
+                .await
+                .unwrap();
         }
     }
 

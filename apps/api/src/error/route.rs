@@ -1,6 +1,6 @@
 use axum::{http::StatusCode, response::IntoResponse};
 
-use crate::types::response::Response;
+use crate::types::route::Response;
 
 use super::{
     Resource,

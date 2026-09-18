@@ -8,11 +8,11 @@ pub enum SortOrder {
     Descending,
 }
 
-impl std::fmt::Display for SortOrder {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl SortOrder {
+    pub fn as_sql(&self) -> &str {
         match self {
-            Self::Ascending => write!(f, "ASC"),
-            Self::Descending => write!(f, "DESC"),
+            SortOrder::Ascending => "ASC",
+            SortOrder::Descending => "DESC",
         }
     }
 }

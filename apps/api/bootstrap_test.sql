@@ -7,7 +7,7 @@ CREATE SCHEMA IF NOT EXISTS app;
 
 -- Migration user (change password from 'cl_migrate_api' in prod)
 CREATE ROLE cl_migrate_api WITH LOGIN PASSWORD 'cl_migrate_api' NOSUPERUSER NOCREATEDB NOCREATEROLE;
-ALTER ROLE cl_migrate_api SET search_path TO public;
+ALTER ROLE cl_migrate_api SET search_path TO app;
 
 GRANT CONNECT ON DATABASE "testdb" TO cl_migrate_api; -- update 'testdb' in prod
 

@@ -82,7 +82,7 @@ mod success {
         } = update_model;
         assert_eq!(task.title, title.unwrap());
         assert_eq!(task.notes, notes.unwrap());
-        assert_eq!(task.start_dt, start.unwrap());
+        assert_eq!(task.start, start.unwrap());
         assert_eq!(task.has_time, has_time.unwrap());
         assert_eq!(task.deadline, deadline.unwrap());
         assert_eq!(task.completed_at.is_some(), completed.unwrap());
@@ -252,7 +252,7 @@ mod input {
         let res = task_repo.update(task.id, user_id, update_model).await;
         if let Ok(task) = res {
             assert!(task.notes.is_none());
-            assert!(task.start_dt.is_none());
+            assert!(task.start.is_none());
             assert!(task.deadline.is_none());
         }
     }

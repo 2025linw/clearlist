@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 
-import { ColorTheme, ThemeMode } from '@/context/theme/types';
+import { ColorVariantName, ThemeMode } from '@/context/theme/types';
 
 import * as Storage from '@/lib/storage';
 
 type StorageSchema = {
   systemTheme: 'system' | ThemeMode;
-  colorTheme: ColorTheme;
+  colorTheme: ColorVariantName;
 };
 const storageDefaults: StorageSchema = {
   systemTheme: 'system',
@@ -25,8 +25,6 @@ export default function usePersisted<K extends keyof StorageSchema>(key: K) {
 
           setValue(parsed);
         } catch {
-          console.error('Invalid format found in storage');
-
           setValue(storageDefaults[key]);
         }
       }
@@ -39,7 +37,7 @@ export default function usePersisted<K extends keyof StorageSchema>(key: K) {
     setValue(val);
 
     Storage.setItem(key, JSON.stringify(val)).catch((e) => {
-      console.error('Failed to persist', e);
+      throw Error(e);
     });
   }
 

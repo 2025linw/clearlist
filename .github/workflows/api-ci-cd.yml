@@ -111,7 +111,7 @@ jobs:
       - name: Create artifact folder
         run: |
           mkdir artifact
-          cp -t artifact/ target/release/clearlist-api
+          cp -rt artifact/ target/release/clearlist-api
 
       - name: Archive artifacts
         run: tar -czf clearlist-api.tar.gz -C artifact/ .

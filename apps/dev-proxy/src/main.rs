@@ -1,8 +1,15 @@
+mod config;
+
 use std::{env, net::SocketAddr};
 
-use axum::Router;
+use axum::{Router, body::Body, http::{Request, header}};
 use axum_reverse_proxy::ReverseProxy;
 use axum_server::tls_rustls::RustlsConfig;
+
+use config::Config;
+use tower::ServiceBuilder;
+
+use crate::config::{AppConfig, WebConfig};
 
 #[tokio::main]
 async fn main() {
@@ -25,44 +32,58 @@ async fn main() {
         }
     }
 
-    let srv_port = env::var("PROXY_PORT")
-        .expect("PROXY_PORT should be set in environment variables!")
-        .parse::<u16>()
-        .expect("PROXY_PORT should be a valid u16");
-
-    let api_port = env::var("API_PORT")
-        .expect("API_PORT should be set in environment variables!")
-        .parse::<u16>()
-        .expect("API_PORT should be a valid u16");
-    let auth_port = env::var("AUTH_PORT")
-        .expect("AUTH_PORT should be set in environment variables!")
-        .parse::<u16>()
-        .expect("AUTH_PORT should be a valid u16");
-
-    // Run proxy
-    let api_proxy = ReverseProxy::new("/", &format!("localhost:{api_port}"));
-    let auth_proxy = ReverseProxy::new("/", &format!("localhost:{auth_port}"));
-    let app_proxy = ReverseProxy::new("/", "localhost:5002");
-
-    let config = RustlsConfig::from_pem_file("certs/todo.local.pem", "certs/todo.local-key.pem")
-        .await
-        .expect("certs should exist and be loaded");
-
+    let port: u16;
     let app = if web {
+        let WebConfig {
+            srv_port,
+            api_port,
+            auth_port,
+            web_port,
+        } = Config::new_web_from_env().web_config();
+
+        port = srv_port;
+
+        let api_proxy = ReverseProxy::new("/", &format!("localhost:{api_port}"));
+        let auth_proxy = ReverseProxy::new("/", &format!("localhost:{auth_port}"));
+
+        let app_proxy = ReverseProxy::new("/", &format!("localhost:{web_port}"));
+        let app_proxy = ServiceBuilder::new()
+            .map_request(|mut request: Request<Body>| {
+                request.headers_mut().remove(header::ORIGIN);
+                request
+            })
+            .service(app_proxy);
+
         Router::new()
             .route_service("/api/{*path}", api_proxy)
             .route_service("/api/auth/{*path}", auth_proxy)
             .fallback_service(app_proxy)
     } else {
+        let AppConfig {
+            srv_port,
+            api_port,
+            auth_port,
+        } = Config::new_app_from_env().app_config();
+
+        port = srv_port;
+
+        let api_proxy = ReverseProxy::new("/", &format!("localhost:{api_port}"));
+        let auth_proxy = ReverseProxy::new("/", &format!("localhost:{auth_port}"));
+
         Router::new()
             .route_service("/api/{*path}", api_proxy)
             .route_service("/api/auth/{*path}", auth_proxy)
     };
 
     if web {
-        let addr: SocketAddr = format!("0.0.0.0:{srv_port}").parse().unwrap();
+        let addr: SocketAddr = format!("0.0.0.0:{port}").parse().unwrap();
+        let config =
+            RustlsConfig::from_pem_file("certs/todo.localhost.pem", "certs/todo.localhost.key")
+                .await
+                .expect("certs should exist and be loaded");
 
-        println!("Starting proxy server for web development on port {srv_port}");
+        println!("Starting proxy server for web development on port {port}");
+        println!("Connect on https://todo.localhost:8081");
         axum_server::bind_rustls(addr, config)
             .serve(app.into_make_service())
             .await
@@ -72,11 +93,11 @@ async fn main() {
                 std::process::exit(1);
             });
     } else {
-        let listener = tokio::net::TcpListener::bind(&format!("0.0.0.0:{srv_port}"))
+        let listener = tokio::net::TcpListener::bind(&format!("0.0.0.0:{port}"))
             .await
             .unwrap();
 
-        println!("Starting proxy server for native app development on port {srv_port}");
+        println!("Starting proxy server for native app development on port {port}");
         axum::serve(listener, app.into_make_service())
             .await
             .unwrap_or_else(|err| {

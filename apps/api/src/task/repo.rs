@@ -93,7 +93,7 @@ impl PgTaskRepository {
         create_model: CreateModel,
     ) -> Result<TaskModel> {
         let id = query_scalar(
-            "INSERT INTO app.tasks (id, title, notes, start_dt, has_time, deadline, position_key, created_by)
+            "INSERT INTO app.tasks (id, title, notes, start, has_time, deadline, position_key, created_by)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING id",
         )

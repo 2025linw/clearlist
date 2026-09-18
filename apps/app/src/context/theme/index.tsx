@@ -1,20 +1,25 @@
-import { ReactNode, createContext, useContext } from 'react';
+import { PropsWithChildren, createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
 import usePersisted from '@/hooks/use-persisted';
 
-import { ColorTheme, ThemeContextType, ThemeMode, buildTheme } from './types';
+import {
+  ColorVariantName,
+  ThemeContextType,
+  ThemeMode,
+  buildTheme,
+} from './types';
 
 const ThemeContext = createContext<ThemeContextType>(
   {} as unknown as ThemeContextType,
 ); // TODO: fix this jank?
 
-type Props = {
-  children: ReactNode;
-  onThemeVariantChange?: (_v: ColorTheme) => void; // TODO: is this needed?
-};
+type ProviderProps = PropsWithChildren<{
+  theme?: ThemeMode;
+  onThemeVariantChange?: (_v: ColorVariantName) => void; // TODO: is this needed?
+}>;
 
-export function Provider({ children, ...props }: Props) {
+export function Provider({ children, ...props }: ProviderProps) {
   const {
     value: themeMode,
     setValue: _setThemeMode,
@@ -35,7 +40,7 @@ export function Provider({ children, ...props }: Props) {
         : 'light'
       : themeMode;
 
-  const theme = buildTheme(colorTheme, darkMode);
+  const theme = buildTheme(colorTheme, props.theme ?? darkMode);
 
   function setThemeMode(v: 'system' | ThemeMode) {
     _setThemeMode(v);
@@ -44,7 +49,7 @@ export function Provider({ children, ...props }: Props) {
     _setThemeMode('system');
   }
 
-  function setColorTheme(v: ColorTheme) {
+  function setColorTheme(v: ColorVariantName) {
     _setColorTheme(v);
     props.onThemeVariantChange?.(v);
   }
@@ -88,18 +93,6 @@ export function useTheme() {
   return theme;
 }
 
-export function useThemeMode() {
-  const { themeMode, setThemeMode } = useThemeContext();
-
-  return [themeMode, setThemeMode] as const;
-}
-
-export function useResetThemeMode() {
-  const { resetThemeMode } = useThemeContext();
-
-  return resetThemeMode;
-}
-
 export function useColorTheme() {
   const { colorTheme, setColorTheme } = useThemeContext();
 
@@ -110,4 +103,16 @@ export function useResetColorTheme() {
   const { resetColorTheme } = useThemeContext();
 
   return resetColorTheme;
+}
+
+export function useThemeMode() {
+  const { themeMode, setThemeMode } = useThemeContext();
+
+  return [themeMode, setThemeMode] as const;
+}
+
+export function useResetThemeMode() {
+  const { resetThemeMode } = useThemeContext();
+
+  return resetThemeMode;
 }

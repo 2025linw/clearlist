@@ -3,12 +3,14 @@ pub mod route;
 
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::{FromRow, Type};
+use ts_rs::TS;
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
 )]
 #[sqlx(transparent)]
+#[ts(export, export_to = "category/CategoryID.ts")]
 pub struct CategoryID(Uuid);
 
 impl CategoryID {
@@ -37,8 +39,10 @@ pub struct CategoryModel {
     pub position_key: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "category/Category.ts")]
 pub struct Category {
     pub id: CategoryID,
     pub name: String,

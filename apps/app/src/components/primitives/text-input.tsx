@@ -4,52 +4,43 @@ import {
   StyleProp,
   StyleSheet,
   TextStyle,
-  View,
-  ViewStyle,
 } from 'react-native';
 
 import { useTheme } from '@/context/theme';
 import { Theme } from '@/context/theme/types';
 
 type TextInputProps = RNTextInputProps & {
+  value?: string;
+  onChangeText?: (value: string) => void;
   style?: StyleProp<TextStyle>;
-  containerStyle?: StyleProp<ViewStyle>;
 };
 
-export default function TextInput({ style, ...props }: TextInputProps) {
+export default function TextInput({
+  value,
+  onChangeText,
+  style,
+  ...props
+}: TextInputProps) {
   const theme = useTheme();
 
-  const styles = buildStyle(theme);
+  const styles = buildStyles(theme);
+  const variantStyle = theme.components.Typography.variants.text;
 
   return (
-    <View style={styles.container}>
-      <RNTextInput
-        placeholderTextColor={styles.placeholder.color}
-        style={[styles.typography, style]}
-        {...props}
-      />
-    </View>
+    <RNTextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={styles.placeholder.color}
+      style={[styles.typography, variantStyle, style]}
+      {...props}
+    />
   );
 }
 
-type TextInputStyle = {
-  container: ViewStyle;
-  typography: TextStyle;
-  placeholder: TextStyle;
-};
-
-function buildStyle(theme: Theme): TextInputStyle {
+function buildStyles(theme: Theme) {
   const componentStyle = theme.components.TextInput;
 
   return StyleSheet.create({
-    container: {
-      borderRadius: theme.rounded.base,
-      paddingVertical: theme.spacings.base,
-      paddingHorizontal: theme.spacings.lg,
-
-      backgroundColor: theme.palette.surface,
-      borderColor: theme.palette.border,
-    },
     typography: {
       ...componentStyle.input,
     },
