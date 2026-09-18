@@ -509,7 +509,7 @@ mod sort {
             } = case;
 
             let opts = QueryOpts {
-                sort: Sort::new(Some(sort_by), sort_order),
+                sort: Sort::new(sort_by, sort_order),
                 ..Default::default()
             };
 

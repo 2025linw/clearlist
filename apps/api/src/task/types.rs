@@ -39,6 +39,7 @@ impl std::fmt::Display for TaskID {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SortBy {
     ID,
     Created,

@@ -59,10 +59,14 @@ impl<R: TaskRepository> TaskService<R> {
             filter.tags(tags);
         }
 
-        let sort = Sort::new(
-            sort_by.or(Some(SortBy::Updated)),
-            sort_order.unwrap_or(SortOrder::Descending),
-        );
+        let sort = match (sort_by, sort_order) {
+            (Some(sort_by), Some(sort_order)) => Sort::new(sort_by, sort_order),
+            (Some(sort_by), None) => Sort::new(sort_by, SortOrder::Ascending),
+            (None, order) => match order {
+                Some(sort_order) => Sort::new(SortBy::Updated, sort_order),
+                None => Sort::new(SortBy::Updated, SortOrder::Descending),
+            },
+        };
 
         let page = page.unwrap_or(1);
         let limit = limit.unwrap_or(25).min(150);

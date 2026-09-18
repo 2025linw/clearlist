@@ -133,15 +133,9 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub fn new(by: Option<SortBy>, order: SortOrder) -> Self {
-        if let Some(by) = by {
-            Self {
-                sort: Some((by, order)),
-            }
-        } else {
-            Self {
-                sort: Some((SortBy::ID, order)),
-            }
+    pub fn new(by: SortBy, order: SortOrder) -> Self {
+        Self {
+            sort: Some((by, order)),
         }
     }
 }
