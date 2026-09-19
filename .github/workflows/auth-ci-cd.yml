@@ -139,7 +139,20 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
 
+    env:
+      SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
+      SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
+      SSH_OPTIONS: "-o BatchMode=yes -o ConnectTimeout=10  -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
+
     steps:
+      - name: Verify SSH connectivity
+        run: |
+          echo "Checking server is reachable..."
+
+          ssh $SSH_OPTIONS "$SSH_USER@$SSH_HOST" true
+
+          echo "Server is reachable."
+
       - name: Download artifact
         uses: actions/download-artifact@v8
         with:
@@ -147,22 +160,21 @@ jobs:
           path: artifact/
 
       - name: Upload archive
-        env:
-          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
-          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p /tmp/clearlist-auth"
-          scp artifact/clearlist-auth.tar.gz \
+          ssh $SSH_OPTIONS \
+            "$SSH_USER@$SSH_HOST" \
+            "mkdir -p /tmp/clearlist-auth"
+          scp $SSH_OPTIONS \
+            artifact/clearlist-auth.tar.gz \
             "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
 
       - name: Deploy server
         env:
-          SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
-          SSH_USER: ${{ secrets.AUTH_DEPLOY_USER }}
           DEPLOY_SCRIPT: ${{ secrets.AUTH_DEPLOY_SCRIPT }}
           VERSION: ${{ needs.build.outputs.version }}
           TIMESTAMP: ${{ needs.build.outputs.timestamp }}
           SHA: ${{ needs.build.outputs.sha }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST" \
+          ssh $SSH_OPTIONS \
+            "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
