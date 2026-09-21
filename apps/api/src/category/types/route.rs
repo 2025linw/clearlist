@@ -1,18 +1,15 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "category/CreateRequest.ts")]
 pub struct CreateRequest {
     pub name: String,
 
     pub position_key: String,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, TS)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "category/UpdateRequest.ts")]
 pub struct UpdateRequest {
     pub name: Option<String>,
 

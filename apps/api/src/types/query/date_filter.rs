@@ -30,6 +30,7 @@ where
 
 #[derive(Debug, Default, Clone, Deserialize)]
 pub struct BracketInterval<T> {
+    // TODO: add eq?
     #[serde(alias = "<>")]
     pub ne: Option<T>,
     #[serde(alias = "<")]

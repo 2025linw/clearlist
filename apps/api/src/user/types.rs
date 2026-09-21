@@ -4,16 +4,14 @@ pub mod route;
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type, postgres::types::PgInterval};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::types::field::CompletedTaskRetention;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
 )]
 #[sqlx(transparent)]
-#[ts(export, export_to = "user/UserID.ts")]
 pub struct UserID(pub Uuid);
 
 impl UserID {
@@ -47,17 +45,17 @@ pub struct UserModel {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(Deserialize))]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "user/User.ts")]
 pub struct User {
     pub id: UserID,
 
     pub display_name: String,
 
-    #[ts(type = "string | null")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub preferred_timezone: Option<Tz>,
-    #[ts(type = "string | null")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_task_retention: Option<CompletedTaskRetention>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,

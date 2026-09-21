@@ -4,7 +4,6 @@ pub mod route;
 use chrono_tz::Tz;
 use serde::{Deserialize, Serialize};
 use sqlx::{FromRow, Type};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
@@ -14,10 +13,9 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type, TS,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
 )]
 #[sqlx(transparent)]
-#[ts(export, export_to = "task/TaskID.ts")]
 pub struct TaskID(Uuid);
 
 impl TaskID {
@@ -47,6 +45,8 @@ pub enum SortBy {
     Start,
     Deadline,
     Position,
+    Completed,
+    Deleted,
 }
 
 impl std::fmt::Display for SortBy {
@@ -58,6 +58,8 @@ impl std::fmt::Display for SortBy {
             SortBy::Start => write!(f, "start"),
             SortBy::Deadline => write!(f, "deadline"),
             SortBy::Position => write!(f, "position_key"),
+            SortBy::Completed => write!(f, "completed_at"),
+            SortBy::Deleted => write!(f, "deleted_at"),
         }
     }
 }
@@ -81,22 +83,25 @@ pub struct TaskModel {
     pub created_by: UserID,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, TS)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(test, derive(Deserialize))]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "task/Task.ts")]
 pub struct Task {
     pub id: TaskID,
 
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
-    #[ts(type = "string | null")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start: Option<Start>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline: Option<chrono::NaiveDate>,
     pub tags: Vec<Tag>,
 
     pub position_key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,

@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use ts_rs::TS;
 
 use crate::{
     tag::types::TagID,
@@ -29,13 +28,11 @@ pub struct URLQueryOpts {
     pub tags: Option<Vec<TagID>>,
 }
 
-#[derive(Debug, Clone, Deserialize, TS)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "task/CreateRequest.ts")]
 pub struct CreateRequest {
     pub title: String,
     pub notes: Option<String>,
-    #[ts(type = "string | null")]
     pub start: Option<Start>,
     pub deadline: Option<chrono::NaiveDate>,
     pub tags: Option<Vec<TagID>>,
@@ -43,16 +40,12 @@ pub struct CreateRequest {
     pub position_key: String,
 }
 
-#[derive(Debug, Default, Clone, Deserialize, TS)]
+#[derive(Debug, Default, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
-#[ts(export, export_to = "task/UpdateRequest.ts")]
 pub struct UpdateRequest {
     pub title: Option<String>,
-    #[ts(type = "string | null")]
     pub notes: Option<Option<String>>,
-    #[ts(type = "string | null")]
     pub start: Option<Option<Start>>,
-    #[ts(type = "string | null")]
     pub deadline: Option<Option<chrono::NaiveDate>>,
     pub tags: Option<Vec<TagID>>,
 
