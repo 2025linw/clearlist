@@ -7,12 +7,13 @@ import {
   ViewStyle,
 } from 'react-native';
 
-import TextInput from '@/components/primitives/text-input';
-import Typography from '@/components/primitives/typography';
+import TextInput from '@components/primitives/text-input';
+import Typography from '@components/primitives/typography';
 
 type EditableTypographyProps = {
   value?: string;
-  onSave?: (value: string) => void;
+  onChangeText?: (value?: string) => void;
+  onSave?: (value?: string) => void;
   placeholder?: string;
   disabled?: boolean;
   multiline?: boolean;
@@ -22,6 +23,7 @@ type EditableTypographyProps = {
 
 export default function EditableTypography({
   value,
+  onChangeText,
   onSave,
   placeholder,
   ...props
@@ -33,7 +35,11 @@ export default function EditableTypography({
     return (
       <TextInput
         value={text}
-        onChangeText={setText}
+        onChangeText={(text: string) => {
+          setText(text);
+
+          onChangeText?.(text);
+        }}
         placeholder={placeholder}
         onBlur={() => {
           setEditing(false);

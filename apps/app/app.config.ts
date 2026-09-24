@@ -99,6 +99,7 @@ export default (): ExpoConfig => ({
     'expo-secure-store',
     'expo-image',
     'expo-web-browser',
+    'expo-localization',
   ],
   experiments: {
     typedRoutes: true,

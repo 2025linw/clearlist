@@ -1,8 +1,8 @@
 import { Redirect } from 'expo-router';
 
-import { useSession } from '@/context/auth';
+import { useSession } from '@contexts/auth';
 
-import AuthScreen from '@/screens/auth/auth-screen';
+import AuthScreen from '@screens/auth/auth-screen';
 
 export default function RegistrationPage() {
   const { hasSession } = useSession();

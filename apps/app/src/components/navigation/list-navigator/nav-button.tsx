@@ -1,9 +1,9 @@
 import { Href, useRouter } from 'expo-router';
 
-import { useBreakpoints } from '@/context/theme/useBreakpoints';
+import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
-import Icon, { IconColor, IconName } from '@/components/icon';
-import Button from '@/components/primitives/button';
+import Button from '@components/primitives/button';
+import Icon, { IconColor, IconName } from '@components/primitives/icon';
 
 type NavButtonProps = {
   children: string;
@@ -31,6 +31,7 @@ export default function NavButton({
           color={props.iconColor || 'gray'}
         />
       }
+      // onPress={() => (gtTablet ? router.replace(href) : router.push(href))}
       onPress={() => (gtTablet ? router.replace(href) : router.push(href))}
     >
       {expanded ? children : undefined}

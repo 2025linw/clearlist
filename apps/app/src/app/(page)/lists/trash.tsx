@@ -1,13 +1,11 @@
-import { Category } from '@/services/types';
-
-import Icon from '@/components/icon';
-import ListScreen from '@/screens/list-screen';
+import Icon from '@components/primitives/icon';
+import ListScreen from '@screens/list-screen';
 
 export default function TrashPage() {
   return (
     <ListScreen
       listName="Trash"
-      category={Category.Trash}
+      category={'trash'}
       listIcon={
         <Icon
           name="trash-bin"

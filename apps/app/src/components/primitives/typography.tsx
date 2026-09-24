@@ -1,7 +1,7 @@
 import { StyleProp, Text, TextProps, TextStyle, View } from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { Theme, TypographyVariants } from '@/context/theme/types';
+import { useTheme } from '@contexts/theme';
+import { Theme, TypographyVariants } from '@contexts/theme/types';
 
 type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
 

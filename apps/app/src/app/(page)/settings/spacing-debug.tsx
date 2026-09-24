@@ -1,12 +1,11 @@
 import { StyleSheet, Text } from 'react-native';
 
-import { spacings } from '@/context/theme/spacing';
+import { spacings } from '@contexts/theme/spacing';
 
-import Layout from '@/components/layout';
+import Layout from '@components/layout';
 
 export default function SpacingDebug() {
   return (
-    /* eslint-disable react-native/no-inline-styles */
     <Layout>
       <Text
         numberOfLines={1}
@@ -69,7 +68,6 @@ export default function SpacingDebug() {
         x16
       </Text>
     </Layout>
-    /* eslint-enable react-native/no-inline-styles */
   );
 }
 

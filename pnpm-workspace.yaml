@@ -11,6 +11,7 @@ injectWorkspacePackages: true
 allowBuilds:
   msgpackr-extract: true
   unrs-resolver: true
+trustLockfile: true
 minimumReleaseAgeExclude:
   - "@expo/cli@57.0.19"
   - "@expo/inline-modules@0.1.7"
@@ -37,3 +38,10 @@ minimumReleaseAgeExclude:
   - expo-secure-store@57.0.2
   - expo-system-ui@57.0.3
   - expo@57.0.17
+  - '@expo/cli@57.0.26'
+  - expo-asset@57.0.18
+  - expo-constants@57.0.19
+  - expo@57.0.24
+  - '@expo/metro-runtime@57.0.16'
+  - '@expo/ui@57.0.19'
+  - expo-router@57.0.22

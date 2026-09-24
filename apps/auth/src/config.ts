@@ -11,6 +11,6 @@ export const trustedOrigins = [
   'https://todo.saphydev.com',
   'clearlist://',
   ...(process.env.NODE_ENV === 'development'
-    ? ['https://todo.localhost:8081']
+    ? ['https://will-laptop-kubuntu.tailae0279.ts.net:8080']
     : []),
 ];

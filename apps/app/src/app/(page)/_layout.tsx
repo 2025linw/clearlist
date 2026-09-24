@@ -2,10 +2,10 @@ import { Redirect, Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { useSession } from '@/context/auth';
-import { useBreakpoints } from '@/context/theme/useBreakpoints';
+import { useSession } from '@contexts/auth';
+import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
-import ListNavigator from '@/components/navigation/list-navigator';
+import ListNavigator from '@components/navigation/list-navigator';
 
 export default function RootLayout() {
   const { hasSession } = useSession();
@@ -20,14 +20,14 @@ export default function RootLayout() {
 
   if (gtTablet) {
     return (
-      <View style={style.container}>
+      <View style={styles.container}>
         <ListNavigator
           mode="tablet"
           width={sidebarWidth}
           onWidthChange={setSidebarWidth}
         />
 
-        <View style={style.content}>
+        <View style={styles.content}>
           <Stack
             screenOptions={{
               headerShown: false,
@@ -49,7 +49,7 @@ export default function RootLayout() {
   }
 }
 
-const style = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     height: '100%',
 

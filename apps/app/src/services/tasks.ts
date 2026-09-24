@@ -1,57 +1,66 @@
 import { task } from '@clearlist/types';
 
+import { apiFetch } from '@lib/api';
+import { buildTaskQuery } from '@services/helpers';
+
 import { API_URL } from '@/constants';
 
-import { buildTaskQuery } from '@/services/helpers';
+import { TaskQuery } from './types';
 
-import { apiFetch } from '@/lib/api-client';
+export async function create(
+  create: task.CreateRequest,
+): Promise<task.Response> {
+  const body = task.CreateRequestSchema.encode(create);
 
-import { TaskQuery, TaskQueryResponse, TaskResponse } from './types';
-
-export async function create(task: task.CreateRequest): Promise<TaskResponse> {
   const res = await apiFetch(API_URL + '/api/tasks', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(task),
+    body: JSON.stringify(body),
   });
 
-  return res.json();
+  const json: unknown = await res.json();
+  return task.ResponseSchema.parse(json);
 }
 
-export async function get(id: string): Promise<TaskResponse> {
+export async function get(id: string) {
   const res = await apiFetch(API_URL + `/api/tasks/${id}`);
 
-  return res.json();
+  const json: unknown = await res.json();
+  return task.ResponseSchema.parse(json);
 }
 
-export async function list(query: TaskQuery = {}): Promise<TaskQueryResponse> {
+export async function list(query: TaskQuery = {}): Promise<task.QueryResponse> {
   const qs = buildTaskQuery(query);
 
   const res = await apiFetch(
     qs ? API_URL + `/api/tasks?${qs}` : API_URL + '/api/tasks',
   );
 
-  return res.json();
+  const json: unknown = await res.json();
+  return task.QueryResponseSchema.parse(json);
 }
 
 export async function update({
   id,
-  update: task,
+  update,
 }: {
   id: string;
-  update: task.UpdateRequest;
-}): Promise<TaskResponse> {
+  update: Partial<task.UpdateRequest>;
+}): Promise<task.Response> {
+  const body = task.UpdateRequestSchema.encode(update);
+
   const res = await apiFetch(API_URL + `/api/tasks/${id}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(task),
+    body: JSON.stringify(body),
   });
 
-  return res.json();
+  const json: unknown = await res.json();
+  return task.ResponseSchema.parse(json);
 }
 
 export async function trash(id: string) {

@@ -1,19 +1,18 @@
-import { useRef, useState } from 'react';
-import {
-  GestureResponderEvent,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  View,
-  ViewStyle,
-} from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { scheduleOnRN } from 'react-native-worklets';
 
-import { useTheme } from '@/context/theme';
-import { Theme } from '@/context/theme/types';
-import { useBreakpoints } from '@/context/theme/useBreakpoints';
+import { useTheme } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
+import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
-import HorizontalDivider from '@/components/primitives/horizontal-divider';
+import HorizontalDivider from '@components/primitives/horizontal-divider';
 
 import Button from './nav-button';
 
@@ -22,9 +21,10 @@ type ListNavigatorProps = {
   mode?: ListNavigatorMode;
   width?: number;
   onWidthChange?: (width: number) => void;
-  style?: StyleProp<ViewStyle>;
 };
 
+const HANDLE_WIDTH = 25;
+const HANDLE_HEIGHT = 80;
 const HANDLE_DISTANCE = 10;
 
 const MIN_WIDTH = 180;
@@ -35,71 +35,64 @@ export default function ListNavigator({
   mode = 'mobile',
   width = 240,
   onWidthChange,
-  ...props
 }: ListNavigatorProps) {
-  const theme = useTheme();
-
   const { top, bottom } = useSafeAreaInsets();
   const { gtTablet } = useBreakpoints();
 
   const [expanded, setExpanded] = useState(true);
-  const resizing = useRef(false);
-  const startX = useRef(0);
-  const startWidth = useRef(width);
+  const sidebarWidth = useSharedValue(width);
+  const startWidth = useSharedValue(width);
 
-  const styles = buildStyles(mode, expanded, width, theme);
+  const theme = useTheme();
+  const styles = buildStyles(theme);
 
-  function handleTap() {
-    setExpanded(!expanded);
-  }
+  const tapGesture = Gesture.Tap()
+    .runOnJS(true)
+    .onEnd((_e, success) => {
+      if (success) setExpanded((expanded) => !expanded);
+    });
+  const panGesture = Gesture.Pan()
+    .enabled(expanded)
+    .onBegin(() => {
+      startWidth.value = sidebarWidth.value;
+    })
+    .onUpdate((e) => {
+      sidebarWidth.value = Math.min(
+        MAX_WIDTH,
+        Math.max(MIN_WIDTH, startWidth.value + e.translationX),
+      );
+    })
+    .onEnd(() => {
+      if (onWidthChange) {
+        scheduleOnRN(onWidthChange, sidebarWidth.value);
+      }
+    });
+  const composedGestures = Gesture.Exclusive(panGesture, tapGesture);
 
-  function handlePointerDown() {
-    resizing.current = true;
-    startX.current = width;
-    startWidth.current = width;
-  }
-
-  function handlePointerMove(e: GestureResponderEvent) {
-    if (!resizing.current) {
-      return;
-    }
-
-    const delta = e.nativeEvent.pageX - startX.current;
-
-    const nextWidth = Math.min(
-      MAX_WIDTH,
-      Math.max(MIN_WIDTH, startWidth.current + delta),
-    );
-
-    if (onWidthChange) onWidthChange(nextWidth);
-  }
-
-  function handlePointerUp() {
-    resizing.current = false;
-  }
+  const sidebarAnimatedStyle = useAnimatedStyle(() => ({
+    width: sidebarWidth.value,
+  }));
 
   if (gtTablet) {
     return (
-      <View
-        style={[styles.wrapper, { paddingTop: top, paddingBottom: bottom }]}
+      <Animated.View
+        style={[
+          styles.container,
+          { paddingTop: top, paddingBottom: bottom },
+          expanded ? sidebarAnimatedStyle : styles.collapsed,
+        ]}
       >
-        <View style={[styles.container, props.style]}>
-          <List expanded={expanded} />
-        </View>
+        <List expanded={expanded} />
 
-        <Pressable
-          style={styles.resizeHandle}
-          onPress={handleTap}
-          onPressIn={handlePointerDown}
-          onPressMove={handlePointerMove}
-          onPressOut={handlePointerUp}
-        />
-      </View>
+        <GestureDetector gesture={composedGestures}>
+          <Animated.View style={styles.resizeHandle} />
+        </GestureDetector>
+      </Animated.View>
     );
   } else {
     return (
       <View
-        style={[styles.wrapper, { paddingTop: top, paddingBottom: bottom }]}
+        style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}
       >
         <List />
       </View>
@@ -107,14 +100,9 @@ export default function ListNavigator({
   }
 }
 
-function buildStyles(
-  mode: ListNavigatorMode,
-  expanded: boolean,
-  width: number,
-  theme: Theme,
-) {
+function buildStyles(theme: Theme) {
   return StyleSheet.create({
-    wrapper: {
+    container: {
       position: 'relative',
       zIndex: 1,
 
@@ -122,30 +110,22 @@ function buildStyles(
 
       backgroundColor: theme.palette.background,
     },
-    container: {
-      flex: 1,
-
-      width: expanded ? width : null,
-
-      flexDirection: 'column',
-      justifyContent: 'space-between',
-    },
-    selected: {
-      backgroundColor: 'red',
+    collapsed: {
+      maxWidth: COLLAPSED_WIDTH,
     },
     resizeHandle: {
       position: 'absolute',
       top: '50%',
-      left: (expanded ? width : COLLAPSED_WIDTH) + HANDLE_DISTANCE,
+      left: '100%',
+      marginLeft: HANDLE_DISTANCE,
+
+      width: HANDLE_WIDTH,
+      height: HANDLE_HEIGHT,
+
+      transform: [{ translateY: -(HANDLE_HEIGHT / 2) }],
       zIndex: 10,
 
-      width: 25,
-      height: 80,
-      transform: [{ translateY: -40 }],
-
       borderRadius: theme.rounded.full,
-      borderWidth: 0,
-
       backgroundColor: 'gray',
     },
   });

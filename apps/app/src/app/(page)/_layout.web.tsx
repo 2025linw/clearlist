@@ -2,9 +2,9 @@ import { Redirect, Slot } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { useSession } from '@/context/auth';
+import { useSession } from '@contexts/auth';
 
-import ListNavigator from '@/components/navigation/list-navigator';
+import ListNavigator from '@components/navigation/list-navigator';
 
 export default function WebRootLayout() {
   const { hasSession } = useSession();
@@ -16,21 +16,21 @@ export default function WebRootLayout() {
   }
 
   return (
-    <View style={style.container}>
+    <View style={styles.container}>
       <ListNavigator
         mode="desktop"
         width={sidebarWidth}
         onWidthChange={setSidebarWidth}
       />
 
-      <View style={style.content}>
+      <View style={styles.content}>
         <Slot />
       </View>
     </View>
   );
 }
 
-const style = StyleSheet.create({
+const styles = StyleSheet.create({
   container: {
     height: '100%',
 

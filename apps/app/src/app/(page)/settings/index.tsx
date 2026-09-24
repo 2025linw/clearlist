@@ -1,15 +1,15 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
-import { useSession, useSessionApi } from '@/context/auth';
-import { useColorTheme, useThemeMode } from '@/context/theme';
+import { useSession, useSessionApi } from '@contexts/auth';
+import { useColorTheme, useThemeMode } from '@contexts/theme';
 
-import FormField from '@/components/forms/form-field';
-import Icon from '@/components/icon';
-import Layout from '@/components/layout';
-import Button from '@/components/primitives/button';
-import HorizontalDivider from '@/components/primitives/horizontal-divider';
-import Typography from '@/components/primitives/typography';
+import FormField from '@components/forms/form-field';
+import Layout from '@components/layout';
+import Button from '@components/primitives/button';
+import HorizontalDivider from '@components/primitives/horizontal-divider';
+import Icon from '@components/primitives/icon';
+import Typography from '@components/primitives/typography';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -38,12 +38,7 @@ export default function SettingsPage() {
       <FormField label="Mode">
         <View style={styles.buttonRow}>
           <Button
-            icon={
-              <Icon
-                name="laptop-outline"
-                color="white"
-              />
-            }
+            icon={<Icon name="laptop-outline" />}
             scheme={themeMode === 'system' ? 'primary' : 'secondary'}
             style={styles.button}
             onPress={() => setThemeMode('system')}
@@ -87,14 +82,17 @@ export default function SettingsPage() {
           >
             Debug (Notification)
           </Button>
+          <Button onPress={() => router.navigate('/settings/date-debug')}>
+            Debug (Time)
+          </Button>
         </>
       )}
 
       <HorizontalDivider />
 
-      <Button onPress={() => logout().finally(() => router.navigate('/login'))}>
-        Logout
-      </Button>
+      <HorizontalDivider />
+
+      <Button onPress={logout}>Logout</Button>
     </Layout>
   ) : (
     <Layout>

@@ -1,3 +1,3 @@
-export type * as task from './generated/task';
-export type * as tag from './generated/tag';
-export type * as user from './generated/user'
+export * as task from './task';
+export * as tag from './tag';
+export * as user from './user';

@@ -1,22 +1,43 @@
 import { ReactElement, cloneElement } from 'react';
-import { Pressable, PressableProps, StyleSheet, View } from 'react-native';
+import {
+  ColorValue,
+  Pressable,
+  PressableProps,
+  StyleProp,
+  StyleSheet,
+  TextStyle,
+  View,
+} from 'react-native';
 
-import { useTheme, useThemeMode } from '@/context/theme';
-import { Theme } from '@/context/theme/types';
+import { useTheme, useThemeMode } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
 
-import Icon, { IconProps } from '@/components/icon';
-import Typography from '@/components/primitives/typography';
+import Icon, { IconProps } from '@components/primitives/icon';
+import Typography from '@components/primitives/typography';
 
 type ButtonSchemes = keyof Omit<
   Theme['components']['Button']['scheme'],
   'disabled'
 >;
 
-export type ButtonProps = PressableProps & {
-  icon?: ReactElement<IconProps>;
-  children?: string;
-  scheme?: ButtonSchemes;
-};
+type ButtonContent =
+  | {
+      children: string;
+      icon?: ReactElement<IconProps>;
+    }
+  | {
+      children?: never;
+      icon: ReactElement<IconProps>;
+    };
+
+export type ButtonProps = Omit<PressableProps, 'children'> &
+  ButtonContent & {
+    scheme?: ButtonSchemes;
+    hasBorder?: boolean;
+    rounded?: boolean;
+  } & {
+    typographyStyle?: StyleProp<TextStyle>;
+  };
 
 export default function Button({
   scheme = 'primary',
@@ -26,15 +47,24 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme, disabled ? 'disabled' : scheme);
+  const styles = buildStyles(
+    theme,
+    disabled ? 'disabled' : scheme,
+    props.hasBorder,
+    {
+      size: props.icon?.props.size,
+      color: props.icon?.props.color,
+    },
+  );
 
-  let icon = undefined;
-  if (props.icon) {
-    icon = cloneElement(props.icon, {
-      size: props.icon.props.size ?? styles.icon.fontSize,
-      color: props.icon.props.color ?? styles.typography.color,
-    });
-  }
+  const icon = props.icon
+    ? cloneElement(props.icon, {
+        size: styles.icon.fontSize,
+        color: styles.icon.color,
+      })
+    : undefined;
+
+  const iconOnly = !!icon && !children;
 
   return (
     <Pressable
@@ -42,6 +72,8 @@ export default function Button({
       disabled={disabled}
       style={(state) => [
         styles.container,
+        props.rounded && styles.rounded,
+        iconOnly && styles.iconOnly,
         state.hovered && styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
@@ -52,7 +84,7 @@ export default function Button({
       {children && (
         <Typography
           variant="button"
-          style={styles.typography}
+          style={[styles.typography, props.typographyStyle]}
           selectable={false}
         >
           {children}
@@ -62,36 +94,66 @@ export default function Button({
   );
 }
 
-function buildStyles(theme: Theme, scheme: ButtonSchemes | 'disabled') {
+const BORDER_WIDTH = 1;
+function buildStyles(
+  theme: Theme,
+  scheme: ButtonSchemes | 'disabled',
+  hasBorder: boolean | undefined,
+  iconStyle: {
+    size?: number;
+    color?: ColorValue;
+  },
+) {
   const componentStyle = theme.components.Button;
+  const componentScheme = componentStyle.scheme[scheme];
 
-  const schemeStyle = componentStyle.scheme[scheme];
+  const useBorder =
+    hasBorder !== undefined ? hasBorder : scheme === 'secondary' ? true : false;
+
+  const padding = theme.spacings.x2;
 
   return StyleSheet.create({
     container: {
-      padding: theme.spacings.x2,
+      padding,
 
       flexDirection: 'row',
       alignItems: 'center',
       gap: theme.spacings.x2,
 
-      backgroundColor: schemeStyle.backgroundColor,
-      borderWidth: 1,
+      backgroundColor: componentScheme.backgroundColor,
       borderRadius: theme.rounded.base,
-      borderColor: schemeStyle.borderColor,
+      ...(useBorder
+        ? {
+            borderWidth: BORDER_WIDTH,
+            borderColor: componentScheme.borderColor,
+          }
+        : {}),
+    },
+    rounded: {
+      borderRadius: theme.rounded.full,
+    },
+    iconOnly: {
+      width:
+        (iconStyle.size ?? componentStyle.icon.size) +
+        2 * padding +
+        (useBorder ? 2 * BORDER_WIDTH : 0),
+      aspectRatio: 1,
+
+      justifyContent: 'center',
     },
     hoveredStyle: {
-      backgroundColor: schemeStyle.hovered.backgroundColor,
+      backgroundColor: componentScheme.hovered.backgroundColor,
     },
     pressedStyle: {
-      backgroundColor: schemeStyle.pressed.backgroundColor,
+      backgroundColor: componentScheme.pressed.backgroundColor,
     },
     typography: {
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
     },
     icon: {
-      fontSize: componentStyle.icon.size,
+      fontSize: iconStyle.size ?? componentStyle.icon.size,
+      color: iconStyle.color ?? componentStyle.scheme[scheme].color,
     },
   });
 }

@@ -6,8 +6,8 @@ import {
   TextStyle,
 } from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { Theme } from '@/context/theme/types';
+import { useTheme } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
 
 type TextInputProps = RNTextInputProps & {
   value?: string;
@@ -28,11 +28,11 @@ export default function TextInput({
 
   return (
     <RNTextInput
+      {...props}
       value={value}
       onChangeText={onChangeText}
       placeholderTextColor={styles.placeholder.color}
       style={[styles.typography, variantStyle, style]}
-      {...props}
     />
   );
 }

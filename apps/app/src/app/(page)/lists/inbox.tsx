@@ -1,13 +1,11 @@
-import { Category } from '@/services/types';
-
-import Icon from '@/components/icon';
-import ListScreen from '@/screens/list-screen';
+import Icon from '@components/primitives/icon';
+import ListScreen from '@screens/list-screen';
 
 export default function InboxPage() {
   return (
     <ListScreen
       listName="Inbox"
-      category={Category.Inbox}
+      category={'inbox'}
       listIcon={
         <Icon
           name="file-tray"

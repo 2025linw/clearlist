@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { useTheme } from '@/context/theme';
+import { useTheme } from '@contexts/theme';
 
 export default function HorizontalDivider() {
   const theme = useTheme();

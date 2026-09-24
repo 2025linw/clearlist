@@ -1,21 +1,21 @@
-import { tag, task } from '@clearlist/types';
+import dayjs from '@lib/datetime';
 
 export enum Cmp {
-  Equal = '=',
-  NotEqual = '!=',
-  Less = '<',
+  Equal = 'eq',
+  NotEqual = 'ne',
+  Less = 'lt',
   LessEq = 'lte',
-  Greater = '>',
+  Greater = 'gt',
   GreaterEq = 'gte',
 }
 
 export type DateQuery =
   | { type: 'ex'; state: boolean }
-  | { type: 'eq'; date: Date }
+  | { type: 'eq'; date: dayjs.Dayjs }
   | {
       type: 'cmp';
-      date: Date;
       cmp: Cmp;
+      date: dayjs.Dayjs;
     };
 
 export type TaskQuery = {
@@ -24,40 +24,19 @@ export type TaskQuery = {
 
   completed?: boolean;
   deleted?: boolean;
+
+  sortBy?: string;
+  sortOrder?: string;
 };
 
-export enum Category {
-  Inbox,
-  Today,
-  Upcoming,
-  Deadline,
-  Logged,
-  Trash,
-}
+const listCategories = [
+  'inbox',
+  'today',
+  'upcoming',
+  'deadline',
+  'logged',
+  'trash',
+] as const;
 
-type Response = {
-  message?: string;
-  data?: unknown;
-};
-
-export type TaskResponse = Response & {
-  data: task.Task;
-};
-
-export type TaskQueryResponse = Response & {
-  data: {
-    count: number;
-    tasks: task.Task[];
-  };
-};
-
-export type TagResponse = Response & {
-  data: tag.Tag;
-};
-
-export type TagQueryResponse = Response & {
-  data: {
-    count: number;
-    tags: tag.Tag[];
-  };
-};
+export type Category = (typeof listCategories)[number];
+// 'inbox' | 'today' | 'upcoming' | 'deadline' | 'logged' | 'trash';

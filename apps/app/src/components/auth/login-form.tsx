@@ -2,14 +2,14 @@ import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { useSessionApi } from '@/context/auth';
-import { useTheme } from '@/context/theme';
-import { Theme } from '@/context/theme/types';
+import { useSessionApi } from '@contexts/auth';
+import { useTheme } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
 
-import FormField from '@/components/forms/form-field';
-import Button from '@/components/primitives/button';
-import TextInput from '@/components/primitives/text-input';
-import Typography from '@/components/primitives/typography';
+import FormField from '@components/forms/form-field';
+import Button from '@components/primitives/button';
+import TextInput from '@components/primitives/text-input';
+import Typography from '@components/primitives/typography';
 
 export type State = 'login' | 'register';
 
@@ -35,7 +35,7 @@ export default function LoginForm(props: LoginFormProps) {
     (info: { email: string; password: string }) => {
       loginApi(info).then(
         (success) => {
-          if (success) router.replace('/');
+          if (success) router.replace('/(page)');
         },
         (err) => {
           setErrorText(err);
@@ -49,7 +49,7 @@ export default function LoginForm(props: LoginFormProps) {
     (info: { email: string; password: string }) => {
       createAccount(info).then(
         (success) => {
-          if (success) router.replace('/');
+          if (success) router.replace('/(page)');
         },
         (err) => {
           setErrorText(err);
