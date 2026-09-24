@@ -2,13 +2,20 @@ import 'dotenv/config';
 
 import { betterAuth } from 'better-auth';
 import { getMigrations } from 'better-auth/db/migration';
+import { PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 
 const migrationAuth = betterAuth({
-  database: new Pool({
-    connectionString: process.env.MIGRATION_URL,
-    max: 10,
-  }),
+  database: {
+    dialect: new PostgresDialect({
+      pool: new Pool({
+        connectionString: process.env.MIGRATION_URL,
+        max: 10,
+      }),
+    }),
+    type: 'postgres',
+    schemaName: 'auth',
+  },
 });
 
 const { toBeCreated, toBeAdded, runMigrations } = await getMigrations(

@@ -14,7 +14,7 @@ use crate::{
     },
     types::{
         extract::{Json, Path, Query, UserContext},
-        response::Response,
+        route::Response,
     },
 };
 
@@ -27,7 +27,7 @@ where
     Ta: TagRepository,
     C: CategoryRepository,
 {
-    let tags = tag_service.list(user_context, Some(query_opts)).await?;
+    let tags = tag_service.list(user_context, query_opts).await?;
 
     Ok(Response::new(StatusCode::OK).data(json!({
         "count": tags.len(),

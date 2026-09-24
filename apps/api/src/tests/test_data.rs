@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 
-use crate::types::{field::Start, query::BracketInterval};
+use crate::types::{query::BracketInterval, start::Start};
 
 pub const NORMALIZATION_TEST_INPUT: [(&str, &str, &str); 4] = [
     ("contains spaces", "  Test Text     ", "Test Text"),

@@ -14,7 +14,7 @@ use crate::{
     },
     types::{
         extract::{Json, Path, Query, UserContext},
-        response::Response,
+        route::Response,
     },
 };
 
@@ -26,7 +26,7 @@ pub async fn list_handler<T>(
 where
     T: TaskRepository,
 {
-    let tasks = task_service.list(user_context, Some(query_opts)).await?;
+    let tasks = task_service.list(user_context, query_opts).await?;
 
     Ok(Response::new(StatusCode::OK).data(json!({
         "count": tasks.len(),

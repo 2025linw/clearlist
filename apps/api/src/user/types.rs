@@ -45,13 +45,17 @@ pub struct UserModel {
     pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: UserID,
 
     pub display_name: String,
 
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub preferred_timezone: Option<Tz>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_task_retention: Option<CompletedTaskRetention>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,

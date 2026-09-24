@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type
 )]
 #[sqlx(transparent)]
 pub struct TagID(Uuid);
@@ -53,10 +53,12 @@ pub struct TagModel {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
 pub struct Tag {
     pub id: TagID,
 
     pub label: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub category: Option<Category>,
 
     pub position_key: String,

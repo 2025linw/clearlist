@@ -1,5 +1,3 @@
-export * from './generated/Task';
-export * from './generated/TaskDTO';
-
-export * from './generated/Tag';
-export * from './generated/TagDTO';
+export * as task from './task';
+export * as tag from './tag';
+export * as user from './user';

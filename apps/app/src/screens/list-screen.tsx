@@ -1,65 +1,94 @@
-import { FlatList, StyleSheet, View } from 'react-native';
+import { ReactElement } from 'react';
 
-import { Task } from '@clearlist/types';
+import { task } from '@clearlist/types';
 
-import AddTaskModal from '@/components/add-task-modal';
-import Layout from '@/components/layout';
-import Typography from '@/components/primitives/typography';
-import TaskItem from '@/components/task-item';
+import * as TaskHook from '@hooks/use-tasks';
+import dayjs from '@lib/datetime';
+import { getCategoryQueryMap } from '@services/helpers';
+import { Category } from '@services/types';
 
-export type Props = {
-  listName: string;
+import Layout from '@components/layout';
+import { IconProps } from '@components/primitives/icon';
+import TaskList from '@components/task-list';
 
-  tasks?: Task[] | null;
-
-  emptyText?: string;
+const requiredTask: task.CreateRequest = {
+  title: '',
+  tags: [],
+  positionKey: 'm',
 };
 
-export default function ListScreen(props: Props) {
-  return (
-    <>
-      <Layout
-        headerText={props.listName}
-        showBackButton
-      >
-        <FlatList
-          data={props.tasks}
-          keyExtractor={(task) => task.id}
-          renderItem={({ item }) => <TaskItem task={item} />}
-          contentContainerStyle={styles.listContainer}
-          ListEmptyComponent={
-            <View style={styles.emptyComponent}>
-              <Typography>
-                {props.tasks === null
-                  ? 'Loading tasks...'
-                  : props.emptyText || 'No tasks'}
-              </Typography>
-            </View>
-          }
-        />
-      </Layout>
+type CreatableCategory = Extract<
+  Category,
+  'inbox' | 'today' | 'upcoming' | 'deadline'
+>;
 
-      <AddTaskModal
-        style={styles.modalContainer}
-        buttonStyle={styles.modalButton}
+type ListScreenProps = {
+  listName: string;
+  listIcon?: ReactElement<IconProps>;
+  category: Category;
+};
+
+export default function ListScreen(props: ListScreenProps) {
+  // const { showError } = useNotificationContext();
+
+  const searchQuery = getCategoryQueryMap()[props.category];
+
+  const queryTasks = TaskHook.useTasks(searchQuery);
+
+  const createTask = TaskHook.useCreateTask();
+  const updateTask = TaskHook.useUpdateTask();
+  const completeTask = TaskHook.useCompleteTask();
+  const reopenTask = TaskHook.useReopenTask();
+  const trashTask = TaskHook.useTrashTask();
+  const restoreTask = TaskHook.useRestoreTask();
+
+  const defaultTask: Record<CreatableCategory, () => task.CreateRequest> = {
+    inbox: () => requiredTask,
+    today: () => ({
+      ...requiredTask,
+      start: {
+        type: 'datetime',
+        value: dayjs().startOf('day'),
+      },
+    }),
+    upcoming: () => ({
+      ...requiredTask,
+      start: {
+        type: 'datetime',
+        value: dayjs().add(1, 'day').startOf('day'),
+      },
+    }),
+    deadline: () => ({
+      ...requiredTask,
+      deadline: dayjs().startOf('day'),
+    }),
+  };
+
+  return (
+    <Layout
+      headerText={props.listName}
+      headerIcon={props.listIcon}
+      showBackButton
+      safeAreaEdges={['top']}
+    >
+      <TaskList
+        data={queryTasks.data?.data.tasks}
+
+        onAddTask={(onCreateCallback) => {
+          const category = props.category;
+          if (category !== 'logged' && category !== 'trash')
+            createTask.mutate(defaultTask[category](), {
+              onSuccess: ({ data }) => {
+                onCreateCallback(data.id);
+              },
+            });
+        }}
+        onTaskUpdate={(id, update) => updateTask.mutate({ id, update })}
+        onTaskComplete={(id) => completeTask.mutate(id)}
+        onTaskReopen={(id) => reopenTask.mutate(id)}
+        onTaskTrash={(id) => trashTask.mutate(id)}
+        onTaskRestore={(id) => restoreTask.mutate(id)}
       />
-    </>
+    </Layout>
   );
 }
-
-const styles = StyleSheet.create({
-  listContainer: {
-    flexGrow: 1,
-  },
-  emptyComponent: {
-    flex: 1,
-
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalContainer: {},
-  modalButton: {
-    bottom: 25,
-    right: 25,
-  },
-});

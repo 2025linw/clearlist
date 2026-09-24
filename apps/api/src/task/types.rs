@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use crate::{
     tag::types::{Tag, TagModel},
-    types::field::Start,
+    types::start::Start,
     user::types::UserID,
 };
 
@@ -37,6 +37,7 @@ impl std::fmt::Display for TaskID {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum SortBy {
     ID,
     Created,
@@ -44,6 +45,8 @@ pub enum SortBy {
     Start,
     Deadline,
     Position,
+    Completed,
+    Deleted,
 }
 
 impl std::fmt::Display for SortBy {
@@ -52,9 +55,11 @@ impl std::fmt::Display for SortBy {
             SortBy::ID => write!(f, "id"),
             SortBy::Created => write!(f, "created_at"),
             SortBy::Updated => write!(f, "updated_at"),
-            SortBy::Start => write!(f, "start_dt"),
+            SortBy::Start => write!(f, "start"),
             SortBy::Deadline => write!(f, "deadline"),
             SortBy::Position => write!(f, "position_key"),
+            SortBy::Completed => write!(f, "completed_at"),
+            SortBy::Deleted => write!(f, "deleted_at"),
         }
     }
 }
@@ -65,7 +70,7 @@ pub struct TaskModel {
 
     pub title: String,
     pub notes: Option<String>,
-    pub start_dt: Option<chrono::DateTime<chrono::Utc>>,
+    pub start: Option<chrono::DateTime<chrono::Utc>>,
     pub has_time: bool,
     pub deadline: Option<chrono::NaiveDate>,
 
@@ -80,17 +85,23 @@ pub struct TaskModel {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
 pub struct Task {
     pub id: TaskID,
 
     pub title: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub notes: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub start: Option<Start>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deadline: Option<chrono::NaiveDate>,
     pub tags: Vec<Tag>,
 
     pub position_key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub deleted_at: Option<chrono::DateTime<chrono::Utc>>,
 
     pub updated_at: chrono::DateTime<chrono::Utc>,
@@ -100,11 +111,11 @@ pub struct Task {
 
 impl Task {
     pub fn from(value: TaskModel, tz: Tz, tags: Vec<TagModel>) -> Self {
-        let start = value.start_dt.map(|start_dt| {
+        let start = value.start.map(|dt| {
             if value.has_time {
-                Start::DateTime(start_dt)
+                Start::DateTime(dt)
             } else {
-                Start::Date(start_dt.with_timezone(&tz).date_naive())
+                Start::Date(dt.with_timezone(&tz).date_naive())
             }
         });
 

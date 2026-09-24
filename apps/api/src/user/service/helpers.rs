@@ -1,5 +1,5 @@
 use crate::{
-    error::service::{NO_EMPTY_STRING, INVALID_SINGLE_LINE, ValidationError},
+    error::service::{INVALID_SINGLE_LINE, NO_EMPTY_STRING, ValidationError},
     utils::service::is_valid_single_line_string,
 };
 

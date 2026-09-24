@@ -6,7 +6,7 @@ use sqlx::prelude::{FromRow, Type};
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type
 )]
 #[sqlx(transparent)]
 pub struct CategoryID(Uuid);
@@ -33,15 +33,20 @@ impl std::fmt::Display for CategoryID {
 #[cfg_attr(test, derive(Default))]
 pub struct CategoryModel {
     pub id: CategoryID,
+
     pub name: String,
+
     pub position_key: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[cfg_attr(test, derive(Deserialize))]
+#[serde(rename_all = "camelCase")]
 pub struct Category {
     pub id: CategoryID,
+
     pub name: String,
+
     pub position_key: String,
 }
 

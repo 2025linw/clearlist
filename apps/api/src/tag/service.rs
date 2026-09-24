@@ -7,7 +7,7 @@ use crate::{
         repo::{ConstraintViolation, Error as RepoError},
         service::{Error, Result},
     },
-    types::{extract::UserContext, pagination::SQLPagination},
+    types::{extract::UserContext, repo::Pagination},
 };
 
 use super::{
@@ -33,59 +33,42 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
         }
     }
 
-    pub async fn list(
-        &self,
-        user_context: UserContext,
-        query: Option<URLQueryOpts>,
-    ) -> Result<Vec<Tag>> {
-        let query = if let Some(query) = query {
-            let URLQueryOpts {
-                page,
-                limit,
-                category,
-            } = helpers::validate_query_opts(query)?;
+    pub async fn list(&self, user_context: UserContext, query: URLQueryOpts) -> Result<Vec<Tag>> {
+        let URLQueryOpts {
+            page,
+            limit,
+            category,
+        } = helpers::validate_query_opts(query)?;
 
-            let mut filter = Filter::new();
-            if let Some(category) = category {
-                match self
-                    .category_repo
-                    .get_id_by_name(user_context.id, category)
-                    .await
-                {
-                    Ok(id) => filter.category(id),
-                    Err(err) => {
-                        if matches!(
-                            err,
-                            RepoError::Constraint(ConstraintViolation::NotFound(
-                                Resource::Category
-                            ))
-                        ) {
-                            return Ok(Vec::new());
-                        }
-
-                        return Err(err.into());
+        let mut filter = Filter::new();
+        if let Some(category) = category {
+            match self
+                .category_repo
+                .get_id_by_name(user_context.id, category)
+                .await
+            {
+                Ok(id) => filter.category(id),
+                Err(err) => {
+                    if matches!(
+                        err,
+                        RepoError::Constraint(ConstraintViolation::NotFound(Resource::Category))
+                    ) {
+                        return Ok(Vec::new());
                     }
+
+                    return Err(err.into());
                 }
             }
+        }
 
-            let page = page.unwrap_or(1);
-            let limit = limit.unwrap_or(25).min(150);
-            let offset = limit * (page - 1);
-            let mut pagination = SQLPagination::new();
-            pagination.limit(limit);
-            pagination.offset(offset);
+        let page = page.unwrap_or(1);
+        let limit = limit.unwrap_or(25).min(150);
+        let offset = limit * (page - 1);
+        let mut pagination = Pagination::new();
+        pagination.limit(limit);
+        pagination.offset(offset);
 
-            QueryOpts { filter, pagination }
-        } else {
-            let mut pagination = SQLPagination::new();
-            pagination.limit(25);
-            pagination.offset(0);
-
-            QueryOpts {
-                filter: Filter::new(),
-                pagination,
-            }
-        };
+        let query = QueryOpts { filter, pagination };
 
         self.repo
             .list(user_context.id, Some(query))

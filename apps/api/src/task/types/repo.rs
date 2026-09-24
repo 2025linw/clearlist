@@ -4,7 +4,10 @@ use sqlx::{QueryBuilder, prelude::FromRow};
 use crate::{
     tag::types::{TagID, TagModel},
     task::types::TaskID,
-    types::{field::DateFilter, order::SortOrder, pagination::SQLPagination},
+    types::{
+        order::SortOrder,
+        repo::{DateFilter, Pagination},
+    },
 };
 
 use super::SortBy;
@@ -13,7 +16,7 @@ use super::SortBy;
 pub struct QueryOpts {
     pub filter: Filter,
     pub sort: Sort,
-    pub pagination: SQLPagination,
+    pub pagination: Pagination,
 }
 
 impl QueryOpts {
@@ -21,11 +24,11 @@ impl QueryOpts {
         // Filter
         if let Some(filter) = self.filter.start {
             builder.push(" AND ");
-            filter.add_to_builder(builder);
+            filter.add_to_builder(builder, "start");
         }
         if let Some(filter) = self.filter.deadline {
             builder.push(" AND ");
-            filter.add_to_builder(builder);
+            filter.add_to_builder(builder, "deadline");
         }
         if let Some(completed) = self.filter.completed {
             builder.push(" AND ");
@@ -61,11 +64,15 @@ impl QueryOpts {
         if let Some((by, order)) = self.sort.sort {
             match by {
                 SortBy::Updated => {
-                    builder.push(format!(" ORDER BY {by} {order} NULLS LAST, id ASC"));
+                    builder.push(format!(
+                        " ORDER BY {by} {} NULLS LAST, id ASC",
+                        order.as_sql()
+                    ));
                 }
                 _ => {
                     builder.push(format!(
-                        " ORDER BY {by} {order} NULLS LAST, updated_at DESC"
+                        " ORDER BY {by} {} NULLS LAST, updated_at DESC",
+                        order.as_sql()
                     ));
                 }
             }
@@ -126,15 +133,9 @@ pub struct Sort {
 }
 
 impl Sort {
-    pub fn new(by: Option<SortBy>, order: SortOrder) -> Self {
-        if let Some(by) = by {
-            Self {
-                sort: Some((by, order)),
-            }
-        } else {
-            Self {
-                sort: Some((SortBy::ID, order)),
-            }
+    pub fn new(by: SortBy, order: SortOrder) -> Self {
+        Self {
+            sort: Some((by, order)),
         }
     }
 }
@@ -176,7 +177,7 @@ impl UpdateModel {
             separated.push_bind_unseparated(notes);
         }
         if let Some(start) = self.start {
-            separated.push("start_dt = ");
+            separated.push("start = ");
             separated.push_bind_unseparated(start);
         }
         if let Some(has_time) = self.has_time {

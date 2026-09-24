@@ -28,7 +28,8 @@ pub fn verify_webhook_signature(
         .get(WEBHOOK_ID)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
-            error!("failed to get webhook id header");
+            error!(target: "clearlist_api", "failed to get webhook id header");
+
             Error::Unauthenticated
         })?;
 
@@ -37,6 +38,7 @@ pub fn verify_webhook_signature(
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
             error!("failed to get webhook timestamp header");
+
             Error::Unauthenticated
         })?;
 
@@ -45,16 +47,19 @@ pub fn verify_webhook_signature(
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
             error!("failed to get webhook signature header");
+
             Error::Unauthenticated
         })?;
 
     let timestamp_value: i64 = timestamp.parse().map_err(|err| {
         error!("timestamp header was not a number: {err}");
+
         Error::Unauthenticated
     })?;
     let now = Utc::now().timestamp();
     if (now - timestamp_value).abs() > MAX_TIMESTAMP_AGE {
         error!("webhook token exprired");
+
         return Err(Error::Unauthenticated);
     }
 
@@ -66,17 +71,20 @@ pub fn verify_webhook_signature(
     );
 
     let signature = signature.strip_prefix("v1=").ok_or_else(|| {
-        error!("signature should have version prefix");
+        error!("signature missing version prefix");
+
         Error::Unauthenticated
     })?;
 
     let provided = hex::decode(signature).map_err(|_| {
         error!("unable to decode signature");
+
         Error::Unauthenticated
     })?;
 
     if provided.len() != expected.len() || !bool::from(provided.ct_eq(expected.as_slice())) {
         error!("signature did not match");
+
         return Err(Error::Unauthenticated);
     }
 

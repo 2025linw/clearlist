@@ -13,7 +13,7 @@ use crate::{
     error::route::Result,
     types::{
         extract::{Json, Path, UserContext},
-        response::Response,
+        route::Response,
     },
 };
 

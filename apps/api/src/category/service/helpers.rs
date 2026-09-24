@@ -1,6 +1,6 @@
 use crate::{
     category::types::route::UpdateRequest,
-    error::service::{NO_EMPTY_STRING, INVALID_SINGLE_LINE, TOO_LONG, ValidationError},
+    error::service::{INVALID_SINGLE_LINE, NO_EMPTY_STRING, TOO_LONG, ValidationError},
     utils::service::is_valid_single_line_string,
 };
 
