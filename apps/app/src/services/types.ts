@@ -29,14 +29,5 @@ export type TaskQuery = {
   sortOrder?: string;
 };
 
-const listCategories = [
-  'inbox',
-  'today',
-  'upcoming',
-  'deadline',
-  'logged',
-  'trash',
-] as const;
-
-export type Category = (typeof listCategories)[number];
-// 'inbox' | 'today' | 'upcoming' | 'deadline' | 'logged' | 'trash';
+export type Category =
+  'inbox' | 'today' | 'upcoming' | 'deadline' | 'logged' | 'trash';

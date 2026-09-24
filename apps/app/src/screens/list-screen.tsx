@@ -16,7 +16,11 @@ const requiredTask: task.CreateRequest = {
   tags: [],
   positionKey: 'm',
 };
-type CreatableCategory = Exclude<Category, 'logged' | 'trash'>;
+
+type CreatableCategory = Extract<
+  Category,
+  'inbox' | 'today' | 'upcoming' | 'deadline'
+>;
 
 type ListScreenProps = {
   listName: string;
