@@ -68,11 +68,6 @@ cd "$DEPLOY_PATH"
 
 systemctl stop "$SERVICE_NAME"
 
-if ! node "$CURRENT_LINK/dist/scripts/migrate.js"; then
-  echo "Migration failed" >&2
-  rollback
-fi
-
 
 # Start service and verify success, otherwise rollback
 systemctl start "$SERVICE_NAME"
