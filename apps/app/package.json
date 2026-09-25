@@ -7,7 +7,9 @@
     "start": "EXPO_PACKAGER_PROXY_URL=https://will-laptop-kubuntu.tailae0279.ts.net:8080 expo start",
     "dev": "npm run start",
     "prod": "EXPO_PACKAGER_PROXY_URL=https://will-laptop-kubuntu.tailae0279.ts.net:8080 expo start --no-dev",
-    "web:build": "expo export --platform web",
+    "export:web": "expo export --platform web",
+    "tsc": "tsc",
+    "format": "prettier src --check",
     "lint": "expo lint",
     "test": "echo 'No tests created'"
   },
