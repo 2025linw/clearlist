@@ -9,19 +9,24 @@
     "package.json"
   ],
   "scripts": {
-    "dev": "NODE_ENV=development ts-node src/app.ts",
     "build": "tsc",
-    "start": "NODE_ENV=production node dist/app.js",
+    "start": "NODE_ENV=development ts-node src/app.ts",
+    "dev": "npm run start",
+    "prod": "npm run build && NODE_ENV=production node dist/app.js",
+    "export": "npm run build",
     "migrate": "ts-node src/scripts/migrate.ts",
-    "lint": "eslint .",
+    "tsc": "tsc",
+    "format": "prettier src --check",
+    "lint": "eslint src",
     "test": "echo 'No tests created'"
   },
   "dependencies": {
-    "@better-auth/expo": "^1.6.11",
-    "better-auth": "^1.6.11",
+    "@better-auth/expo": "catalog:",
+    "better-auth": "catalog:",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "kysely": "^0.29.6",
     "pg": "^8.21.0"
   },
   "devDependencies": {
@@ -29,9 +34,9 @@
     "@clearlist/prettier-config": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.9.1",
+    "@types/node": "^26.3.0",
     "@types/pg": "^8.20.0",
     "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.0"
   }
 }

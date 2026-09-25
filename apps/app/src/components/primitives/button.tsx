@@ -1,102 +1,184 @@
-import { ReactNode } from 'react';
+import { ReactElement, cloneElement } from 'react';
 import {
+  ColorValue,
   Pressable,
   PressableProps,
+  StyleProp,
   StyleSheet,
   TextStyle,
   View,
-  ViewStyle,
 } from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { ButtonSchemes, Theme } from '@/context/theme/types';
+import { useTheme, useThemeMode } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
 
-import Typography from '@/components/primitives/typography';
+import Icon, { IconProps } from '@components/primitives/icon';
+import Typography from '@components/primitives/typography';
 
-export type ButtonProps = PressableProps & {
-  text: string;
-  scheme?: ButtonSchemes;
-  leftIcon?: ReactNode;
-};
+type ButtonSchemes = keyof Omit<
+  Theme['components']['Button']['scheme'],
+  'disabled'
+>;
+
+type ButtonContent =
+  | {
+      children: string;
+      icon?: ReactElement<IconProps>;
+    }
+  | {
+      children?: never;
+      icon: ReactElement<IconProps>;
+    };
+
+export type ButtonProps = Omit<PressableProps, 'children'> &
+  ButtonContent & {
+    scheme?: ButtonSchemes;
+    hasBorder?: boolean;
+    rounded?: boolean;
+  } & {
+    typographyStyle?: StyleProp<TextStyle>;
+  };
 
 export default function Button({
-  text,
-  scheme = 'default',
-  leftIcon,
-  ...pressableProps
+  scheme = 'primary',
+  children,
+  disabled,
+  style,
+  ...props
 }: ButtonProps) {
   const theme = useTheme();
-
-  const styles = buildStyle(
+  const styles = buildStyles(
     theme,
-    pressableProps.disabled ? 'disabled' : scheme,
+    disabled ? 'disabled' : scheme,
+    props.hasBorder,
+    {
+      size: props.icon?.props.size,
+      color: props.icon?.props.color,
+    },
   );
+
+  const icon = props.icon
+    ? cloneElement(props.icon, {
+        size: styles.icon.fontSize,
+        color: styles.icon.color,
+      })
+    : undefined;
+
+  const iconOnly = !!icon && !children;
 
   return (
     <Pressable
-      {...pressableProps}
-      disabled={pressableProps.disabled}
+      {...props}
+      disabled={disabled}
+      style={(state) => [
+        styles.container,
+        props.rounded && styles.rounded,
+        iconOnly && styles.iconOnly,
+        state.pressed && styles.pressedStyle,
+        typeof style === 'function' ? style(state) : style,
+      ]}
     >
-      <View style={styles.container}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+      {icon}
 
+      {children && (
         <Typography
           variant="button"
-          style={styles.typography}
+          style={[styles.typography, props.typographyStyle]}
+          selectable={false}
         >
-          {text}
+          {children}
         </Typography>
-      </View>
+      )}
     </Pressable>
   );
 }
 
-type ButtonStyle = {
-  container: ViewStyle;
-  typography: TextStyle;
-  leftIcon: ViewStyle;
-};
-function buildStyle(
+const BORDER_WIDTH = 1;
+function buildStyles(
   theme: Theme,
   scheme: ButtonSchemes | 'disabled',
-): ButtonStyle {
+  hasBorder: boolean | undefined,
+  iconStyle: {
+    size?: number;
+    color?: ColorValue;
+  },
+) {
+  const componentStyle = theme.components.Button;
+  const componentScheme = componentStyle.scheme[scheme];
+
+  const useBorder =
+    hasBorder !== undefined ? hasBorder : scheme === 'secondary' ? true : false;
+
+  const padding = theme.spacings.x2;
+
   return StyleSheet.create({
     container: {
+      padding,
+
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: theme.rounded.base,
-      paddingVertical: theme.spacings.lg,
-      paddingHorizontal: theme.spacings.xl,
+      gap: theme.spacings.x2,
 
-      backgroundColor: theme.components.Button[scheme].backgroundColor,
-      borderColor: theme.components.Button[scheme].borderColor,
+      backgroundColor: componentScheme.backgroundColor,
+      borderRadius: theme.rounded.base,
+      ...(useBorder
+        ? {
+            borderWidth: BORDER_WIDTH,
+            borderColor: componentScheme.borderColor,
+          }
+        : {}),
+    },
+    rounded: {
+      borderRadius: theme.rounded.full,
+    },
+    iconOnly: {
+      width:
+        (iconStyle.size ?? componentStyle.icon.size) +
+        2 * padding +
+        (useBorder ? 2 * BORDER_WIDTH : 0),
+      aspectRatio: 1,
+
+      justifyContent: 'center',
+    },
+    hoveredStyle: {
+      backgroundColor: componentScheme.hovered.backgroundColor,
+    },
+    pressedStyle: {
+      backgroundColor: componentScheme.pressed.backgroundColor,
     },
     typography: {
-      color: theme.components.Button[scheme].color,
+      color: componentStyle.scheme[scheme].color,
+      userSelect: 'none',
     },
-    leftIcon: {
-      marginRight: theme.spacings.base,
+    icon: {
+      fontSize: iconStyle.size ?? componentStyle.icon.size,
+      color: iconStyle.color ?? componentStyle.scheme[scheme].color,
     },
   });
 }
 
 export function Demo() {
+  const [themeMode, setThemeMode] = useThemeMode();
+
   return (
     /* eslint-disable react-native/no-inline-styles */
-    <View style={{ gap: 16 }}>
-      <Button text="Default" />
+    <View
+      style={[StyleSheet.absoluteFill, { gap: 16, alignItems: 'flex-start' }]}
+    >
+      <Button>Default</Button>
+      <Button scheme="primary">Primary</Button>
+      <Button scheme="secondary">Secondary</Button>
+      <Button scheme="tertiary">Tertiary</Button>
+      <Button scheme="danger">Danger</Button>
+      <Button disabled>Disabled</Button>
+      <Button icon={<Icon name="home-outline" />} />
+
       <Button
-        text="Primary"
-        scheme="primary"
-      />
-      <Button
-        text="Danger  "
-        scheme="danger"
-      />
-      <Button
-        text="Disabled"
-        disabled
-      />
+        style={{ position: 'absolute', bottom: 15 }}
+        onPress={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
+      >
+        Toggle Theme
+      </Button>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

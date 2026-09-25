@@ -1,14 +1,12 @@
 -- User Schema
 CREATE TABLE app.users (
     id uuid PRIMARY KEY,
-    auth_user_id uuid UNIQUE NOT NULL,
 
     display_name text NOT NULL,
 
+    preferred_timezone text,
+    completed_task_retention interval,
+
+    updated_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_at timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
--- Permissions
-GRANT SELECT, INSERT, UPDATE, DELETE ON
-app.users
-TO cl_api;
