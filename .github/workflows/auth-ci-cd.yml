@@ -12,6 +12,8 @@ on:
       - "apps/auth/**"
       - "!apps/auth/**/*.md"
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/auth-ci-cd.yml"
       - "package.json"
@@ -28,6 +30,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-skip:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - name: Skip CI check
+        run: echo "Proceeding with workflow"
+
   ci:
     name: CI
     runs-on: ubuntu-latest
