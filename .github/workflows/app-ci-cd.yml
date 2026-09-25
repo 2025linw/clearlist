@@ -115,7 +115,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
         with:
-          args: "Tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+          args: "App tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
 
   build-and-deploy:
     name: Build and deploy
@@ -291,4 +291,4 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
         with:
-          args: "Build ${{ job.status == 'success' && 'completed successfully ✅' || 'failed ❌' }}"
+          args: "App build ${{ job.status == 'success' && 'completed successfully ✅' || 'failed ❌' }}"

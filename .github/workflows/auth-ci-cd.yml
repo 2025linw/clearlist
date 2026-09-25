@@ -23,6 +23,9 @@ on:
       - "!apps/auth/**/*.md"
   workflow_dispatch:
 
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+
 permissions:
   contents: read
 
@@ -97,6 +100,14 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: pnpm auth:test
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   build:
     name: Build
     needs: ci
@@ -150,6 +161,14 @@ jobs:
           path: clearlist-auth.tar.gz
           retention-days: 7
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth build ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   deploy:
     name: CD
     needs: build
@@ -195,3 +214,11 @@ jobs:
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
+
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth deploy ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
