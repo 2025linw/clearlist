@@ -11,12 +11,18 @@ on:
       - "apps/api/**"
       - "!apps/api/**/*.md"
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/api-ci-cd.yml"
       - "Cargo.toml"
       - "Cargo.lock"
       - "apps/api/**"
       - "!apps/api/**/*.md"
+  workflow_dispatch:
+
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
 permissions:
   contents: read
@@ -26,8 +32,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-skip:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - name: Skip CI check
+        run: echo "Proceeding with workflow"
+
   ci:
     name: CI
+    needs: check-skip
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -78,11 +92,19 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   build:
     name: Build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
@@ -123,11 +145,19 @@ jobs:
           path: clearlist-api.tar.gz
           retention-days: 7
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API build ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   deploy:
     name: CD
-    runs-on: self-hosted
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
 
     env:
       SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
@@ -168,3 +198,11 @@ jobs:
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
+
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API deploy ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"

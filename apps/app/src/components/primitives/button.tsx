@@ -74,7 +74,6 @@ export default function Button({
         styles.container,
         props.rounded && styles.rounded,
         iconOnly && styles.iconOnly,
-        state.hovered && styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}

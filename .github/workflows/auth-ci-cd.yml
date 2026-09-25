@@ -12,6 +12,8 @@ on:
       - "apps/auth/**"
       - "!apps/auth/**/*.md"
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/auth-ci-cd.yml"
       - "package.json"
@@ -19,6 +21,10 @@ on:
       - "pnpm-lock.yaml"
       - "apps/auth/**"
       - "!apps/auth/**/*.md"
+  workflow_dispatch:
+
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
 permissions:
   contents: read
@@ -28,8 +34,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-skip:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - name: Skip CI check
+        run: echo "Proceeding with workflow"
+
   ci:
     name: CI
+    needs: check-skip
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -62,8 +76,14 @@ jobs:
       - name: Run install
         run: pnpm install --frozen-lockfile
 
-      - name: Run lint
+      - name: Run TypeScript check
+        run: pnpm auth:tsc
+
+      - name: Run ESLint
         run: pnpm auth:lint
+
+      - name: Run Prettier check
+        run: pnpm auth:format
 
       - name: Bootstrap and run database migration
         env:
@@ -80,11 +100,19 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: pnpm auth:test
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   build:
     name: Build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
@@ -97,7 +125,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
-      - name: Setup Node
+      - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
           node-version-file: package.json
@@ -107,7 +135,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build deployment
-        run: pnpm auth:build
+        run: pnpm auth:export
 
       - name: Generate metadata
         id: meta
@@ -133,11 +161,19 @@ jobs:
           path: clearlist-auth.tar.gz
           retention-days: 7
 
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth build ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   deploy:
     name: CD
-    runs-on: self-hosted
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
 
     env:
       SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
@@ -178,3 +214,11 @@ jobs:
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
+
+      - name: Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "Auth deploy ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
