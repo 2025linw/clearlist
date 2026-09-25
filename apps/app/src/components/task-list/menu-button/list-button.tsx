@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
 import Icon from '@components/primitives/icon';
 

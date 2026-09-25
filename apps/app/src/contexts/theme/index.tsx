@@ -1,14 +1,14 @@
-import { PropsWithChildren, createContext, useContext } from 'react';
+import { type PropsWithChildren, createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
 import usePersisted from '@hooks/use-persisted';
 
 import {
-  ColorVariantName,
-  ThemeContextType,
-  ThemeMode,
-  buildTheme,
+  type ColorVariantName,
+  type ThemeContextType,
+  type ThemeMode,
 } from './types';
+import { buildTheme } from './types';
 
 const ThemeContext = createContext<ThemeContextType>(
   {} as unknown as ThemeContextType,

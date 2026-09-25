@@ -2,10 +2,6 @@ import { Platform } from 'react-native';
 
 import { authClient } from '@lib/auth-client';
 
-// export type Response = {
-//   message?: string;
-// };
-
 export class ApiError extends Error {
   readonly status: number;
   readonly statusText: string;

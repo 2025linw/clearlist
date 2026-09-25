@@ -1,5 +1,5 @@
 import {
-  PropsWithChildren,
+  type PropsWithChildren,
   createContext,
   useCallback,
   useContext,
@@ -8,12 +8,16 @@ import {
   useState,
 } from 'react';
 
-import { apiFetch } from '@lib/api';
 import { authClient } from '@lib/auth-client';
+import { apiFetch } from '@lib/fetch';
 
 import { API_URL } from '@/constants';
 
-import { ApiContextType, AuthContextType, LoginInfo } from './types';
+import {
+  type ApiContextType,
+  type AuthContextType,
+  type LoginInfo,
+} from './types';
 
 const AuthContext = createContext<AuthContextType>({
   loaded: false,

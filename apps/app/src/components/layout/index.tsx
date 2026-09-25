@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
-import { PropsWithChildren, ReactElement } from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import { type PropsWithChildren, type ReactElement } from 'react';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
-import { IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitives/icon';
 
 import Header from './header';
 

@@ -1,19 +1,20 @@
-import { ReactElement, cloneElement } from 'react';
+import { type ReactElement } from 'react';
+import { cloneElement } from 'react';
 import {
-  ColorValue,
-  Pressable,
-  PressableProps,
-  StyleProp,
-  StyleSheet,
-  TextStyle,
-  View,
+  type ColorValue,
+  type PressableProps,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme, useThemeMode } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
-import Icon, { IconProps } from '@components/primitives/icon';
+import Icon, { type IconProps } from '@components/primitives/icon';
 import Typography from '@components/primitives/typography';
+
+import { type ElementProps } from './types';
 
 type ButtonSchemes = keyof Omit<
   Theme['components']['Button']['scheme'],
@@ -30,7 +31,7 @@ type ButtonContent =
       icon: ReactElement<IconProps>;
     };
 
-export type ButtonProps = Omit<PressableProps, 'children'> &
+export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
   ButtonContent & {
     scheme?: ButtonSchemes;
     hasBorder?: boolean;
@@ -77,6 +78,7 @@ export default function Button({
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}
+      role="button"
     >
       {icon}
 

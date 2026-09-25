@@ -3,11 +3,11 @@
  */
 import color from 'color';
 
-import { ColorValue, Platform } from 'react-native';
+import { type ColorValue, Platform } from 'react-native';
 
-import { Colors } from '@contexts/theme/colors/types';
+import { type Colors } from '@contexts/theme/colors/types';
 
-import { ColorVariant, colors, main } from './colors';
+import { type ColorVariant, colors, main } from './colors';
 import { spacings } from './spacing';
 
 export type ThemeContextType = {

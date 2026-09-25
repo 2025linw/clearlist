@@ -1,4 +1,4 @@
-import { ColorVariant } from '../types';
+import { type ColorVariant } from '../types';
 
 export const colors: ColorVariant = {
   light: {

@@ -4,10 +4,10 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { task } from '@clearlist/types';
+import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
 import dayjs from '@lib/datetime';
 

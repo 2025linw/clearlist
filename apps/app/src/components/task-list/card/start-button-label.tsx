@@ -2,7 +2,7 @@ import { StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import dayjs from '@lib/datetime';
 
 import Button from '@components/primitives/button';

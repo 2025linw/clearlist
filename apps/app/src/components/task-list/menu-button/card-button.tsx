@@ -9,7 +9,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
 import Button from '@components/primitives/button';
 import Icon from '@components/primitives/icon';

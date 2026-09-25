@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { ColorVariantName, ThemeMode } from '@contexts/theme/types';
+import { type ColorVariantName, type ThemeMode } from '@contexts/theme/types';
 import * as Storage from '@lib/storage';
 
 type StorageSchema = {

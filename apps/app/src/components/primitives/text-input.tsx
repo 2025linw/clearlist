@@ -1,13 +1,13 @@
 import {
   TextInput as RNTextInput,
-  TextInputProps as RNTextInputProps,
-  StyleProp,
+  type TextInputProps as RNTextInputProps,
+  type StyleProp,
   StyleSheet,
-  TextStyle,
+  type TextStyle,
 } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
 type TextInputProps = RNTextInputProps & {
   value?: string;

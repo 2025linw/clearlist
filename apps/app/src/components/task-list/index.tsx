@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ListRenderItemInfo, StyleSheet, View } from 'react-native';
+import { type ListRenderItemInfo, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { task } from '@clearlist/types';
+import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@contexts/theme/useBreakpoints';
-import dayjs from '@lib/datetime';
+import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
 

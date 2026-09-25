@@ -1,4 +1,4 @@
-import dayjs from '@lib/datetime';
+import type dayjs from '@lib/datetime';
 
 export enum Cmp {
   Equal = 'eq',

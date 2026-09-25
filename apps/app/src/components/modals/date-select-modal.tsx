@@ -2,7 +2,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker from 'react-native-ui-datepicker';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import dayjs, { getDateToday } from '@lib/datetime';
 
 import Button from '@components/primitives/button';

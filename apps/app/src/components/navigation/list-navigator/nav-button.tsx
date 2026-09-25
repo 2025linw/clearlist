@@ -1,9 +1,12 @@
-import { Href, useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 
 import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
 import Button from '@components/primitives/button';
-import Icon, { IconColor, IconName } from '@components/primitives/icon';
+import Icon, {
+  type IconColor,
+  type IconName,
+} from '@components/primitives/icon';
 
 type NavButtonProps = {
   children: string;

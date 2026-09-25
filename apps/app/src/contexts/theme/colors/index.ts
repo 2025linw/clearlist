@@ -1,4 +1,4 @@
-import type { ColorScale } from '@contexts/theme/colors/types';
+import { type ColorScale } from '@contexts/theme/colors/types';
 
 export type { ColorVariant } from './types';
 

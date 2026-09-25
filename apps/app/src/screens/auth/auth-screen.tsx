@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import LoginForm, { State } from '@components/auth/login-form';
+import LoginForm, { type State } from '@components/auth/login-form';
 import Layout from '@components/layout';
 
 import { API_URL } from '@/constants';

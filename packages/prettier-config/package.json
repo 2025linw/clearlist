@@ -7,10 +7,6 @@
       "types": "./types.d.ts",
       "default": "./base.js"
     },
-    "./node": {
-      "types": "./types.d.ts",
-      "default": "./node.js"
-    },
     "./expo": {
       "types": "./types.d.ts",
       "default": "./expo.js"

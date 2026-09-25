@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import dayjs from '@lib/datetime';
 
 import Typography from '@components/primitives/typography';

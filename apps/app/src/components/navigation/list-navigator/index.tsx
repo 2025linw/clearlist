@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@contexts/theme/useBreakpoints';
 
 import HorizontalDivider from '@components/primitives/horizontal-divider';

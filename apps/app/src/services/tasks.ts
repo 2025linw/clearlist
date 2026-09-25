@@ -1,11 +1,11 @@
 import { task } from '@clearlist/types';
 
-import { apiFetch } from '@lib/api';
+import { apiFetch } from '@lib/fetch';
 import { buildTaskQuery } from '@services/helpers';
 
 import { API_URL } from '@/constants';
 
-import { TaskQuery } from './types';
+import { type TaskQuery } from './types';
 
 export async function create(
   create: task.CreateRequest,

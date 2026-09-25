@@ -1,12 +1,12 @@
 // @ts-nocheck
 
 import expoConfig from 'eslint-config-expo/flat.js';
-import react from 'eslint-plugin-react';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import reactNative from 'eslint-plugin-react-native';
-import testingLibrary from 'eslint-plugin-testing-library';
 import tanstackQuery from '@tanstack/eslint-plugin-query'
 
-import base from './base.js';
+import testingLibrary from 'eslint-plugin-testing-library';
+
 import noSingleStyleArray from './rules/no-single-style-array.mjs';
 
 const testFiles = [
@@ -15,12 +15,13 @@ const testFiles = [
 ];
 
 export default [
+  {
+    ignores: ['**/dist/**', '**/node_modules/**'],
+  },
   ...expoConfig,
-  ...base,
   ...tanstackQuery.configs['flat/recommended'],
   {
     plugins: {
-      react,
       'react-native': reactNative,
       'local': {
         rules: {
@@ -31,17 +32,26 @@ export default [
     rules: {
       'react-native/no-inline-styles': 'warn',
       'local/no-single-style-array': 'warn',
-    },
-    settings: {
-      'import/resolver': {
-        typescript: {
-          project: true,
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
         },
-      },
+      ],
     },
   },
   {
-    ...testingLibrary.configs['flat/react'],
     files: testFiles,
+    ...testingLibrary.configs['flat/react'],
+    settings: {
+      'testing-library/utils-module': '@testing-library/react-native',
+    },
+  },
+  eslintPluginPrettierRecommended,
+  {
+    rules: {
+      'prettier/prettier': 'warn',
+    },
   },
 ];

@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import {
   Pressable,
-  StyleProp,
+  type StyleProp,
   StyleSheet,
-  TextStyle,
-  ViewStyle,
+  type TextStyle,
+  type ViewStyle,
 } from 'react-native';
 
 import TextInput from '@components/primitives/text-input';

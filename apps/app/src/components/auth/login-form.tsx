@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSessionApi } from '@contexts/auth';
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
 import FormField from '@components/forms/form-field';
 import Button from '@components/primitives/button';

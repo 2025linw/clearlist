@@ -1,6 +1,8 @@
-import dayjs, { getDateToday } from '@lib/datetime';
+import type dayjs from '@lib/datetime';
+import { getDateToday } from '@lib/datetime';
 
-import { Category, Cmp, TaskQuery } from './types';
+import { type Category, type TaskQuery } from './types';
+import { Cmp } from './types';
 
 export function toYYYYMMDD(input_date: dayjs.Dayjs) {
   return input_date.format('YYYY-MM-DD');

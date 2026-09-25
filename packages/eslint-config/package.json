@@ -3,10 +3,6 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./base": {
-      "types": "./types.d.ts",
-      "default": "./base.js"
-    },
     "./node": {
       "types": "./types.d.ts",
       "default": "./node.js"
@@ -22,7 +18,6 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.5",
-    "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-testing-library": "^7.16.2",
     "typescript-eslint": "^8.60.1"
