@@ -3,10 +3,12 @@ import {
   ColorValue,
   Pressable,
   PressableProps,
+  PressableStateCallbackType,
   StyleProp,
   StyleSheet,
   TextStyle,
   View,
+  ViewStyle,
 } from 'react-native';
 
 import { useTheme, useThemeMode } from '@contexts/theme';
@@ -66,18 +68,24 @@ export default function Button({
 
   const iconOnly = !!icon && !children;
 
+  function pressableStyleHandler(
+    state: PressableStateCallbackType,
+  ): StyleProp<ViewStyle> {
+    return [
+      styles.container,
+      props.rounded && styles.rounded,
+      iconOnly && styles.iconOnly,
+      'hovered' in state && state.hovered && styles.hoveredStyle,
+      state.pressed && styles.pressedStyle,
+      typeof style === 'function' ? style(state) : style,
+    ];
+  }
+
   return (
     <Pressable
       {...props}
       disabled={disabled}
-      style={(state) => [
-        styles.container,
-        props.rounded && styles.rounded,
-        iconOnly && styles.iconOnly,
-        'hovered' in state && state.hovered && styles.hoveredStyle,
-        state.pressed && styles.pressedStyle,
-        typeof style === 'function' ? style(state) : style,
-      ]}
+      style={pressableStyleHandler}
     >
       {icon}
 
