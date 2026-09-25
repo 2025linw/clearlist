@@ -11,7 +11,8 @@
       "@contexts/*": ["./src/contexts/*"],
       "@lib/*": ["./src/lib/*"],
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["jest"]
   },
   "include": [
     "src/**/*.ts",

@@ -3,10 +3,16 @@
 import expoConfig from 'eslint-config-expo/flat.js';
 import react from 'eslint-plugin-react';
 import reactNative from 'eslint-plugin-react-native';
+import testingLibrary from 'eslint-plugin-testing-library';
 import tanstackQuery from '@tanstack/eslint-plugin-query'
 
 import base from './base.js';
 import noSingleStyleArray from './rules/no-single-style-array.mjs';
+
+const testFiles = [
+  '**/__tests__/**/*.{js,jsx,ts,tsx}',
+  '**/*.{spec,test}.{js,jsx,ts,tsx}',
+];
 
 export default [
   ...expoConfig,
@@ -33,11 +39,9 @@ export default [
         },
       },
     },
-    overrides: [
-      {
-        files: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
-        extends: ['plugin:testing-library/react'],
-      },
-    ]
+  },
+  {
+    ...testingLibrary.configs['flat/react'],
+    files: testFiles,
   },
 ];

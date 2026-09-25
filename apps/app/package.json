@@ -9,7 +9,7 @@
     "prod": "EXPO_PACKAGER_PROXY_URL=https://will-laptop-kubuntu.tailae0279.ts.net:8080 expo start --no-dev",
     "web:build": "expo export --platform web",
     "lint": "expo lint",
-    "test": "echo 'No tests created'"
+    "test": "jest"
   },
   "dependencies": {
     "@backpackapp-io/react-native-toast": "^0.15.1",
@@ -55,9 +55,18 @@
     "@clearlist/prettier-config": "workspace:*",
     "@clearlist/types": "workspace:*",
     "@testing-library/react-native": "^14.0.1",
+    "@types/jest": "29.5.14",
     "@types/react": "~19.2.15",
     "@types/react-native-vector-icons": "^6.4.18",
+    "jest": "~29.7.0",
+    "jest-expo": "~57.0.5",
     "test-renderer": "^1.2.0",
     "typescript": "^6.0.3"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!(\\.pnpm/|(?:jest-)?react-native(?:/|-)|@react-native(?:/|-)|@react-native-vector-icons/|expo(?:/|-)|@expo/|color(?:-(?:string|name|convert))?/))"
+    ]
   }
 }
