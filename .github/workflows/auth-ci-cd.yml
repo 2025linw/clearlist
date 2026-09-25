@@ -21,6 +21,7 @@ on:
       - "pnpm-lock.yaml"
       - "apps/auth/**"
       - "!apps/auth/**/*.md"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -39,6 +40,7 @@ jobs:
 
   ci:
     name: CI
+    needs: check-skip
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -97,9 +99,9 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
       timestamp: ${{ steps.meta.outputs.timestamp }}
@@ -150,9 +152,9 @@ jobs:
 
   deploy:
     name: CD
-    runs-on: self-hosted
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
 
     env:
       SSH_HOST: ${{ secrets.AUTH_DEPLOY_HOST }}
