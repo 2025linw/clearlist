@@ -23,7 +23,6 @@ export default [
       },
     },
     rules: {
-      'prettier/prettier': 'warn',
       'react-native/no-inline-styles': 'warn',
       'local/no-single-style-array': 'warn',
     },
@@ -34,5 +33,11 @@ export default [
         },
       },
     },
+    overrides: [
+      {
+        files: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
+        extends: ['plugin:testing-library/react'],
+      },
+    ]
   },
 ];
