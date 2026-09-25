@@ -54,7 +54,6 @@ env:
   EXPO_TEAM_ID: ${{ secrets.EXPO_TEAM_ID }}
   GOOGLE_PLAY_SERVICE_ACCOUNT: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
   DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-  NODE_OPTIONS: --openssl-legacy-provider
 
 jobs:
   check-skip:
