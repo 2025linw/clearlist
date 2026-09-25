@@ -76,7 +76,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "pnpm"
+          cache: pnpm
 
       - name: 📦 Get pnpm cache directory path
         id: pnpm-cache-dir-path
@@ -94,16 +94,16 @@ jobs:
         run: pnpm install
 
       - name: 🧪 Run TypeScript check
-        run: pnpm tsc
+        run: pnpm app:tsc
 
       - name: 🧹 Run ESLint
-        run: pnpm lint
+        run: pnpm app:lint
 
       - name: 🎨 Run Prettier check
-        run: pnpm format:check
+        run: pnpm app:format
 
       - name: 🧪 Run Jest Tests
-        run: pnpm test
+        run: pnpm app:test
 
       - name: 📢 Notify test results via Discord
         if: always()
@@ -111,7 +111,7 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
         with:
-          args: 'Tests ${{ job.status == "success" && "passed ✅" || "failed ❌" }}'
+          args: "Tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
 
   build-and-deploy:
     name: Build and deploy
@@ -286,4 +286,4 @@ jobs:
         env:
           DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
         with:
-          args: 'Build ${{ job.status == "success" && "completed successfully ✅" || "failed ❌" }}'
+          args: "Build ${{ job.status == 'success' && 'completed successfully ✅' || 'failed ❌' }}"
