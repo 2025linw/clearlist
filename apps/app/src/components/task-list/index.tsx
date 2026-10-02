@@ -8,7 +8,6 @@ import { task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
 import { Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 import dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
@@ -37,7 +36,6 @@ export default function TaskList({
 }: TaskListProp) {
   const theme = useTheme();
   const styles = buildStyles(theme);
-  const { gtMobile } = useBreakpoints();
 
   const taskAdded = useRef<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<task.Task | null>(null);
@@ -133,7 +131,6 @@ export default function TaskList({
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
-          style={gtMobile ? styles.list : styles.listMobile}
           itemLayoutAnimation={LinearTransition.duration(CARD_TRANSITION_SPEED)}
         />
       </GestureDetector>
@@ -188,12 +185,6 @@ function buildStyles(theme: Theme) {
   return StyleSheet.create({
     container: {
       flex: 1,
-    },
-    list: {
-      paddingHorizontal: theme.spacings.x16,
-    },
-    listMobile: {
-      paddingHorizontal: theme.spacings.x2,
     },
     menuButton: {
       position: 'absolute',
