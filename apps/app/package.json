@@ -5,7 +5,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "EXPO_PACKAGER_PROXY_URL=https://will-laptop-kubuntu.tailae0279.ts.net:8080 expo start",
-    "dev": "npm run start",
+    "dev": "npm run start --",
     "prod": "EXPO_PACKAGER_PROXY_URL=https://will-laptop-kubuntu.tailae0279.ts.net:8080 expo start --no-dev",
     "export:web": "expo export --platform web",
     "format": "prettier src --check",
