@@ -77,10 +77,8 @@ export default function SettingsPage() {
           <Button onPress={() => router.navigate('/settings/spacing-debug')}>
             Debug (Spacing)
           </Button>
-          <Button
-            onPress={() => router.navigate('/settings/notification-debug')}
-          >
-            Debug (Notification)
+          <Button onPress={() => router.navigate('/settings/toast-debug')}>
+            Debug (Toast)
           </Button>
           <Button onPress={() => router.navigate('/settings/date-debug')}>
             Debug (Time)
