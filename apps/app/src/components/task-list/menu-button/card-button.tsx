@@ -16,10 +16,11 @@ import Icon from '@components/primitives/icon';
 
 import {
   ACTION_BUTTON_SIZE,
-  ACTION_DISTANCE,
   ACTION_ICON_SIZE,
+  ACTION_OFFSET,
   BUTTON_SIZE,
   ICON_SIZE,
+  MENU_SIZE,
 } from './constants';
 
 type CardButtonProps = {
@@ -63,32 +64,14 @@ export default function CardButton({
   const trashButtonStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [
-      {
-        translateX:
-          -(BUTTON_SIZE / 2 + ACTION_DISTANCE + ACTION_BUTTON_SIZE / 2) *
-          progress.value,
-      },
+      { translateX: -ACTION_OFFSET * progress.value },
+      { translateY: 0 },
       { scale: progress.value },
     ],
   }));
 
   return (
-    <View>
-      <GestureDetector gesture={composedGesture}>
-        <Animated.View>
-          <Button
-            rounded
-            icon={
-              <Icon
-                name={menuOpen ? 'close' : 'menu'}
-                size={ICON_SIZE}
-              />
-            }
-            style={styles.button}
-          />
-        </Animated.View>
-      </GestureDetector>
-
+    <View style={styles.menuContainer}>
       {menuOpen && (
         <Animated.View style={[styles.actionButtonContainer, trashButtonStyle]}>
           <Button
@@ -105,22 +88,52 @@ export default function CardButton({
           />
         </Animated.View>
       )}
+
+      <View style={styles.mainButtonContainer}>
+        <GestureDetector gesture={composedGesture}>
+          <Animated.View>
+            <Button
+              rounded
+              icon={
+                <Icon
+                  name={menuOpen ? 'close' : 'menu'}
+                  size={ICON_SIZE}
+                />
+              }
+              style={styles.button}
+            />
+          </Animated.View>
+        </GestureDetector>
+      </View>
     </View>
   );
 }
 
 function buildStyles(theme: Theme) {
   return StyleSheet.create({
+    menuContainer: {
+      width: MENU_SIZE,
+      height: MENU_SIZE,
+
+      pointerEvents: 'box-none',
+    },
+    mainButtonContainer: {
+      position: 'absolute',
+      bottom: 0,
+      right: 0,
+    },
     button: {
       width: BUTTON_SIZE,
+      height: BUTTON_SIZE,
     },
     actionButtonContainer: {
       position: 'absolute',
-      top: (BUTTON_SIZE - ACTION_BUTTON_SIZE) / 2,
-      left: (BUTTON_SIZE - ACTION_BUTTON_SIZE) / 2,
+      bottom: (BUTTON_SIZE - ACTION_BUTTON_SIZE) / 2,
+      right: (BUTTON_SIZE - ACTION_BUTTON_SIZE) / 2,
     },
     actionButton: {
       width: ACTION_BUTTON_SIZE,
+      height: ACTION_BUTTON_SIZE,
     },
   });
 }

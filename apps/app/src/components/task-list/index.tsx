@@ -8,7 +8,6 @@ import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
@@ -37,7 +36,6 @@ export default function TaskList({
 }: TaskListProp) {
   const theme = useTheme();
   const styles = buildStyles(theme);
-  const { gtMobile } = useBreakpoints();
 
   const taskAdded = useRef<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<task.Task | null>(null);
@@ -120,7 +118,7 @@ export default function TaskList({
   }, [taskAdded, data]);
 
   const tapGesture = Gesture.Tap()
-    .maxDistance(25)
+    .maxDistance(5)
     .onEnd(() => {
       scheduleOnRN(setExpandedTask, null);
     });
@@ -133,7 +131,6 @@ export default function TaskList({
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
-          style={gtMobile ? styles.list : styles.listMobile}
           itemLayoutAnimation={LinearTransition.duration(CARD_TRANSITION_SPEED)}
         />
       </GestureDetector>
@@ -145,6 +142,9 @@ export default function TaskList({
         onAddTask={addTask}
         onTrashTask={() => {
           if (activeExpandedTask) onTaskTrash?.(activeExpandedTask.id);
+        }}
+        onRestoreTask={() => {
+          if (activeExpandedTask) onTaskRestore?.(activeExpandedTask.id);
         }}
       />
 
@@ -186,18 +186,12 @@ function buildStyles(theme: Theme) {
     container: {
       flex: 1,
     },
-    list: {
-      paddingHorizontal: theme.spacings.x16,
-    },
-    listMobile: {
-      paddingHorizontal: theme.spacings.x2,
-    },
     menuButton: {
       position: 'absolute',
       bottom: theme.spacings.x8,
       right: theme.spacings.x8,
 
-      zIndex: theme.zHeight.floating,
+      zIndex: theme.zHeight.modal,
     },
   });
 }

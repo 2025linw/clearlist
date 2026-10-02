@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { Provider as AuthProvider, useSession } from '@contexts/auth';
 import { Provider as ThemeProvider, useThemeContext } from '@contexts/theme';
+import { useAppFonts } from '@hooks/use-fonts';
 import { ToastRenderer } from '@lib/toast';
 
 SplashScreen.preventAutoHideAsync();
@@ -33,15 +34,21 @@ export default function App() {
 function AppInner() {
   const { loaded: authLoaded } = useSession();
   const { loaded: themeLoaded } = useThemeContext();
+  const { fontsLoaded, fontError } = useAppFonts();
 
   // Check when
   useEffect(() => {
-    if (themeLoaded && authLoaded) {
+    if (themeLoaded && authLoaded && fontsLoaded) {
       SplashScreen.hide();
     }
-  }, [themeLoaded, authLoaded]);
+  }, [themeLoaded, authLoaded, fontsLoaded]);
 
-  if (!(themeLoaded && authLoaded)) return null;
+  if (!(themeLoaded && authLoaded && fontsLoaded)) return null;
+  if (fontError) {
+    console.error('unable to load fonts');
+
+    return null;
+  }
 
   return (
     <>

@@ -81,12 +81,10 @@ export default function SettingsPage() {
             Debug (Toast)
           </Button>
           <Button onPress={() => router.navigate('/settings/date-debug')}>
-            Debug (Time)
+            Debug (Date)
           </Button>
         </>
       )}
-
-      <HorizontalDivider />
 
       <HorizontalDivider />
 

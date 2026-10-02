@@ -1,40 +1,27 @@
-import { Redirect, Stack } from 'expo-router';
+import { Slot, Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { useSession } from '@contexts/auth';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import ListNavigator from '@components/navigation/list-navigator';
 
 export default function RootLayout() {
-  const { hasSession } = useSession();
-
-  const { gtTablet } = useBreakpoints();
+  const { gtTablet, gtDesktop } = useBreakpoints();
 
   const [sidebarWidth, setSidebarWidth] = useState(240);
-
-  if (!hasSession) {
-    return <Redirect href="/login" />;
-  }
 
   if (gtTablet) {
     return (
       <View style={styles.container}>
         <ListNavigator
-          mode="tablet"
+          mode={gtDesktop ? 'desktop' : 'tablet'}
           width={sidebarWidth}
           onWidthChange={setSidebarWidth}
         />
 
         <View style={styles.content}>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              gestureEnabled: false,
-              animation: 'none',
-            }}
-          />
+          <Slot />
         </View>
       </View>
     );

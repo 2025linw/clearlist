@@ -7,12 +7,15 @@ import { type buildTheme, type variants } from './settings';
 import { type typographyVariants } from './tokens';
 
 export type Theme = ReturnType<typeof buildTheme>;
+export type Theme = ReturnType<typeof buildTheme>;
 
 export type ThemeContextType = {
   loaded: boolean;
 
   theme: Theme;
 
+  themeMode: ThemeMode | 'system';
+  setThemeMode: (_: ThemeMode | 'system') => void;
   themeMode: ThemeMode | 'system';
   setThemeMode: (_: ThemeMode | 'system') => void;
   resetThemeMode: () => void;
@@ -40,6 +43,22 @@ export type Palette = {
 };
 
 export type ThemeMode = 'light' | 'dark';
+
+export type ColorVariantName = keyof typeof variants;
+
+export type ColorScale<T extends string> = {
+  [K in `${T}-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12}`]: ColorValue;
+};
+
+export type ThemeColors = {
+  primary: ColorScale<'primary'>;
+  secondary: ColorScale<'secondary'>;
+};
+
+export type ThemeModes = {
+  [K in ThemeMode]: ThemeColors;
+};
+
 
 export type ColorVariantName = keyof typeof variants;
 

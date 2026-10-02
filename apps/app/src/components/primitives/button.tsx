@@ -1,6 +1,7 @@
 import { type ReactElement } from 'react';
 import { cloneElement } from 'react';
 import {
+  Platform,
   type ColorValue,
   type PressableProps,
   type StyleProp,
@@ -74,6 +75,7 @@ export default function Button({
       style={(state) => [
         styles.container,
         iconOnly && styles.iconContainer,
+        Platform.OS === 'web' && state.hovered && styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}

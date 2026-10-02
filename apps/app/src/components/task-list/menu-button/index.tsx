@@ -1,4 +1,4 @@
-import { type StyleProp, View, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import CardButton from './card-button';
 import ListButton from './list-button';
@@ -20,8 +20,14 @@ export default function MenuButton({
   ...props
 }: MenuButtonProps) {
   return (
-    <View style={style}>
+    <View style={[styles.container, style]}>
       {state === 'list' ? <ListButton {...props} /> : <CardButton {...props} />}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    pointerEvents: 'box-none',
+  },
+});
