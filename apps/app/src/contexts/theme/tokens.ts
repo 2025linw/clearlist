@@ -73,6 +73,9 @@ export const shadows = {
         shadowRadius: 1.2,
       },
       android: { elevation: 3 },
+      web: {
+        boxShadow: '0px 2px 1.2px rgba(0, 0, 0, 0.15)',
+      },
     }),
   },
   base: {
@@ -84,6 +87,9 @@ export const shadows = {
         shadowRadius: 3.85,
       },
       android: { elevation: 6 },
+      web: {
+        boxShadow: '0px 3px 3.85px rgba(0, 0, 0, 0.23)',
+      },
     }),
   },
   high: {
@@ -95,6 +101,9 @@ export const shadows = {
         shadowRadius: 6.37,
       },
       android: { elevation: 10 },
+      web: {
+        boxShadow: '0px 5px 6.37px rgba(0, 0, 0, 0.38)',
+      },
     }),
   },
 } as const;

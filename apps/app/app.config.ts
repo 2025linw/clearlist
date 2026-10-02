@@ -52,47 +52,14 @@ export default (): ExpoConfig => ({
     [
       'expo-font',
       {
-        fonts: ['./assets/fonts/Inter-Regular.otf'],
-        android: {
-          fonts: [
-            {
-              fontFamily: 'Inter',
-              fontDefinitions: [
-                {
-                  path: './assets/fonts/Inter-Italic.otf',
-                  weight: 400,
-                  style: 'italic',
-                },
-                {
-                  path: './assets/fonts/Inter-Medium.otf',
-                  weight: 500,
-                },
-                {
-                  path: './assets/fonts/Inter-Bold.otf',
-                  weight: 700,
-                },
-                {
-                  path: './assets/fonts/Inter-BoldItalic.otf',
-                  weight: 700,
-                  style: 'italic',
-                },
-                {
-                  path: './assets/fonts/Inter-Black.otf',
-                  weight: 900,
-                },
-              ],
-            },
-          ],
-        },
-        ios: {
-          fonts: [
-            './assets/fonts/Inter-Italic.otf',
-            './assets/fonts/Inter-Medium.otf',
-            './assets/fonts/Inter-Bold.otf',
-            './assets/fonts/Inter-BoldItalic.otf',
-            './assets/fonts/Inter-Black.otf',
-          ],
-        },
+        fonts: [
+          './assets/fonts/Inter-Regular.otf',
+          './assets/fonts/Inter-Italic.otf',
+          './assets/fonts/Inter-Medium.otf',
+          './assets/fonts/Inter-Bold.otf',
+          './assets/fonts/Inter-BoldItalic.otf',
+          './assets/fonts/Inter-Black.otf',
+        ],
       },
     ],
     '@react-native-vector-icons/ionicons',
