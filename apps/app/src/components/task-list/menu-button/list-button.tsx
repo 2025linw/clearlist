@@ -24,7 +24,7 @@ export default function ListButton({ onAddTask }: ListButtonProps) {
 
   return (
     <GestureDetector gesture={tapGesture}>
-      <Animated.View style={styles.button}>
+      <Animated.View style={styles.container}>
         <Icon
           name="add"
           size={ICON_SIZE}
@@ -37,7 +37,7 @@ export default function ListButton({ onAddTask }: ListButtonProps) {
 
 function buildStyles(theme: Theme) {
   return StyleSheet.create({
-    button: {
+    container: {
       width: BUTTON_SIZE,
       aspectRatio: 1,
 

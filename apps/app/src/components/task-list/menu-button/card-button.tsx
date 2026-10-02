@@ -72,7 +72,7 @@ export default function CardButton({
 
   return (
     <View
-      style={styles.container}
+      style={styles.menuContainer}
       pointerEvents="box-none"
     >
       {menuOpen && (
@@ -114,7 +114,7 @@ export default function CardButton({
 
 function buildStyles(theme: Theme) {
   return StyleSheet.create({
-    container: {
+    menuContainer: {
       width: MENU_SIZE,
       height: MENU_SIZE,
     },
