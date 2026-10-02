@@ -15,7 +15,6 @@
     "prod": "npm run build && NODE_ENV=production node dist/app.js",
     "export": "npm run build",
     "migrate": "ts-node src/scripts/migrate.ts",
-    "tsc": "tsc",
     "format": "prettier src --check",
     "lint": "eslint src",
     "test": "echo 'No tests created'"

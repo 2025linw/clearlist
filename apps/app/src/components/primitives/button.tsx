@@ -50,6 +50,7 @@ export default function Button({
   const styles = buildStyles(
     theme,
     disabled ? 'disabled' : scheme,
+    props.rounded,
     props.hasBorder,
     {
       size: props.icon?.props.size,
@@ -59,8 +60,7 @@ export default function Button({
 
   const icon = props.icon
     ? cloneElement(props.icon, {
-        size: styles.icon.fontSize,
-        color: styles.icon.color,
+        style: styles.icon,
       })
     : undefined;
 
@@ -72,8 +72,7 @@ export default function Button({
       disabled={disabled}
       style={(state) => [
         styles.container,
-        props.rounded && styles.rounded,
-        iconOnly && styles.iconOnly,
+        iconOnly && styles.iconContainer,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}
@@ -97,6 +96,7 @@ const BORDER_WIDTH = 1;
 function buildStyles(
   theme: Theme,
   scheme: ButtonSchemes | 'disabled',
+  rounded: boolean | undefined,
   hasBorder: boolean | undefined,
   iconStyle: {
     size?: number;
@@ -120,7 +120,7 @@ function buildStyles(
       gap: theme.spacings.x2,
 
       backgroundColor: componentScheme.backgroundColor,
-      borderRadius: theme.rounded.base,
+      borderRadius: rounded ? theme.rounded.full : theme.rounded.base,
       ...(useBorder
         ? {
             borderWidth: BORDER_WIDTH,
@@ -128,10 +128,7 @@ function buildStyles(
           }
         : {}),
     },
-    rounded: {
-      borderRadius: theme.rounded.full,
-    },
-    iconOnly: {
+    iconContainer: {
       width:
         (iconStyle.size ?? componentStyle.icon.size) +
         2 * padding +
@@ -163,15 +160,25 @@ export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
     <View
-      style={[StyleSheet.absoluteFill, { gap: 16, alignItems: 'flex-start' }]}
+      style={[
+        StyleSheet.absoluteFill,
+        { gap: 16, alignItems: 'flex-start', padding: 10 },
+      ]}
     >
       <Button>Default</Button>
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>
       <Button scheme="tertiary">Tertiary</Button>
-      <Button scheme="danger">Danger</Button>
+
+      <Button
+        scheme="danger"
+        icon={<Icon name="warning" />}
+      >
+        Danger
+      </Button>
       <Button disabled>Disabled</Button>
       <Button icon={<Icon name="home-outline" />} />
+      <Button icon={<Icon name="add" />}>Button with Icon</Button>
 
       <Button
         style={{ position: 'absolute', bottom: 15 }}

@@ -1,6 +1,6 @@
 import { StyleSheet, Text } from 'react-native';
 
-import { spacings } from '@contexts/theme/spacing';
+import { spacings } from '@contexts/theme/tokens';
 
 import Layout from '@components/layout';
 

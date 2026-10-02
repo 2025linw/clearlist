@@ -1,6 +1,6 @@
-import { ColorVariant } from '../types';
+import { ThemeModes } from '../types';
 
-export const colors: ColorVariant = {
+export const colors: ThemeModes = {
   light: {
     primary: {
       'primary-1': '#fcfdff',

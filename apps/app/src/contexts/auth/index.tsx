@@ -10,6 +10,7 @@ import {
 
 import { apiFetch } from '@lib/api';
 import { authClient } from '@lib/auth-client';
+import toast from '@lib/toast';
 
 import { API_URL } from '@/constants';
 
@@ -37,7 +38,7 @@ export function Provider({ children }: PropsWithChildren) {
     const getSession = async () => {
       const { data, error } = await authClient.getSession();
       if (error) {
-        // showError('Unable to connect to authentication service');
+        toast.error('Unable to connect to authentication service');
 
         setUser({
           loaded: true,
@@ -49,7 +50,7 @@ export function Provider({ children }: PropsWithChildren) {
       }
 
       if (!data) {
-        // showError('Your session has expired');
+        toast.error('Your session has expired');
 
         setUser({
           loaded: true,
@@ -63,7 +64,7 @@ export function Provider({ children }: PropsWithChildren) {
       try {
         await apiFetch(API_URL + '/api/me');
       } catch {
-        // showError('Unable to get user information');
+        toast.error('Unable to get user information');
       }
 
       setUser({
@@ -84,14 +85,14 @@ export function Provider({ children }: PropsWithChildren) {
         name: params.email.split('@')[0],
       });
       if (error) {
-        // showError('Unable to create new account');
+        toast.error('Unable to create new account');
 
         return false;
       }
 
       const res = await apiFetch(API_URL + '/api/me');
       if (res.status !== 200) {
-        // showError('Unable to access application account');
+        toast.error('Unable to access application account');
 
         throw false;
       }
@@ -112,14 +113,14 @@ export function Provider({ children }: PropsWithChildren) {
       password: params.password,
     });
     if (error) {
-      // showError('Unable to login to account');
+      toast.error('Unable to login to account');
 
       return false;
     }
 
     const res = await apiFetch(API_URL + '/api/me');
     if (res.status !== 200) {
-      // showError('Unable to access application account');
+      toast.error('Unable to access application account');
 
       throw false;
     }
@@ -135,7 +136,7 @@ export function Provider({ children }: PropsWithChildren) {
   const logout = useCallback<ApiContextType['logout']>(async () => {
     const { error } = await authClient.signOut();
     if (error) {
-      // showError('Unable to logout of account');
+      toast.error('Unable to logout of account');
 
       return;
     }

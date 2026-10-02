@@ -1,6 +1,6 @@
 import { Href, useRouter } from 'expo-router';
 
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import Button from '@components/primitives/button';
 import Icon, { IconColor, IconName } from '@components/primitives/icon';
