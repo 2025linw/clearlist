@@ -1,9 +1,11 @@
-import { StyleProp, Text, TextStyle, View } from 'react-native';
+import { StyleProp, Text, TextProps, TextStyle, View } from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { TypographyPalettes, TypographyVariants } from '@/context/theme/types';
+import { useTheme } from '@contexts/theme';
+import { Theme, TypographyVariants } from '@contexts/theme/types';
 
-type TypographyProps = {
+type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
+
+type TypographyProps = TextProps & {
   children: string;
   palette?: TypographyPalettes;
   variant?: TypographyVariants;
@@ -42,7 +44,6 @@ export function Demo() {
       <Typography palette="primary">Palette primary</Typography>
       <Typography palette="subtle">Palette subtle</Typography>
       <Typography palette="danger">Palette danger</Typography>
-      <Typography palette="navigation">Palette navigation</Typography>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

@@ -1,0 +1,173 @@
+import { useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+
+import { useSessionApi } from '@contexts/auth';
+import { useTheme } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
+
+import FormField from '@components/forms/form-field';
+import Button from '@components/primitives/button';
+import TextInput from '@components/primitives/text-input';
+import Typography from '@components/primitives/typography';
+
+export type State = 'login' | 'register';
+
+type LoginFormProps = {
+  type: State;
+};
+
+export default function LoginForm(props: LoginFormProps) {
+  const theme = useTheme();
+  const styles = buildStyles(theme);
+  const router = useRouter();
+
+  const { createAccount, login: loginApi } = useSessionApi();
+
+  const [isLoading, setLoading] = useState(false);
+  const [errorText, setErrorText] = useState('');
+
+  const [email, setEmail] = useState('will@email.com');
+  const [password, setPassword] = useState('testpass');
+  const [isPasswordFocused, setPasswordFocused] = useState(false);
+
+  const login = useCallback(
+    (info: { email: string; password: string }) => {
+      loginApi(info).then(
+        (success) => {
+          if (success) router.replace('/(page)');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, loginApi, setErrorText],
+  );
+
+  const register = useCallback(
+    (info: { email: string; password: string }) => {
+      createAccount(info).then(
+        (success) => {
+          if (success) router.replace('/(page)');
+        },
+        (err) => {
+          setErrorText(err);
+        },
+      );
+    },
+    [router, createAccount, setErrorText],
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.loginBox}>
+        <View style={styles.inputContainer}>
+          <FormField
+            label={'Email'}
+            style={styles.loginField}
+          >
+            <TextInput
+              style={styles.loginField}
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              autoComplete="email"
+              autoCorrect={false}
+            />
+          </FormField>
+
+          <FormField
+            label={'Password'}
+            style={styles.loginField}
+          >
+            <TextInput
+              style={styles.loginField}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              autoComplete="new-password"
+              autoCorrect={false}
+              secureTextEntry={!isPasswordFocused}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
+            />
+          </FormField>
+        </View>
+
+        <Button
+          scheme="primary"
+          disabled={isLoading}
+          onPress={async () => {
+            if (isLoading) return;
+            setLoading(true);
+
+            try {
+              if (props.type === 'login') {
+                login({ email, password });
+              } else {
+                register({ email, password });
+              }
+            } catch (e) {
+              setErrorText(`${JSON.stringify(e)}`);
+            } finally {
+              setLoading(false);
+            }
+          }}
+        >
+          {props.type === 'login' ? 'Login' : 'Register'}
+        </Button>
+      </View>
+
+      <Button
+        onPress={() =>
+          router.replace(props.type === 'login' ? '/register' : '/login')
+        }
+      >
+        {props.type === 'login'
+          ? "Don't have an account? Register"
+          : 'Have an account? Login'}
+      </Button>
+
+      <View style={styles.msgBox}>
+        <Typography palette="danger">{errorText}</Typography>
+      </View>
+    </View>
+  );
+}
+
+function buildStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      width: '100%',
+      padding: theme.spacings.x4,
+
+      justifyContent: 'space-between',
+    },
+    loginBox: {
+      borderRadius: theme.rounded.lg,
+      padding: theme.spacings.x4,
+
+      gap: theme.spacings.x3,
+
+      backgroundColor: theme.palette.subtle,
+    },
+    inputContainer: {
+      padding: theme.spacings.x2,
+
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 10,
+    },
+    loginField: {
+      padding: 5,
+
+      gap: 10,
+    },
+    msgBox: {
+      height: '10%',
+    },
+  });
+}

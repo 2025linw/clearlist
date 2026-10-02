@@ -11,7 +11,7 @@ export default (): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: 'com.saphy.clearlist',
+    bundleIdentifier: 'com.saphydev.clearlist',
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -21,7 +21,7 @@ export default (): ExpoConfig => ({
     },
   },
   android: {
-    package: 'com.saphy.clearlist',
+    package: 'com.saphydev.clearlist',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',
@@ -35,6 +35,7 @@ export default (): ExpoConfig => ({
     favicon: './assets/images/favicon.png',
   },
   plugins: [
+    'expo-status-bar',
     'expo-router',
     [
       'expo-splash-screen',
@@ -48,56 +49,24 @@ export default (): ExpoConfig => ({
         },
       },
     ],
-    'expo-secure-store',
     [
       'expo-font',
       {
-        fonts: ['./assets/fonts/Inter-Regular.otf'],
-        android: {
-          fonts: [
-            {
-              fontFamily: 'Inter',
-              fontDefinitions: [
-                {
-                  path: './assets/fonts/Inter-Italic.otf',
-                  weight: 400,
-                  style: 'italic',
-                },
-                {
-                  path: './assets/fonts/Inter-Medium.otf',
-                  weight: 500,
-                },
-                {
-                  path: './assets/fonts/Inter-Bold.otf',
-                  weight: 700,
-                },
-                {
-                  path: './assets/fonts/Inter-BoldItalic.otf',
-                  weight: 700,
-                  style: 'italic',
-                },
-                {
-                  path: './assets/fonts/Inter-Black.otf',
-                  weight: 900,
-                },
-              ],
-            },
-          ],
-        },
-        ios: {
-          fonts: [
-            './assets/fonts/Inter-Italic.otf',
-            './assets/fonts/Inter-Medium.otf',
-            './assets/fonts/Inter-Bold.otf',
-            './assets/fonts/Inter-BoldItalic.otf',
-            './assets/fonts/Inter-Black.otf',
-          ],
-        },
+        fonts: [
+          './assets/fonts/Inter-Regular.otf',
+          './assets/fonts/Inter-Italic.otf',
+          './assets/fonts/Inter-Medium.otf',
+          './assets/fonts/Inter-Bold.otf',
+          './assets/fonts/Inter-BoldItalic.otf',
+          './assets/fonts/Inter-Black.otf',
+        ],
       },
     ],
     '@react-native-vector-icons/ionicons',
+    'expo-secure-store',
     'expo-image',
     'expo-web-browser',
+    'expo-localization',
   ],
   experiments: {
     typedRoutes: true,

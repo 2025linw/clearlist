@@ -1,21 +1,33 @@
-import { Tag, Task } from '@clearlist/types';
+import dayjs from '@lib/datetime';
 
-export type BaseResponse = {
-  message?: string;
+export enum Cmp {
+  Equal = 'eq',
+  NotEqual = 'ne',
+  Less = 'lt',
+  LessEq = 'lte',
+  Greater = 'gt',
+  GreaterEq = 'gte',
+}
+
+export type DateQuery =
+  | { type: 'ex'; state: boolean }
+  | { type: 'eq'; date: dayjs.Dayjs }
+  | {
+      type: 'cmp';
+      cmp: Cmp;
+      date: dayjs.Dayjs;
+    };
+
+export type TaskQuery = {
+  startDate?: DateQuery;
+  deadline?: DateQuery;
+
+  completed?: boolean;
+  deleted?: boolean;
+
+  sortBy?: string;
+  sortOrder?: string;
 };
 
-export type TaskResponse = {
-  message?: string;
-  data: {
-    count: number;
-    tasks: Task[];
-  };
-};
-
-export type TagResponse = {
-  message?: string;
-  data: {
-    count: number;
-    tags: Tag[];
-  };
-};
+export type Category =
+  'inbox' | 'today' | 'upcoming' | 'deadline' | 'logged' | 'trash';

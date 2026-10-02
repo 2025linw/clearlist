@@ -1,44 +1,66 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
 import { SplashScreen, Stack } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Provider as AuthProvider } from '@/context/auth';
-import { Provider as ThemeProvider, useThemeContext } from '@/context/theme';
+import { Provider as AuthProvider, useSession } from '@contexts/auth';
+import { Provider as ThemeProvider, useThemeContext } from '@contexts/theme';
+import { useAppFonts } from '@hooks/use-fonts';
+import { ToastRenderer } from '@lib/toast';
 
 SplashScreen.preventAutoHideAsync();
 
+const queryClient = new QueryClient();
+
 export default function App() {
   return (
-    <GestureHandlerRootView style={styles.rootContainer}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppInner />
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.root}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppInner />
+            </AuthProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 
 function AppInner() {
-  const { loaded } = useThemeContext();
+  const { loaded: authLoaded } = useSession();
+  const { loaded: themeLoaded } = useThemeContext();
+  const { fontsLoaded, fontError } = useAppFonts();
 
+  // Check when
   useEffect(() => {
-    if (loaded) {
+    if (themeLoaded && authLoaded && fontsLoaded) {
       SplashScreen.hide();
     }
-  }, [loaded]);
+  }, [themeLoaded, authLoaded, fontsLoaded]);
 
-  if (!loaded) return null;
+  if (!(themeLoaded && authLoaded && fontsLoaded)) return null;
+  if (fontError) {
+    console.error('unable to load fonts');
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+    return null;
+  }
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }} />
+
+      <ToastRenderer />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
-  rootContainer: {
+  root: {
     flex: 1,
   },
 });

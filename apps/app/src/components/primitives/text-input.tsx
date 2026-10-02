@@ -2,25 +2,50 @@ import {
   TextInput as RNTextInput,
   TextInputProps as RNTextInputProps,
   StyleProp,
+  StyleSheet,
   TextStyle,
 } from 'react-native';
 
-import { useTheme } from '@/context/theme';
+import { useTheme } from '@contexts/theme';
+import { Theme } from '@contexts/theme/types';
 
 type TextInputProps = RNTextInputProps & {
-  style?: StyleProp<Pick<TextStyle, 'color'>>;
+  value?: string;
+  onChangeText?: (value: string) => void;
+  style?: StyleProp<TextStyle>;
 };
 
-export default function TextInput({ style, ...props }: TextInputProps) {
-  const { components } = useTheme();
+export default function TextInput({
+  value,
+  onChangeText,
+  style,
+  ...props
+}: TextInputProps) {
+  const theme = useTheme();
 
-  const typography = components.Typography;
+  const styles = buildStyles(theme);
+  const variantStyle = theme.components.Typography.variants.text;
 
   return (
     <RNTextInput
-      placeholderTextColor={typography.palette.subtle.color}
-      style={[typography.palette['text'], typography.variants['text'], style]}
       {...props}
+      value={value}
+      onChangeText={onChangeText}
+      placeholderTextColor={styles.placeholder.color}
+      style={[styles.typography, variantStyle, style]}
     />
   );
+}
+
+function buildStyles(theme: Theme) {
+  const componentStyle = theme.components.TextInput;
+
+  return StyleSheet.create({
+    typography: {
+      ...componentStyle.input,
+    },
+    placeholder: {
+      ...componentStyle.placeholder,
+    },
+  });
 }
