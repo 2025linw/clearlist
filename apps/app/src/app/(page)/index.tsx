@@ -2,8 +2,6 @@ import { Redirect } from 'expo-router';
 
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
-// import { useNotificationContext } from '@contexts/error';
-
 import ListNavigator from '@components/navigation/list-navigator';
 
 export default function Index() {
