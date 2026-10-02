@@ -3,12 +3,8 @@ import { useColorScheme } from 'react-native';
 
 import usePersisted from '@hooks/use-persisted';
 
-import {
-  ColorVariantName,
-  ThemeContextType,
-  ThemeMode,
-  buildTheme,
-} from './types';
+import { buildTheme } from './settings';
+import { ColorVariantName, ThemeContextType, ThemeMode } from './types';
 
 const ThemeContext = createContext<ThemeContextType>(
   {} as unknown as ThemeContextType,
@@ -32,7 +28,6 @@ export function Provider({ children, ...props }: ProviderProps) {
   } = usePersisted('colorTheme');
 
   const systemTheme = useColorScheme();
-
   const darkMode =
     themeMode === 'system'
       ? systemTheme === 'dark'
@@ -42,7 +37,7 @@ export function Provider({ children, ...props }: ProviderProps) {
 
   const theme = buildTheme(colorTheme, props.theme ?? darkMode);
 
-  function setThemeMode(v: 'system' | ThemeMode) {
+  function setThemeMode(v: ThemeMode | 'system') {
     _setThemeMode(v);
   }
   function resetThemeMode() {
