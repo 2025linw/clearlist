@@ -16,7 +16,7 @@ const testFiles = [
 
 export default [
   {
-    ignores: ['**/dist/**', '**/node_modules/**'],
+    ignores: ['**/dist/**', '**/node_modules/**', '**/*.config.{ts,mts,js,mjs}'],
   },
   ...expoConfig,
   ...tanstackQuery.configs['flat/recommended'],
