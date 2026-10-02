@@ -12,9 +12,7 @@
     "auth:lint": "pnpm --filter @clearlist/auth run lint",
     "auth:format": "pnpm --filter @clearlist/auth run format",
     "auth:test": "pnpm --filter @clearlist/auth run test",
-
     "app:export:web": "pnpm --filter @clearlist/app run export:web",
-    "app:tsc": "pnpm --filter @clearlist/app run tsc",
     "app:lint": "pnpm --filter @clearlist/app run lint",
     "app:format": "pnpm --filter @clearlist/app run format",
     "app:test": "pnpm --filter @clearlist/app run test"
@@ -23,7 +21,7 @@
     "@clearlist/eslint-config": "workspace:*",
     "@clearlist/prettier-config": "workspace:*",
     "@clearlist/types": "workspace:*",
-    "eslint": "<10",
-    "prettier": "^3.8.4"
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.9"
   }
 }

@@ -45,3 +45,8 @@ minimumReleaseAgeExclude:
   - '@expo/metro-runtime@57.0.16'
   - '@expo/ui@57.0.19'
   - expo-router@57.0.22
+  - expo-constants@57.0.20
+  - expo-modules-core@57.0.20
+  - expo@57.0.26
+  - '@expo/ui@57.0.21'
+  - expo-router@57.0.24
