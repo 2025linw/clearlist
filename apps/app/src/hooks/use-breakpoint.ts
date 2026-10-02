@@ -1,19 +1,22 @@
 import { useMemo } from 'react';
 import { useWindowDimensions } from 'react-native';
 
-export type Breakpoint = 'gtMobile' | 'gtTablet';
+export type Breakpoint = 'gtMobile' | 'gtTablet' | 'gtDesktop';
 
 export function useBreakpoints(): Record<Breakpoint, boolean> & {
   activeBreakpoint?: Breakpoint;
 } {
   const { width } = useWindowDimensions();
 
-  const gtMobile = width >= 800;
-  const gtTablet = width >= 1300;
+  const gtMobile = width >= 480;
+  const gtTablet = width >= 768;
+  const gtDesktop = width >= 992;
 
   return useMemo(() => {
     let active: Breakpoint | undefined;
-    if (gtTablet) {
+    if (gtDesktop) {
+      active = 'gtDesktop';
+    } else if (gtTablet) {
       active = 'gtTablet';
     } else if (gtMobile) {
       active = 'gtMobile';
@@ -23,6 +26,7 @@ export function useBreakpoints(): Record<Breakpoint, boolean> & {
       activeBreakpoint: active,
       gtMobile,
       gtTablet,
+      gtDesktop,
     };
-  }, [gtMobile, gtTablet]);
+  }, [gtMobile, gtTablet, gtDesktop]);
 }
