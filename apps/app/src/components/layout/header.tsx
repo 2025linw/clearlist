@@ -4,7 +4,7 @@ import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 import { Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import Button from '@components/primitives/button';
 import Icon, { IconProps } from '@components/primitives/icon';

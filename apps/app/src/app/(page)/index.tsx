@@ -1,6 +1,6 @@
 import { Redirect } from 'expo-router';
 
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 // import { useNotificationContext } from '@contexts/error';
 

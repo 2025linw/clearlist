@@ -5,7 +5,7 @@ import { Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
 import { Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import { IconProps } from '@components/primitives/icon';
 

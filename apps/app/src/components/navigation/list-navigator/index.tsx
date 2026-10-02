@@ -10,7 +10,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
 import { Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import HorizontalDivider from '@components/primitives/horizontal-divider';
 
