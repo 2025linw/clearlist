@@ -20,7 +20,10 @@ export default function MenuButton({
   ...props
 }: MenuButtonProps) {
   return (
-    <View style={style}>
+    <View
+      style={style}
+      pointerEvents="box-none"
+    >
       {state === 'list' ? <ListButton {...props} /> : <CardButton {...props} />}
     </View>
   );

@@ -120,7 +120,7 @@ export default function TaskList({
   }, [taskAdded, data]);
 
   const tapGesture = Gesture.Tap()
-    .maxDistance(25)
+    .maxDistance(5)
     .onEnd(() => {
       scheduleOnRN(setExpandedTask, null);
     });
@@ -145,6 +145,9 @@ export default function TaskList({
         onAddTask={addTask}
         onTrashTask={() => {
           if (activeExpandedTask) onTaskTrash?.(activeExpandedTask.id);
+        }}
+        onRestoreTask={() => {
+          if (activeExpandedTask) onTaskRestore?.(activeExpandedTask.id);
         }}
       />
 
@@ -197,7 +200,7 @@ function buildStyles(theme: Theme) {
       bottom: theme.spacings.x8,
       right: theme.spacings.x8,
 
-      zIndex: theme.zHeight.floating,
+      zIndex: theme.zHeight.modal,
     },
   });
 }
