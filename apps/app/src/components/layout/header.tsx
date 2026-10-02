@@ -31,7 +31,7 @@ export default function Header(props: HeaderProps) {
 
   const icon = props.icon
     ? cloneElement(props.icon, {
-        size: theme.components.Typography.variants.h1.fontSize + 5.5,
+        size: theme.components.Typography.variants.h1.fontSize + 4,
       })
     : null;
 
