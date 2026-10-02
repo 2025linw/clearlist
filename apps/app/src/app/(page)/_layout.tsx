@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { useSession } from '@contexts/auth';
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import ListNavigator from '@components/navigation/list-navigator';
 

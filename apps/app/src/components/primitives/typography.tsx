@@ -50,7 +50,6 @@ export function Demo() {
       <Typography palette="primary">Palette primary</Typography>
       <Typography palette="subtle">Palette subtle</Typography>
       <Typography palette="danger">Palette danger</Typography>
-      <Typography palette="navigation">Palette navigation</Typography>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

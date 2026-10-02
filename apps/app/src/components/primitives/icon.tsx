@@ -3,21 +3,16 @@ import { type ComponentProps } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
-import { type Theme } from '@contexts/theme/types';
 
 type IoniconType = ComponentProps<typeof Ionicons>;
 export type IconName = IoniconType['name'];
 export type IconColor = IoniconType['color'];
 
-type IconVariant = keyof Theme['components']['Icon']['variants'];
-
 export type IconProps = IoniconType & {
-  variant?: IconVariant;
   containerStyle?: StyleProp<ViewStyle>;
 };
 
 export default function Icon({
-  variant = 'default',
   size,
   color,
   style,
@@ -28,18 +23,13 @@ export default function Icon({
 }: IconProps) {
   const { components } = useTheme();
 
-  const componentStyle = components.Icon.variants[variant];
+  const componentStyle = components.Icon;
 
   const flattenedStyle = StyleSheet.flatten(style);
   const resolvedSize = size ?? flattenedStyle?.fontSize ?? componentStyle.size;
+  const resolvedColor = color ?? flattenedStyle?.color ?? componentStyle.color;
 
   const styles = buildStyles(resolvedSize);
-
-  if (__DEV__ && size !== undefined && flattenedStyle?.fontSize !== undefined) {
-    console.warn(
-      'Icon: both size and style.fontSize were specified; size takes precedence.',
-    );
-  }
 
   return (
     <View
@@ -50,18 +40,18 @@ export default function Icon({
       <Ionicons
         {...props}
         size={resolvedSize}
-        color={color ?? componentStyle.color}
-        style={[style, { fontSize: resolvedSize }]}
+        color={resolvedColor}
+        style={[style, { fontSize: resolvedSize, color: resolvedColor }]}
       />
     </View>
   );
 }
 
-function buildStyles(inputSize?: number) {
+function buildStyles(iconSize?: number) {
   return StyleSheet.create({
     container: {
-      width: inputSize,
-      height: inputSize,
+      width: iconSize,
+      height: iconSize,
 
       alignItems: 'center',
       justifyContent: 'center',

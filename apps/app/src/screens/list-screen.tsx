@@ -29,8 +29,6 @@ type ListScreenProps = {
 };
 
 export default function ListScreen(props: ListScreenProps) {
-  // const { showError } = useNotificationContext();
-
   const searchQuery = getCategoryQueryMap()[props.category];
 
   const queryTasks = TaskHook.useTasks(searchQuery);

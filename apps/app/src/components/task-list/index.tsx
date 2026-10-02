@@ -8,7 +8,7 @@ import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@contexts/theme/useBreakpoints';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
