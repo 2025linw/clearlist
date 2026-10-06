@@ -9,14 +9,13 @@ export type IconName = IoniconType['name'];
 export type IconColor = IoniconType['color'];
 
 export type IconProps = IoniconType & {
-  containerStyle?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Icon({
-  size,
-  color,
+  size: sizeProp,
+  color: colorProp,
   style,
-  containerStyle,
   role,
   testID,
   ...props
@@ -25,23 +24,21 @@ export default function Icon({
 
   const componentStyle = components.Icon;
 
-  const flattenedStyle = StyleSheet.flatten(style);
-  const resolvedSize = size ?? flattenedStyle?.fontSize ?? componentStyle.size;
-  const resolvedColor = color ?? flattenedStyle?.color ?? componentStyle.color;
+  const size = sizeProp ?? componentStyle.size;
+  const color = colorProp ?? componentStyle.color;
 
-  const styles = buildStyles(resolvedSize);
+  const styles = buildStyles(size);
 
   return (
     <View
-      style={[styles.container, containerStyle]}
+      style={[styles.container, style]}
       role={role}
       testID={testID}
     >
       <Ionicons
         {...props}
-        size={resolvedSize}
-        color={resolvedColor}
-        style={[style, { fontSize: resolvedSize, color: resolvedColor }]}
+        size={size}
+        color={color}
       />
     </View>
   );

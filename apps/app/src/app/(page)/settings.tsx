@@ -13,11 +13,17 @@ import Typography from '@components/primitives/typography';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { logout } = useSessionApi();
+  const { logout: logoutApi } = useSessionApi();
   const { hasSession } = useSession();
 
   const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
+
+  function logout() {
+    logoutApi().finally(() => {
+      router.replace('/login');
+    });
+  }
 
   return hasSession ? (
     <Layout
@@ -101,8 +107,6 @@ const styles = StyleSheet.create({
   buttonRow: {
     display: 'flex',
     flexDirection: 'row',
-    // justifyContent: 'space-evenly',
-    // alignItems: 'stretch',
   },
   button: {
     flex: 1,

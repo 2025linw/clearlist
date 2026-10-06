@@ -11,8 +11,8 @@ import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
 import dayjs from '@lib/datetime';
 
+import EditableTypography from '@components/editable-typography';
 import Checkbox from '@components/primitives/checkbox';
-import EditableTypography from '@components/text/editable-typography';
 
 import DeadlineBadge from './deadline-badge';
 import DeadlineButtonLabel from './deadline-button-label';

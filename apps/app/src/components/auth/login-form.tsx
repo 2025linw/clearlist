@@ -5,6 +5,7 @@ import { StyleSheet, View } from 'react-native';
 import { useSessionApi } from '@contexts/auth';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
+import { useToast } from '@hooks/use-toast';
 
 import FormField from '@components/forms/form-field';
 import Button from '@components/primitives/button';
@@ -21,47 +22,56 @@ export default function LoginForm(props: LoginFormProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
   const router = useRouter();
+  const toast = useToast();
 
   const { createAccount, login: loginApi } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
-  const [errorText, setErrorText] = useState('');
 
   const [email, setEmail] = useState('will@email.com');
   const [password, setPassword] = useState('testpass');
-  const [isPasswordFocused, setPasswordFocused] = useState(false);
-
-  const login = useCallback(
-    (info: { email: string; password: string }) => {
-      loginApi(info).then(
-        (success) => {
-          if (success) router.replace('/(page)');
-        },
-        (err) => {
-          setErrorText(err);
-        },
-      );
-    },
-    [router, loginApi, setErrorText],
-  );
+  const [isPasswordShown] = useState(false);
+  // const [isPasswordShown, setPasswordShown] = useState(false);
 
   const register = useCallback(
     (info: { email: string; password: string }) => {
-      createAccount(info).then(
-        (success) => {
-          if (success) router.replace('/(page)');
-        },
-        (err) => {
-          setErrorText(err);
-        },
-      );
+      createAccount(info)
+        .then(
+          (success) => {
+            router.setParams({ animation: 'none' });
+
+            if (success) router.replace('/(page)/main');
+          },
+          (err) => {
+            toast.error(`Error registering: ${err}`);
+          },
+        )
+        .finally(() => setLoading(false));
     },
-    [router, createAccount, setErrorText],
+    [router, toast, createAccount],
+  );
+
+  const login = useCallback(
+    (info: { email: string; password: string }) => {
+      loginApi(info)
+        .then(
+          (success) => {
+            router.setParams({ animation: 'none' });
+
+            if (success) router.replace('/(page)/main');
+          },
+          (err) => {
+            toast.error(`Error logging in: ${err}`);
+          },
+        )
+        .finally(() => setLoading(false));
+    },
+    [router, toast, loginApi],
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.loginBox}>
+      <View style={[styles.box, styles.loginBox]}>
         <View style={styles.inputContainer}>
           <FormField
             label={'Email'}
@@ -88,11 +98,11 @@ export default function LoginForm(props: LoginFormProps) {
               value={password}
               onChangeText={setPassword}
               autoCapitalize="none"
-              autoComplete="new-password"
+              autoComplete={
+                props.type === 'register' ? 'new-password' : 'current-password'
+              }
               autoCorrect={false}
-              secureTextEntry={!isPasswordFocused}
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
+              secureTextEntry={!isPasswordShown}
             />
           </FormField>
         </View>
@@ -104,35 +114,31 @@ export default function LoginForm(props: LoginFormProps) {
             if (isLoading) return;
             setLoading(true);
 
-            try {
-              if (props.type === 'login') {
-                login({ email, password });
-              } else {
-                register({ email, password });
-              }
-            } catch (e) {
-              setErrorText(`${JSON.stringify(e)}`);
-            } finally {
-              setLoading(false);
-            }
+            (props.type === 'register' ? register : login)({ email, password });
           }}
+          style={styles.button}
         >
-          {props.type === 'login' ? 'Login' : 'Register'}
+          {props.type === 'register' ? 'Register' : 'Login'}
         </Button>
       </View>
 
-      <Button
-        onPress={() =>
-          router.replace(props.type === 'login' ? '/register' : '/login')
-        }
-      >
-        {props.type === 'login'
-          ? "Don't have an account? Register"
-          : 'Have an account? Login'}
-      </Button>
+      <View style={styles.box}>
+        <Typography>
+          {props.type === 'register'
+            ? 'Have an account?'
+            : "Don't have an account?"}
+        </Typography>
 
-      <View style={styles.msgBox}>
-        <Typography palette="danger">{errorText}</Typography>
+        <Button
+          scheme="tertiary"
+          hasBorder
+          onPress={() =>
+            router.replace(props.type === 'register' ? '/login' : '/register')
+          }
+          style={styles.button}
+        >
+          {props.type === 'register' ? 'Login' : 'Register'}
+        </Button>
       </View>
     </View>
   );
@@ -146,12 +152,12 @@ function buildStyles(theme: Theme) {
 
       justifyContent: 'space-between',
     },
-    loginBox: {
+    box: {
       borderRadius: theme.rounded.lg,
       padding: theme.spacings.x4,
-
       gap: theme.spacings.x3,
-
+    },
+    loginBox: {
       backgroundColor: theme.palette.subtle,
     },
     inputContainer: {
@@ -166,8 +172,8 @@ function buildStyles(theme: Theme) {
 
       gap: 10,
     },
-    msgBox: {
-      height: '10%',
+    button: {
+      justifyContent: 'center',
     },
   });
 }

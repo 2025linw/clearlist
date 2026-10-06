@@ -52,7 +52,21 @@ function AppInner() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen
+          name="(public)/login"
+          options={{ animation: 'none' }}
+        />
+        <Stack.Screen
+          name="(public)/register"
+          options={{ animation: 'none' }}
+        />
+
+        <Stack.Screen
+          name="(page)"
+          options={{ title: 'Home' }}
+        />
+      </Stack>
 
       <ToastRenderer />
     </>

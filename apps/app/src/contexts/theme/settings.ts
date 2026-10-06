@@ -37,6 +37,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           text: { color: palette.text },
           subtle: { color: palette.subtle },
 
+          success: { color: palette.success },
           danger: { color: palette.danger },
         },
         variants: typographyVariants,
@@ -92,7 +93,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           success: {
             backgroundColor: palette.success,
             borderColor: palette.border,
-            color: palette.text,
+            color: '#fff',
 
             hovered: {
               backgroundColor: themeColors.primary['primary-10'],
@@ -140,7 +141,10 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
         },
       },
       TextInput: {
-        input: { color: palette.text },
+        input: {
+          ...typographyVariants.text,
+          color: palette.text,
+        },
         placeholder: { color: palette.subtle },
       },
     },

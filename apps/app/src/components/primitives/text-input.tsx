@@ -24,15 +24,15 @@ export default function TextInput({
   const theme = useTheme();
 
   const styles = buildStyles(theme);
-  const variantStyle = theme.components.Typography.variants.text;
+  const { color: placeholderTextColor } = styles.placeholder;
 
   return (
     <RNTextInput
       {...props}
       value={value}
       onChangeText={onChangeText}
-      placeholderTextColor={styles.placeholder.color}
-      style={[styles.typography, variantStyle, style]}
+      placeholderTextColor={placeholderTextColor}
+      style={[styles.typography, style]}
     />
   );
 }
@@ -41,11 +41,7 @@ function buildStyles(theme: Theme) {
   const componentStyle = theme.components.TextInput;
 
   return StyleSheet.create({
-    typography: {
-      ...componentStyle.input,
-    },
-    placeholder: {
-      ...componentStyle.placeholder,
-    },
+    typography: componentStyle.input,
+    placeholder: componentStyle.placeholder,
   });
 }

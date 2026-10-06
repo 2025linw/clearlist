@@ -1,8 +1,8 @@
 import { type ReactElement } from 'react';
 import { cloneElement } from 'react';
 import {
-  Platform,
   type ColorValue,
+  Platform,
   type PressableProps,
   type StyleProp,
   type TextStyle,
@@ -60,9 +60,11 @@ export default function Button({
     },
   );
 
+  const iconComponentStyle = theme.components.Button.icon;
   const icon = props.icon
     ? cloneElement(props.icon, {
-        style: styles.icon,
+        size: props.icon?.props.size ?? iconComponentStyle.size,
+        color: styles.icon.color,
       })
     : undefined;
 
@@ -110,10 +112,17 @@ function buildStyles(
   const componentStyle = theme.components.Button;
   const componentScheme = componentStyle.scheme[scheme];
 
+  // Default border to true for secondary, otherwise honor hasBorder or false
   const useBorder =
     hasBorder !== undefined ? hasBorder : scheme === 'secondary' ? true : false;
 
   const padding = theme.spacings.x2;
+
+  // Container size (width and height) for icon only button
+  const iconOnlySize =
+    (iconStyle.size ?? componentStyle.icon.size) +
+    2 * padding +
+    (useBorder ? 2 * BORDER_WIDTH : 0);
 
   return StyleSheet.create({
     container: {
@@ -133,11 +142,8 @@ function buildStyles(
         : {}),
     },
     iconContainer: {
-      width:
-        (iconStyle.size ?? componentStyle.icon.size) +
-        2 * padding +
-        (useBorder ? 2 * BORDER_WIDTH : 0),
-      aspectRatio: 1,
+      width: iconOnlySize,
+      height: iconOnlySize,
 
       justifyContent: 'center',
     },
@@ -152,7 +158,6 @@ function buildStyles(
       userSelect: 'none',
     },
     icon: {
-      fontSize: iconStyle.size ?? componentStyle.icon.size,
       color: iconStyle.color ?? componentStyle.scheme[scheme].color,
     },
   });
