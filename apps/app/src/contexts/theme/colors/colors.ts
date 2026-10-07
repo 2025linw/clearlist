@@ -45,6 +45,21 @@ export const yellow: ColorScale<'yellow'> = {
   'yellow-12': '#473B1F',
 };
 
+export const amber: ColorScale<'amber'> = {
+  'amber-1': '#FEFDFB',
+  'amber-2': '#FEFBE9',
+  'amber-3': '#FFF7C2',
+  'amber-4': '#FFEE9C',
+  'amber-5': '#FBE577',
+  'amber-6': '#F3D673',
+  'amber-7': '#E9C162',
+  'amber-8': '#E2A336',
+  'amber-9': '#FFC53D',
+  'amber-10': '#FFBA18',
+  'amber-11': '#AB6400',
+  'amber-12': '#4F3422',
+};
+
 export const green: ColorScale<'green'> = {
   'green-1': '#FBFEFC',
   'green-2': '#F4FBF6',
