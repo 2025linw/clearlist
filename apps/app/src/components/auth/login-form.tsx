@@ -18,7 +18,7 @@ type LoginFormProps = {
   type: State;
 };
 
-export default function LoginForm(props: LoginFormProps) {
+export default function LoginForm({ type }: LoginFormProps) {
   const theme = useTheme();
   const styles = buildStyles(theme);
   const router = useRouter();
@@ -99,7 +99,7 @@ export default function LoginForm(props: LoginFormProps) {
               onChangeText={setPassword}
               autoCapitalize="none"
               autoComplete={
-                props.type === 'register' ? 'new-password' : 'current-password'
+                type === 'register' ? 'new-password' : 'current-password'
               }
               autoCorrect={false}
               secureTextEntry={!isPasswordShown}
@@ -114,30 +114,28 @@ export default function LoginForm(props: LoginFormProps) {
             if (isLoading) return;
             setLoading(true);
 
-            (props.type === 'register' ? register : login)({ email, password });
+            (type === 'register' ? register : login)({ email, password });
           }}
           style={styles.button}
         >
-          {props.type === 'register' ? 'Register' : 'Login'}
+          {type === 'register' ? 'Register' : 'Login'}
         </Button>
       </View>
 
       <View style={styles.box}>
         <Typography>
-          {props.type === 'register'
-            ? 'Have an account?'
-            : "Don't have an account?"}
+          {type === 'register' ? 'Have an account?' : "Don't have an account?"}
         </Typography>
 
         <Button
           scheme="tertiary"
           hasBorder
           onPress={() =>
-            router.replace(props.type === 'register' ? '/login' : '/register')
+            router.replace(type === 'register' ? '/login' : '/register')
           }
           style={styles.button}
         >
-          {props.type === 'register' ? 'Login' : 'Register'}
+          {type === 'register' ? 'Login' : 'Register'}
         </Button>
       </View>
     </View>
@@ -145,32 +143,35 @@ export default function LoginForm(props: LoginFormProps) {
 }
 
 function buildStyles(theme: Theme) {
+  const gap = theme.spacings.x4;
+
   return StyleSheet.create({
     container: {
       width: '100%',
+
       padding: theme.spacings.x4,
 
       justifyContent: 'space-between',
+      gap,
     },
     box: {
-      borderRadius: theme.rounded.lg,
-      padding: theme.spacings.x4,
-      gap: theme.spacings.x3,
+      padding: theme.spacings.x3,
+
+      gap,
     },
     loginBox: {
-      backgroundColor: theme.palette.subtle,
+      borderRadius: theme.rounded.lg,
+      borderWidth: 1,
+      borderColor: theme.palette.border,
+
+      backgroundColor: theme.palette.surface,
     },
     inputContainer: {
-      padding: theme.spacings.x2,
-
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 10,
     },
     loginField: {
-      padding: 5,
-
-      gap: 10,
+      margin: theme.spacings.x2,
     },
     button: {
       justifyContent: 'center',
