@@ -12,7 +12,7 @@ import Icon from '../icon';
 const theme = buildTheme('default', 'light');
 
 describe('<Button /> Content', () => {
-  test('Text renders correctly', async () => {
+  test('text renders correctly', async () => {
     await renderWithProviders(<Button>Click Here</Button>);
 
     const button = screen.getByRole('button');
@@ -21,7 +21,7 @@ describe('<Button /> Content', () => {
     expect(button).toHaveTextContent('Click Here');
   });
 
-  test('Icon renders correctly', async () => {
+  test('icon renders correctly', async () => {
     await renderWithProviders(
       <Button
         icon={

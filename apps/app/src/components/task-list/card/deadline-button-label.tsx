@@ -25,7 +25,7 @@ export default function DeadlineButtonLabel({
     <Animated.View style={styles.container}>
       <Button
         scheme="tertiary"
-        typographyStyle={styles.text}
+        textStyle={styles.text}
         icon={
           <Icon
             name="flag"

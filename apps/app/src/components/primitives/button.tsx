@@ -37,7 +37,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
     scheme?: ButtonSchemes;
     hasBorder?: boolean;
     rounded?: boolean;
-    typographyStyle?: StyleProp<TextStyle>;
+    textStyle?: StyleProp<TextStyle>;
     testOnly_hovered?: null | boolean | undefined;
   };
 
@@ -89,7 +89,7 @@ export default function Button({
       {children && (
         <Typography
           variant="button"
-          style={[styles.typography, props.typographyStyle]}
+          style={[styles.typography, props.textStyle]}
           selectable={false}
         >
           {children}

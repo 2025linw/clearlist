@@ -25,7 +25,7 @@ export default function StartButtonLabel({
     <Animated.View style={styles.container}>
       <Button
         scheme="tertiary"
-        typographyStyle={styles.text}
+        textStyle={styles.text}
         icon={
           <Icon
             name="calendar-outline"
