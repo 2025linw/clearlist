@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 
 import { type task } from '@clearlist/types';
 
@@ -88,14 +86,11 @@ export default function TaskCard({
     wasExpanded.current = expanded;
   }, [expanded, flushUpdate]);
 
-  const tap = Gesture.Tap()
-    .enabled(!disabled)
-    .onEnd(() => {
-      if (onPress) scheduleOnRN(onPress);
-    });
-
   return (
-    <GestureDetector gesture={tap}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+    >
       <Animated.View
         style={[
           styles.container,
@@ -108,8 +103,13 @@ export default function TaskCard({
         <View style={styles.mainRow}>
           <Checkbox
             checked={!!task.completedAt}
-            onCheck={props.onTaskComplete}
-            onUncheck={props.onTaskReopen}
+            onChange={(checked) => {
+              const handler = checked
+                ? props.onTaskComplete
+                : props.onTaskReopen;
+
+              handler?.();
+            }}
           />
 
           {task.start && !expanded && (
@@ -180,7 +180,7 @@ export default function TaskCard({
           </Animated.View>
         )}
       </Animated.View>
-    </GestureDetector>
+    </Pressable>
   );
 }
 
