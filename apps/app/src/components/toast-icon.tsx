@@ -2,7 +2,7 @@ import { useTheme } from '@contexts/theme';
 
 import Icon, { type IconName } from '@components/primitives/icon';
 
-type ToastType = 'default' | 'success' | 'error';
+type ToastType = 'default' | 'success' | 'warn' | 'error';
 
 type ToastIconProps = {
   type: ToastType;
@@ -11,7 +11,8 @@ type ToastIconProps = {
 const iconNames: Record<ToastType, IconName> = {
   default: 'information-circle-outline',
   success: 'checkmark-circle-outline',
-  error: 'alert-circle-outline',
+  warn: 'alert-circle-outline',
+  error: 'close-circle-outline',
 };
 
 export default function ToastIcon({ type }: ToastIconProps) {
@@ -21,6 +22,7 @@ export default function ToastIcon({ type }: ToastIconProps) {
   const colors = {
     default: theme.palette.text,
     success: theme.palette.success,
+    warn: theme.palette.warning,
     error: theme.palette.error,
   };
 
