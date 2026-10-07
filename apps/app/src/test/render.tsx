@@ -13,9 +13,17 @@ function Providers({ children, ...props }: TestProvidersProps) {
   return <ThemeProvider theme={props.theme}>{children}</ThemeProvider>;
 }
 
+type RenderWithProvidersOptions = Omit<RenderOptions, 'wrapper'> & {
+  theme?: ThemeMode;
+};
+
 export function renderWithProviders(
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
+  { theme = 'light', ...options }: RenderWithProvidersOptions = {},
 ) {
-  return render(ui, { wrapper: Providers, ...options });
+  function wrapper({ children }: PropsWithChildren) {
+    return <Providers theme={theme}>{children}</Providers>;
+  }
+
+  return render(ui, { ...options, wrapper: wrapper });
 }

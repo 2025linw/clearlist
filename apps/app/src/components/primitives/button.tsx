@@ -37,8 +37,8 @@ export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
     scheme?: ButtonSchemes;
     hasBorder?: boolean;
     rounded?: boolean;
-  } & {
     typographyStyle?: StyleProp<TextStyle>;
+    testOnly_hovered?: null | boolean | undefined;
   };
 
 export default function Button({
@@ -77,7 +77,8 @@ export default function Button({
       style={(state) => [
         styles.container,
         iconOnly && styles.iconContainer,
-        Platform.OS === 'web' && state.hovered && styles.hoveredStyle,
+        (props.testOnly_hovered || (Platform.OS === 'web' && state.hovered)) &&
+          styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}
@@ -132,14 +133,11 @@ function buildStyles(
       alignItems: 'center',
       gap: theme.spacings.x2,
 
-      backgroundColor: componentScheme.backgroundColor,
+      borderWidth: useBorder ? BORDER_WIDTH : 0,
       borderRadius: rounded ? theme.rounded.full : theme.rounded.base,
-      ...(useBorder
-        ? {
-            borderWidth: BORDER_WIDTH,
-            borderColor: componentScheme.borderColor,
-          }
-        : {}),
+      borderColor: componentScheme.borderColor,
+
+      backgroundColor: componentScheme.backgroundColor,
     },
     iconContainer: {
       width: iconOnlySize,
@@ -147,12 +145,8 @@ function buildStyles(
 
       justifyContent: 'center',
     },
-    hoveredStyle: {
-      backgroundColor: componentScheme.hovered.backgroundColor,
-    },
-    pressedStyle: {
-      backgroundColor: componentScheme.pressed.backgroundColor,
-    },
+    hoveredStyle: componentScheme.hovered,
+    pressedStyle: componentScheme.pressed,
     typography: {
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
