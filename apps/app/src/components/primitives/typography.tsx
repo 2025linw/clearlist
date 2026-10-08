@@ -12,7 +12,7 @@ import { type Theme, type TypographyVariants } from '@contexts/theme/types';
 type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
 
 type TypographyProps = TextProps & {
-  children: string;
+  children?: string;
   palette?: TypographyPalettes;
   variant?: TypographyVariants;
   style?: StyleProp<TextStyle>;
