@@ -10,7 +10,7 @@ import Button from '../button';
 import Icon from '../icon';
 
 describe('<Button /> Content', () => {
-  test('textOnly renders correctly', async () => {
+  test('renders correctly with only text', async () => {
     await renderWithProviders(<Button>Test</Button>);
 
     const button = screen.getByRole('button');
@@ -19,7 +19,7 @@ describe('<Button /> Content', () => {
     expect(button).toHaveTextContent('Test');
   });
 
-  test('iconOnly renders correctly', async () => {
+  test('renders correctly with only icon', async () => {
     await renderWithProviders(
       <Button
         icon={
@@ -38,7 +38,7 @@ describe('<Button /> Content', () => {
     expect(button).toContainElement(icon);
   });
 
-  test('text and icon renders correctly', async () => {
+  test('renders correctly with both icon and text', async () => {
     await renderWithProviders(
       <Button
         icon={
