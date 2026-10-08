@@ -12,16 +12,17 @@ import Icon from '../icon';
 const theme = buildTheme('default', 'light');
 
 describe('<Button /> Content', () => {
-  test('text renders correctly', async () => {
-    await renderWithProviders(<Button>Click Here</Button>);
+  test('textOnly renders correctly', async () => {
+    await renderWithProviders(<Button>Test</Button>);
 
     const button = screen.getByRole('button');
 
     expect(button).toBeOnTheScreen();
-    expect(button).toHaveTextContent('Click Here');
+    expect(button).toBeVisible();
+    expect(button).toHaveTextContent('Test');
   });
 
-  test('icon renders correctly', async () => {
+  test('iconOnly renders correctly', async () => {
     await renderWithProviders(
       <Button
         icon={
@@ -37,7 +38,31 @@ describe('<Button /> Content', () => {
     const icon = screen.getByTestId('button-icon');
 
     expect(button).toBeOnTheScreen();
+    expect(button).toBeVisible();
     expect(button).toContainElement(icon);
+  });
+
+  test('text and icon renders correctly', async () => {
+    await renderWithProviders(
+      <Button
+        icon={
+          <Icon
+            name="add"
+            testID="button-icon"
+          />
+        }
+      >
+        Test
+      </Button>,
+    );
+
+    const button = screen.getByRole('button');
+    const icon = screen.getByTestId('button-icon');
+
+    expect(button).toBeOnTheScreen();
+    expect(button).toBeVisible();
+    expect(button).toContainElement(icon);
+    expect(button).toHaveTextContent('Test', { exact: false });
   });
 });
 
@@ -205,7 +230,7 @@ describe('<Button /> Style', () => {
   });
 
   test.each(['primary', 'secondary', 'tertiary', 'success', 'danger'] as const)(
-    'scheme styles',
+    '%s scheme styles',
     async (schemeName) => {
       await renderWithProviders(<Button scheme={schemeName}>Test</Button>);
 
@@ -278,7 +303,7 @@ describe('<Button /> Style', () => {
   test.each(['primary', 'secondary', 'tertiary'] as const)(
     // NOTE: only testing primary, secondary, and tertiary,
     // as they are the only buttons that would have special handling of borders
-    'border prop overrides defaults',
+    'border prop overrides defaults for %s scheme',
     async (schemeName) => {
       await renderWithProviders(
         <Button
