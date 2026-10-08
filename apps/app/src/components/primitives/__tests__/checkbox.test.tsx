@@ -14,7 +14,6 @@ describe('<Checkbox /> Content', () => {
 
     const checkbox = screen.getByRole('checkbox');
 
-    expect(checkbox).toBeOnTheScreen();
     expect(checkbox).toBeVisible();
   });
 });

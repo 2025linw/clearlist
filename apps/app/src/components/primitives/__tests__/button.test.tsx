@@ -17,7 +17,6 @@ describe('<Button /> Content', () => {
 
     const button = screen.getByRole('button');
 
-    expect(button).toBeOnTheScreen();
     expect(button).toBeVisible();
     expect(button).toHaveTextContent('Test');
   });
@@ -37,7 +36,6 @@ describe('<Button /> Content', () => {
     const button = screen.getByRole('button');
     const icon = screen.getByTestId('button-icon');
 
-    expect(button).toBeOnTheScreen();
     expect(button).toBeVisible();
     expect(button).toContainElement(icon);
   });
@@ -59,7 +57,6 @@ describe('<Button /> Content', () => {
     const button = screen.getByRole('button');
     const icon = screen.getByTestId('button-icon');
 
-    expect(button).toBeOnTheScreen();
     expect(button).toBeVisible();
     expect(button).toContainElement(icon);
     expect(button).toHaveTextContent('Test', { exact: false });
