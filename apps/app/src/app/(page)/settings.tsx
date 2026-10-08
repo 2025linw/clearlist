@@ -80,6 +80,9 @@ export default function SettingsPage() {
           <Button onPress={() => router.navigate('/settings/button-debug')}>
             Debug (Button)
           </Button>
+          <Button onPress={() => router.navigate('/settings/checkbox-debug')}>
+            Debug (Checkbox)
+          </Button>
           <Button onPress={() => router.navigate('/settings/spacing-debug')}>
             Debug (Spacing)
           </Button>
