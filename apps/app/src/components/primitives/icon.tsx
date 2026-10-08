@@ -33,12 +33,12 @@ export default function Icon({
     <View
       style={[styles.container, style]}
       role={role}
-      testID={testID}
     >
       <Ionicons
         {...props}
         size={size}
         color={color}
+        testID={testID}
       />
     </View>
   );
