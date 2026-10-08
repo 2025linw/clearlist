@@ -1,9 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
 
 export default function HorizontalDivider() {
   const theme = useTheme();
+  const styles = buildStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -12,13 +14,14 @@ export default function HorizontalDivider() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    // TODO: use theme spacing
-    paddingHorizontal: 3,
-    paddingVertical: 5,
-  },
-  line: {
-    height: StyleSheet.hairlineWidth,
-  },
-});
+function buildStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: theme.spacings.x2,
+      paddingVertical: theme.spacings.x3,
+    },
+    line: {
+      height: theme.spacings.thin,
+    },
+  });
+}
