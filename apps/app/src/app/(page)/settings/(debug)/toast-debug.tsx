@@ -14,6 +14,7 @@ export default function NotificationDebug() {
       <Button onPress={() => toast.success('This is a success toast')}>
         Success
       </Button>
+      <Button onPress={() => toast.warn('This is an warn toast')}>Warn</Button>
       <Button onPress={() => toast.error('This is an error toast')}>
         Error
       </Button>
