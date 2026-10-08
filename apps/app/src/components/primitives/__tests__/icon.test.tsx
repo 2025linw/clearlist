@@ -8,8 +8,6 @@ import Icon from '@components/primitives/icon';
 
 import { renderWithProviders } from '@/test/render';
 
-const theme = buildTheme('default', 'light');
-
 describe('<Icon /> Content', () => {
   test('renders correctly', async () => {
     await renderWithProviders(
@@ -26,6 +24,8 @@ describe('<Icon /> Content', () => {
 });
 
 describe('<Icon /> Style', () => {
+  const theme = buildTheme('default', 'light');
+
   test('default style', async () => {
     await renderWithProviders(
       <Icon

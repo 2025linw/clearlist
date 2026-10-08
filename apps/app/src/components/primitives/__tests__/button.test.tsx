@@ -9,8 +9,6 @@ import { renderWithProviders } from '@/test/render';
 import Button from '../button';
 import Icon from '../icon';
 
-const theme = buildTheme('default', 'light');
-
 describe('<Button /> Content', () => {
   test('textOnly renders correctly', async () => {
     await renderWithProviders(<Button>Test</Button>);
@@ -202,6 +200,8 @@ describe('<Button /> Action', () => {
 });
 
 describe('<Button /> Style', () => {
+  const theme = buildTheme('default', 'light');
+
   test('icon only button is square', async () => {
     await renderWithProviders(<Button icon={<Icon name="add" />} />);
 

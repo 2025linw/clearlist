@@ -6,8 +6,6 @@ import Checkbox from '@components/primitives/checkbox';
 
 import { renderWithProviders } from '@/test/render';
 
-const theme = buildTheme('default', 'light');
-
 describe('<Checkbox /> Content', () => {
   test('renders correctly', async () => {
     await renderWithProviders(<Checkbox />);
@@ -56,6 +54,8 @@ describe('<Checkbox /> Action', () => {
 });
 
 describe('<Checkbox /> Style', () => {
+  const theme = buildTheme('default', 'light');
+
   test.each([
     { disabled: false, colorKey: 'text' },
     { disabled: true, colorKey: 'subtle' },
