@@ -58,6 +58,7 @@ describe('<Button /> Content', () => {
     const icon = screen.getByTestId('button-icon');
 
     expect(button).toBeVisible();
+    expect(icon).toBeVisible();
     expect(button).toContainElement(icon);
     expect(button).toHaveTextContent('Test', { exact: false });
   });
