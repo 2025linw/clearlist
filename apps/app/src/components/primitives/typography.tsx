@@ -1,10 +1,18 @@
-import { StyleProp, Text, TextStyle, View } from 'react-native';
+import {
+  type StyleProp,
+  Text,
+  type TextProps,
+  type TextStyle,
+  View,
+} from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { TypographyPalettes, TypographyVariants } from '@/context/theme/types';
+import { useTheme } from '@contexts/theme';
+import { type Theme, type TypographyVariants } from '@contexts/theme/types';
 
-type TypographyProps = {
-  children: string;
+type TypographyPalettes = keyof Theme['components']['Typography']['palette'];
+
+type TypographyProps = TextProps & {
+  children?: string;
   palette?: TypographyPalettes;
   variant?: TypographyVariants;
   style?: StyleProp<TextStyle>;
@@ -22,14 +30,19 @@ export default function Typography({
   const variantStyle = components.Typography.variants[variant];
 
   return (
-    <Text style={[paletteStyle, variantStyle, props.style]}>{children}</Text>
+    <Text
+      {...props}
+      style={[paletteStyle, variantStyle, props.style]}
+    >
+      {children}
+    </Text>
   );
 }
 
 export function Demo() {
   return (
-    /* eslint-disable react-native/no-inline-styles */
-    <View style={{ gap: 16 }}>
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Typography>Default Text</Typography>
       <Typography variant="h1">Variant h1</Typography>
       <Typography variant="h2">Variant h2</Typography>
@@ -41,9 +54,8 @@ export function Demo() {
       <Typography palette="text">Palette text</Typography>
       <Typography palette="primary">Palette primary</Typography>
       <Typography palette="subtle">Palette subtle</Typography>
+      <Typography palette="success">Palette success</Typography>
       <Typography palette="danger">Palette danger</Typography>
-      <Typography palette="navigation">Palette navigation</Typography>
     </View>
-    /* eslint-enable react-native/no-inline-styles */
   );
 }

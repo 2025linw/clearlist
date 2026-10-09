@@ -1,18 +1,27 @@
 // @ts-nocheck
 
 import expoConfig from 'eslint-config-expo/flat.js';
-import react from 'eslint-plugin-react';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import reactNative from 'eslint-plugin-react-native';
+import tanstackQuery from '@tanstack/eslint-plugin-query'
 
-import base from './base.js';
+import testingLibrary from 'eslint-plugin-testing-library';
+
 import noSingleStyleArray from './rules/no-single-style-array.mjs';
 
+const testFiles = [
+  '**/__tests__/**/*.{js,jsx,ts,tsx}',
+  '**/*.{spec,test}.{js,jsx,ts,tsx}',
+];
+
 export default [
+  {
+    ignores: ['**/dist/**', '**/node_modules/**', '**/*.config.{ts,mts,js,mjs}'],
+  },
   ...expoConfig,
-  ...base,
+  ...tanstackQuery.configs['flat/recommended'],
   {
     plugins: {
-      react,
       'react-native': reactNative,
       'local': {
         rules: {
@@ -21,9 +30,28 @@ export default [
       },
     },
     rules: {
-      'prettier/prettier': 'warn',
       'react-native/no-inline-styles': 'warn',
       'local/no-single-style-array': 'warn',
+      '@typescript-eslint/consistent-type-imports': [
+        'error',
+        {
+          prefer: 'type-imports',
+          fixStyle: 'inline-type-imports',
+        },
+      ],
+    },
+  },
+  {
+    files: testFiles,
+    ...testingLibrary.configs['flat/react'],
+    settings: {
+      'testing-library/utils-module': '@testing-library/react-native',
+    },
+  },
+  eslintPluginPrettierRecommended,
+  {
+    rules: {
+      'prettier/prettier': 'warn',
     },
   },
 ];

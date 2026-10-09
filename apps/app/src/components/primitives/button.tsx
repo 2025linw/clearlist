@@ -1,103 +1,190 @@
-import { ReactNode } from 'react';
+import { type ReactElement } from 'react';
+import { cloneElement } from 'react';
 import {
-  Pressable,
-  PressableProps,
-  StyleSheet,
-  TextStyle,
-  View,
-  ViewStyle,
+  type ColorValue,
+  Platform,
+  type PressableProps,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useTheme } from '@/context/theme';
-import { ButtonSchemes, Theme } from '@/context/theme/types';
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
 
-import Typography from '@/components/primitives/typography';
+import Icon, { type IconProps } from '@components/primitives/icon';
+import Typography from '@components/primitives/typography';
 
-export type ButtonProps = PressableProps & {
-  text: string;
-  scheme?: ButtonSchemes;
-  leftIcon?: ReactNode;
-};
+import { type ElementProps } from './types';
+
+type ButtonSchemes = keyof Omit<
+  Theme['components']['Button']['scheme'],
+  'disabled'
+>;
+
+type ButtonContent =
+  | {
+      children: string;
+      icon?: ReactElement<IconProps>;
+    }
+  | {
+      children?: never;
+      icon: ReactElement<IconProps>;
+    };
+
+export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
+  ButtonContent & {
+    scheme?: ButtonSchemes;
+    hasBorder?: boolean;
+    rounded?: boolean;
+    textStyle?: StyleProp<TextStyle>;
+    testOnly_hovered?: null | boolean | undefined;
+  };
 
 export default function Button({
-  text,
-  scheme = 'default',
-  leftIcon,
-  ...pressableProps
+  scheme = 'primary',
+  children,
+  disabled,
+  style,
+  ...props
 }: ButtonProps) {
   const theme = useTheme();
-
-  const styles = buildStyle(
+  const styles = buildStyles(
     theme,
-    pressableProps.disabled ? 'disabled' : scheme,
+    disabled ? 'disabled' : scheme,
+    props.rounded,
+    props.hasBorder,
+    {
+      size: props.icon?.props.size,
+      color: props.icon?.props.color,
+    },
   );
+
+  const iconComponentStyle = theme.components.Button.icon;
+  const icon = props.icon
+    ? cloneElement(props.icon, {
+        size: props.icon?.props.size ?? iconComponentStyle.size,
+        color: styles.icon.color,
+      })
+    : undefined;
+
+  const iconOnly = !!icon && !children;
 
   return (
     <Pressable
-      {...pressableProps}
-      disabled={pressableProps.disabled}
+      {...props}
+      disabled={disabled}
+      style={(state) => [
+        styles.container,
+        iconOnly && styles.iconContainer,
+        (props.testOnly_hovered ||
+          (Platform.OS === 'web' &&
+            (state as typeof state & { hovered?: boolean }).hovered)) &&
+          styles.hoveredStyle,
+        state.pressed && styles.pressedStyle,
+        typeof style === 'function' ? style(state) : style,
+      ]}
+      role="button"
     >
-      <View style={styles.container}>
-        {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+      {icon}
 
+      {children && (
         <Typography
           variant="button"
-          style={styles.typography}
+          style={[styles.typography, props.textStyle]}
+          selectable={false}
         >
-          {text}
+          {children}
         </Typography>
-      </View>
+      )}
     </Pressable>
   );
 }
 
-type ButtonStyle = {
-  container: ViewStyle;
-  typography: TextStyle;
-  leftIcon: ViewStyle;
-};
-function buildStyle(
+const BORDER_WIDTH = 1;
+function buildStyles(
   theme: Theme,
   scheme: ButtonSchemes | 'disabled',
-): ButtonStyle {
+  rounded: boolean | undefined,
+  hasBorder: boolean | undefined,
+  iconStyle: {
+    size?: number;
+    color?: ColorValue;
+  },
+) {
+  const componentStyle = theme.components.Button;
+  const componentScheme = componentStyle.scheme[scheme];
+
+  // Default border to true for secondary, otherwise honor hasBorder or false
+  const useBorder =
+    hasBorder !== undefined ? hasBorder : scheme === 'secondary' ? true : false;
+
+  const padding = theme.spacings.x2;
+
+  // Container size (width and height) for icon only button
+  const iconOnlySize =
+    (iconStyle.size ?? componentStyle.icon.size) +
+    2 * padding +
+    (useBorder ? 2 * BORDER_WIDTH : 0);
+
   return StyleSheet.create({
     container: {
+      padding,
+
       flexDirection: 'row',
       alignItems: 'center',
-      borderRadius: theme.rounded.base,
-      paddingVertical: theme.spacings.lg,
-      paddingHorizontal: theme.spacings.xl,
+      gap: theme.spacings.x2,
 
-      backgroundColor: theme.components.Button[scheme].backgroundColor,
-      borderColor: theme.components.Button[scheme].borderColor,
+      borderWidth: useBorder ? BORDER_WIDTH : 0,
+      borderRadius: rounded ? theme.rounded.full : theme.rounded.base,
+      borderColor: componentScheme.borderColor,
+
+      backgroundColor: componentScheme.backgroundColor,
     },
+    iconContainer: {
+      width: iconOnlySize,
+      height: iconOnlySize,
+
+      justifyContent: 'center',
+    },
+    hoveredStyle: componentScheme.hovered,
+    pressedStyle: componentScheme.pressed,
     typography: {
-      color: theme.components.Button[scheme].color,
+      color: componentStyle.scheme[scheme].color,
+      userSelect: 'none',
     },
-    leftIcon: {
-      marginRight: theme.spacings.base,
+    icon: {
+      color: iconStyle.color ?? componentStyle.scheme[scheme].color,
     },
   });
 }
 
 export function Demo() {
   return (
-    /* eslint-disable react-native/no-inline-styles */
-    <View style={{ gap: 16 }}>
-      <Button text="Default" />
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
+      <Button>Default</Button>
+      <Button icon={<Icon name="home-outline" />} />
+      <Button icon={<Icon name="add" />}>Button with Icon</Button>
+
+      <Button scheme="primary">Primary</Button>
+      <Button scheme="secondary">Secondary</Button>
+      <Button scheme="tertiary">Tertiary</Button>
+
       <Button
-        text="Primary"
-        scheme="primary"
-      />
+        scheme="success"
+        icon={<Icon name="checkmark-circle" />}
+      >
+        Success
+      </Button>
       <Button
-        text="Danger  "
         scheme="danger"
-      />
-      <Button
-        text="Disabled"
-        disabled
-      />
+        icon={<Icon name="warning" />}
+      >
+        Danger
+      </Button>
+
+      <Button disabled>Disabled</Button>
     </View>
-    /* eslint-enable react-native/no-inline-styles */
   );
 }
