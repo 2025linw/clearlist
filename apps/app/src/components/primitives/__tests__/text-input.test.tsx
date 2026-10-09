@@ -16,17 +16,17 @@ describe('<TextInput /> Content', () => {
   });
 
   test('shows value text', async () => {
-    await renderWithProviders(<TextInput value="initial input" />);
+    await renderWithProviders(<TextInput value="initial" />);
 
-    const textInput = screen.getByDisplayValue('initial input');
+    const textInput = screen.getByDisplayValue('initial');
 
     expect(textInput).toBeVisible();
   });
 
   test('shows defaultValue text', async () => {
-    await renderWithProviders(<TextInput defaultValue="initial input" />);
+    await renderWithProviders(<TextInput defaultValue="initial" />);
 
-    const textInput = screen.getByDisplayValue('initial input');
+    const textInput = screen.getByDisplayValue('initial');
 
     expect(textInput).toBeVisible();
   });
@@ -44,9 +44,9 @@ describe('<TextInput /> Style', () => {
   const theme = buildTheme('default', 'light');
 
   test('style defaults', async () => {
-    await renderWithProviders(<TextInput value="initial input" />);
+    await renderWithProviders(<TextInput value="initial" />);
 
-    const textInput = screen.getByDisplayValue('initial input');
+    const textInput = screen.getByDisplayValue('initial');
 
     const componentStyle = theme.components.TextInput;
 
@@ -61,28 +61,28 @@ describe('<TextInput /> Style', () => {
   test('disabled style', async () => {
     await renderWithProviders(
       <TextInput
-        value="initial input"
+        value="initial"
         disabled
       />,
     );
 
-    const textInput = screen.getByDisplayValue('initial input');
+    const textInput = screen.getByDisplayValue('initial');
 
     const componentStyle = theme.components.TextInput;
 
     expect(textInput).toHaveStyle(componentStyle.disabled);
   });
 
-  test('caller can override styles', async () => {
+  test('caller can override style', async () => {
     await renderWithProviders(
       <TextInput
-        value="initial input"
+        value="initial"
         // eslint-disable-next-line react-native/no-inline-styles
         style={{ color: 'orange' }}
       />,
     );
 
-    const textInput = screen.getByDisplayValue('initial input');
+    const textInput = screen.getByDisplayValue('initial');
 
     expect(textInput).toHaveStyle({ color: 'orange' });
   });
