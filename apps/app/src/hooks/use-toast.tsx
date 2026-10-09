@@ -1,8 +1,11 @@
 import { toast } from '@backpackapp-io/react-native-toast';
 import { type ValueOrFunction } from '@backpackapp-io/react-native-toast/lib/typescript/core/types';
 
+import { View } from 'react-native';
+
 import { useTheme } from '@contexts/theme';
 
+import Button from '@components/primitives/button';
 import { ToastIcon } from '@components/toast';
 
 export function useToast() {
@@ -69,4 +72,24 @@ export function useToast() {
   const remove = toast.remove;
 
   return { message, success, warn, error, promise, dismiss, remove };
+}
+
+export function Demo() {
+  const toast = useToast();
+
+  return (
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
+      <Button onPress={() => toast.message('This is a default toast')}>
+        Default
+      </Button>
+      <Button onPress={() => toast.success('This is a success toast')}>
+        Success
+      </Button>
+      <Button onPress={() => toast.warn('This is an warn toast')}>Warn</Button>
+      <Button onPress={() => toast.error('This is an error toast')}>
+        Error
+      </Button>
+    </View>
+  );
 }
