@@ -17,5 +17,7 @@ export function buildPalette(themeColors: ThemeColors): Palette {
     warning: colors.amber['amber-9'],
     danger: colors.red['red-9'],
     error: colors.red['red-9'],
+
+    colors,
   };
 }

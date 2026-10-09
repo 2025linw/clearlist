@@ -3,6 +3,8 @@
  */
 import { type ColorValue } from 'react-native';
 
+import { type colors } from '@contexts/theme/colors';
+
 import { type buildTheme, type variants } from './settings';
 import { type typographyVariants } from './tokens';
 
@@ -37,6 +39,8 @@ export type Palette = {
   warning: ColorValue;
   error: ColorValue;
   danger: ColorValue;
+
+  colors: typeof colors;
 };
 
 export type ThemeMode = 'light' | 'dark';

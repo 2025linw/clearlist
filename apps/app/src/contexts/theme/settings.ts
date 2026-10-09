@@ -96,10 +96,10 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
             color: '#fff',
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: palette.colors.green['green-10'],
             },
             pressed: {
-              backgroundColor: color(themeColors.primary['primary-10'])
+              backgroundColor: color(palette.colors.green['green-10'])
                 .darken(0.08)
                 .saturate(0.1)
                 .hex(),
@@ -111,10 +111,10 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
             color: '#fff',
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: palette.colors.red['red-10'],
             },
             pressed: {
-              backgroundColor: color(palette.danger)
+              backgroundColor: color(palette.colors.red['red-10'])
                 .darken(0.08)
                 .saturate(0.1)
                 .hex(),
@@ -126,13 +126,10 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
             color: palette.subtle,
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: palette.surface,
             },
             pressed: {
-              backgroundColor: color(themeColors.primary['primary-10'])
-                .darken(0.08)
-                .saturate(0.1)
-                .hex(),
+              backgroundColor: palette.surface,
             },
           },
         },
