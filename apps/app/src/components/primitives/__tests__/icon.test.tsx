@@ -44,24 +44,6 @@ describe('<Icon /> Style', () => {
     });
   });
 
-  test('container matches default icon size', async () => {
-    await renderWithProviders(
-      <Icon
-        name="add"
-        testID="icon"
-      />,
-    );
-
-    const icon = screen.getByTestId('icon');
-    const iconContainer = icon.parent;
-    const style = StyleSheet.flatten(iconContainer?.props.style);
-
-    const componentStyle = theme.components.Icon;
-
-    expect(style.width).toStrictEqual(componentStyle.size);
-    expect(style.height).toStrictEqual(componentStyle.size);
-  });
-
   test('color prop overrides default', async () => {
     await renderWithProviders(
       <Icon
@@ -88,8 +70,7 @@ describe('<Icon /> Style', () => {
     );
 
     const icon = screen.getByTestId('icon');
-    const iconContainer = icon.parent;
-    const style = StyleSheet.flatten(iconContainer?.props.style);
+    const style = StyleSheet.flatten(icon.props.style);
 
     expect(icon).toHaveStyle({
       fontSize: 40,

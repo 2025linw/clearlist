@@ -1,6 +1,6 @@
 import Ionicons from '@react-native-vector-icons/ionicons';
 import { type ComponentProps } from 'react';
-import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { type StyleProp, StyleSheet, type TextStyle } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 
@@ -8,8 +8,8 @@ type IoniconType = ComponentProps<typeof Ionicons>;
 export type IconName = IoniconType['name'];
 export type IconColor = IoniconType['color'];
 
-export type IconProps = IoniconType & {
-  style?: StyleProp<ViewStyle>;
+export type IconProps = Omit<IoniconType, 'style'> & {
+  style?: StyleProp<Omit<TextStyle, 'color' | 'fontSize'>>;
 };
 
 export default function Icon({
@@ -30,17 +30,13 @@ export default function Icon({
   const styles = buildStyles(size);
 
   return (
-    <View
+    <Ionicons
+      {...props}
+      size={size}
+      color={color}
+      testID={testID}
       style={[styles.container, style]}
-      role={role}
-    >
-      <Ionicons
-        {...props}
-        size={size}
-        color={color}
-        testID={testID}
-      />
-    </View>
+    />
   );
 }
 
