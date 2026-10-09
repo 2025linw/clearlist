@@ -106,7 +106,7 @@ function buildStyles(theme: Theme, editing: boolean, disabled?: boolean) {
 
 export function Demo() {
   return (
-    /* eslint-disable react-native/no-inline-styles */
+    // eslint-disable-next-line
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <EditableTypography editable={false} />
       <EditableTypography
@@ -150,6 +150,5 @@ export function Demo() {
         testOnly_editing
       />
     </View>
-    /* eslint-enable react-native/no-inline-styles */
   );
 }
