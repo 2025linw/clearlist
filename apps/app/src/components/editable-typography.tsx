@@ -120,7 +120,7 @@ export function Demo() {
       <EditableTypography placeholder="Has placeholder - display mode" />
       <EditableTypography
         value="Disabled - display mode"
-        disabled={true}
+        disabled
       />
 
       <EditableTypography
@@ -144,7 +144,7 @@ export function Demo() {
       />
       <EditableTypography
         value="Disabled - editing mode"
-        disabled={true}
+        disabled
         testOnly_editing
       />
     </View>
