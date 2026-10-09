@@ -33,7 +33,7 @@ export default function TextInput({
       value={value}
       onChangeText={onChangeText}
       placeholderTextColor={placeholderTextColor}
-      style={[styles.typography, style]}
+      style={[styles.container, styles.text, style]}
     />
   );
 }
@@ -42,7 +42,8 @@ function buildStyles(theme: Theme) {
   const componentStyle = theme.components.TextInput;
 
   return StyleSheet.create({
-    typography: componentStyle.input,
+    container: componentStyle.container,
+    text: componentStyle.input,
     placeholder: componentStyle.placeholder,
   });
 }

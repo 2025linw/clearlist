@@ -138,11 +138,29 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
         },
       },
       TextInput: {
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: palette.border,
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+        },
         input: {
           ...typographyVariants.text,
           color: palette.text,
         },
         placeholder: { color: palette.subtle },
+      },
+      EditableTypography: {
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: palette.border,
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+        },
+        input: {
+          ...typographyVariants.text,
+          color: palette.text,
+        },
       },
       Toast: {
         size: typographyVariants.button.fontSize,
