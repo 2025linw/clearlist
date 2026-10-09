@@ -121,15 +121,15 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
             },
           },
           disabled: {
-            backgroundColor: palette.surface,
+            backgroundColor: themeColors.secondary['secondary-3'],
             borderColor: palette.border,
             color: palette.subtle,
 
             hovered: {
-              backgroundColor: palette.surface,
+              backgroundColor: themeColors.secondary['secondary-3'],
             },
             pressed: {
-              backgroundColor: palette.surface,
+              backgroundColor: themeColors.secondary['secondary-3'],
             },
           },
         },
