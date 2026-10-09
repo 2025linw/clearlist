@@ -1,7 +1,7 @@
 import { type PropsWithChildren, createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
-import usePersisted from '@hooks/use-persisted';
+import { usePersisted } from '@hooks/use-persisted';
 
 import { buildTheme } from './settings';
 import {

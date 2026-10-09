@@ -12,7 +12,7 @@ const storageDefaults: StorageSchema = {
   colorTheme: 'default',
 };
 
-export default function usePersisted<K extends keyof StorageSchema>(key: K) {
+export function usePersisted<K extends keyof StorageSchema>(key: K) {
   const [value, setValue] = useState<StorageSchema[K]>(storageDefaults[key]);
   const [loaded, setLoaded] = useState(false);
 
