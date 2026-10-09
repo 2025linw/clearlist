@@ -4,7 +4,6 @@ import {
   type StyleProp,
   StyleSheet,
   type TextStyle,
-  type ViewStyle,
 } from 'react-native';
 
 import TextInput from '@components/primitives/text-input';
@@ -18,7 +17,7 @@ type EditableTypographyProps = {
   disabled?: boolean;
   multiline?: boolean;
   style?: StyleProp<TextStyle>;
-  containerStyle?: StyleProp<ViewStyle>;
+  testID?: string;
 };
 
 export default function EditableTypography({
@@ -49,6 +48,7 @@ export default function EditableTypography({
         autoFocus
         multiline={props.multiline}
         style={[styles.container, props.style]}
+        testID={props.testID}
       />
     );
   }
@@ -58,12 +58,12 @@ export default function EditableTypography({
       onPress={() => {
         setEditing(true);
       }}
-      style={props.containerStyle}
       disabled={props.disabled}
     >
       <Typography
         palette={text ? 'text' : 'subtle'}
         style={props.style}
+        testID={props.testID}
       >
         {text || placeholder || ''}
       </Typography>

@@ -30,7 +30,12 @@ export default function Typography({
   const variantStyle = components.Typography.variants[variant];
 
   return (
-    <Text style={[paletteStyle, variantStyle, props.style]}>{children}</Text>
+    <Text
+      {...props}
+      style={[paletteStyle, variantStyle, props.style]}
+    >
+      {children}
+    </Text>
   );
 }
 
