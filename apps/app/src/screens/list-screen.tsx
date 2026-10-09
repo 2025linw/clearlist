@@ -1,7 +1,11 @@
 import { type ReactElement } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { type task } from '@clearlist/types';
 
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 import * as TaskHook from '@hooks/use-tasks';
 import dayjs from '@lib/datetime';
 import { getCategoryQueryMap } from '@services/helpers';
@@ -29,6 +33,11 @@ type ListScreenProps = {
 };
 
 export default function ListScreen(props: ListScreenProps) {
+  const theme = useTheme();
+  const { gtTablet } = useBreakpoints();
+
+  const styles = buildStyles(theme, !gtTablet);
+
   const searchQuery = getCategoryQueryMap()[props.category];
 
   const queryTasks = TaskHook.useTasks(searchQuery);
@@ -67,7 +76,7 @@ export default function ListScreen(props: ListScreenProps) {
       headerText={props.listName}
       headerIcon={props.listIcon}
       showBackButton
-      safeAreaEdges={['top']}
+      style={styles.container}
     >
       <TaskList
         data={queryTasks.data?.data.tasks}
@@ -89,4 +98,12 @@ export default function ListScreen(props: ListScreenProps) {
       />
     </Layout>
   );
+}
+
+function buildStyles(theme: Theme, isMobile: boolean) {
+  return StyleSheet.create({
+    container: {
+      paddingHorizontal: isMobile ? theme.spacings.x2 : theme.spacings.x10,
+    },
+  });
 }
