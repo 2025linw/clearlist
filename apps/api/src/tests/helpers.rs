@@ -57,7 +57,6 @@ where
 
 pub async fn create_test_user(repo: &PgUserRepository) -> UserModel {
     repo.create(UserCreateModel {
-        display_name: "Test User".to_string(),
         ..Default::default()
     })
     .await

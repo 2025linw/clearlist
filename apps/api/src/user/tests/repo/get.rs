@@ -13,7 +13,6 @@ async fn init(pool: PgPool) -> (UserID, PgUserRepository) {
 
     let user = user_repo
         .create(CreateModel {
-            display_name: "Test User".to_string(),
             ..Default::default()
         })
         .await
@@ -40,7 +39,6 @@ mod success {
 
         let create_model = CreateModel {
             id: UserID::new_random(),
-            display_name: "Test User".to_string(),
             created_at: get_today_date_pg(),
         };
         let test_user = user_repo.create(create_model.clone()).await.unwrap();
@@ -49,11 +47,9 @@ mod success {
 
         let CreateModel {
             id,
-            display_name,
             created_at,
         } = create_model;
         assert_eq!(user.id, id);
-        assert_eq!(user.display_name, display_name);
         assert_eq!(user.created_at, created_at);
     }
 }

@@ -34,7 +34,7 @@ mod success {
             .update(
                 user_id,
                 UpdateModel {
-                    display_name: Some("Updated User".to_string()),
+                    preferred_timezone: Some(Some("America/Chicago".to_string())),
                     ..Default::default()
                 },
             )
@@ -47,7 +47,6 @@ mod success {
         let (user_id, user_repo) = init(pool).await;
 
         let update_model = UpdateModel {
-            display_name: Some("Updated User".to_string()),
             preferred_timezone: Some(Some("America/Chicago".to_string())),
             completed_task_retention: Some(Some(PgInterval {
                 months: 0,
@@ -61,11 +60,9 @@ mod success {
             .unwrap();
 
         let UpdateModel {
-            display_name,
             preferred_timezone,
             completed_task_retention,
         } = update_model;
-        assert_eq!(user.display_name, display_name.unwrap());
         assert_eq!(user.preferred_timezone, preferred_timezone.unwrap());
         assert_eq!(
             user.completed_task_retention,
@@ -82,7 +79,7 @@ mod success {
             .update(
                 user_id,
                 UpdateModel {
-                    display_name: Some("Updated User".to_string()),
+                    preferred_timezone: Some(Some("America/Chicago".to_string())),
                     ..Default::default()
                 },
             )
@@ -96,7 +93,7 @@ mod success {
         let (user_id, user_repo) = init(pool).await;
 
         let update_model = UpdateModel {
-            display_name: Some("Updated User".to_string()),
+            preferred_timezone: Some(Some("America/Chicago".to_string())),
             ..Default::default()
         };
         let first_update = user_repo
@@ -124,7 +121,7 @@ mod existence {
             .update(
                 UserID::new_random(),
                 UpdateModel {
-                    display_name: Some("Updated User".to_string()),
+                    preferred_timezone: Some(Some("America/Chicago".to_string())),
                     ..Default::default()
                 },
             )
@@ -148,7 +145,6 @@ mod input {
         let (user_id, user_repo) = init(pool).await;
 
         let update_model = UpdateModel {
-            display_name: Some("Updated User".to_string()),
             preferred_timezone: Some(Some("America/Chicago".to_string())),
             completed_task_retention: Some(Some(PgInterval {
                 months: 0,

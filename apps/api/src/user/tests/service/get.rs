@@ -14,7 +14,6 @@ async fn init() -> (UserID, UserService<MockUserRepository>) {
 
     let user = user_service
         .create(ProvisionRequest {
-            display_name: "Test User".to_string(),
             ..Default::default()
         })
         .await

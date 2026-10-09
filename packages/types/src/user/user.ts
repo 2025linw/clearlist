@@ -4,8 +4,6 @@ import { DatetimeSchema } from '../common';
 export const UserSchema = z.object({
   id: z.uuid(),
 
-  displayName: z.string(),
-
   preferredTimezone: z.string().optional(),
   completedTaskRetention: z.string().optional(),
 

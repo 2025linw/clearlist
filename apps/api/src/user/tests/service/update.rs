@@ -1,12 +1,11 @@
 use crate::{
     error::{
         Resource,
-        service::{Error, INVALID_SINGLE_LINE, NO_EMPTY_STRING, ValidationError},
+        service::Error ,
     },
-    tests::{
-        mocks::MockUserRepository,
-        test_data::{NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
-    },
+    tests::
+        mocks::MockUserRepository
+    ,
     user::{
         service::UserService,
         types::{
@@ -23,7 +22,6 @@ async fn init() -> (UserID, UserService<MockUserRepository>) {
 
     let user = user_service
         .create(ProvisionRequest {
-            display_name: "Test User".to_string(),
             ..Default::default()
         })
         .await
@@ -34,7 +32,6 @@ async fn init() -> (UserID, UserService<MockUserRepository>) {
 
 fn valid_request() -> UpdateRequest {
     UpdateRequest {
-        display_name: Some("Updated User".to_string()),
         ..Default::default()
     }
 }
@@ -68,7 +65,6 @@ mod success {
         let (user_id, user_service) = init().await;
 
         let update_request = UpdateRequest {
-            display_name: Some("Updated User".to_string()),
             ..Default::default()
         };
         let first_update = user_service
@@ -129,76 +125,6 @@ mod error {
         assert!(res.is_err());
         if let Err(err) = res {
             assert!(matches!(err, Error::Internal(_)));
-        }
-    }
-}
-
-mod display_name {
-    use super::*;
-    use tokio::test;
-
-    #[test]
-    async fn normalize_display_name() {
-        let (user_id, user_service) = init().await;
-
-        for (name, input, expected) in NORMALIZATION_TEST_INPUT {
-            let update_request = UpdateRequest {
-                display_name: Some(input.to_string()),
-                ..Default::default()
-            };
-            let user = user_service.update(user_id, update_request).await.unwrap();
-            assert_eq!(
-                user.display_name, expected,
-                "case: {name} - expected: {expected} (found: {})",
-                user.display_name
-            );
-        }
-    }
-
-    #[test]
-    async fn errors_on_blank_display_name() {
-        let (user_id, user_service) = init().await;
-
-        let update_request = UpdateRequest {
-            display_name: Some("".to_string()),
-            ..Default::default()
-        };
-        let res = user_service.update(user_id, update_request).await;
-        assert!(res.is_err());
-        if let Err(err) = res {
-            assert!(matches!(
-                err,
-                Error::Validation(ValidationError::InvalidValue {
-                    field: "display_name",
-                    reason: NO_EMPTY_STRING,
-                })
-            ))
-        }
-    }
-
-    #[test]
-    async fn errors_with_display_name_containing_whitespaces() {
-        let (user_id, user_service) = init().await;
-
-        for (name, input) in SINGLE_LINE_TEST_INPUT {
-            let update_request = UpdateRequest {
-                display_name: Some(input.to_string()),
-                ..Default::default()
-            };
-            let res = user_service.update(user_id, update_request).await;
-            assert!(res.is_err(), "case: {name}; should have failed");
-            if let Err(err) = res {
-                assert!(
-                    matches!(
-                        err,
-                        Error::Validation(ValidationError::InvalidValue {
-                            field: "display_name",
-                            reason: INVALID_SINGLE_LINE
-                        })
-                    ),
-                    "case: {name}; got error: {err}",
-                )
-            }
         }
     }
 }
