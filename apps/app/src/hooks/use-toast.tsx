@@ -1,11 +1,9 @@
 import { toast } from '@backpackapp-io/react-native-toast';
 import { type ValueOrFunction } from '@backpackapp-io/react-native-toast/lib/typescript/core/types';
 
-import { StyleSheet } from 'react-native';
-
 import { useTheme } from '@contexts/theme';
 
-import ToastIcon from '@components/toast-icon';
+import { ToastIcon } from '@components/toast';
 
 export function useToast() {
   const theme = useTheme();
@@ -16,7 +14,7 @@ export function useToast() {
       icon: <ToastIcon type="default" />,
       styles: {
         view: {
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: theme.spacings.thin,
           borderColor: theme.palette.border,
         },
       },
@@ -28,7 +26,7 @@ export function useToast() {
       icon: <ToastIcon type="success" />,
       styles: {
         view: {
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: theme.spacings.thin,
           borderColor: theme.palette.success,
         },
       },
@@ -40,7 +38,7 @@ export function useToast() {
       icon: <ToastIcon type="warn" />,
       styles: {
         view: {
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: theme.spacings.thin,
           borderColor: theme.palette.warning,
         },
       },
@@ -48,11 +46,11 @@ export function useToast() {
 
   const error = (message: string) =>
     toast.error(message, {
-      duration: Infinity,
+      duration: 10000,
       icon: <ToastIcon type="error" />,
       styles: {
         view: {
-          borderWidth: StyleSheet.hairlineWidth,
+          borderWidth: theme.spacings.thin,
           borderColor: theme.palette.error,
         },
       },
