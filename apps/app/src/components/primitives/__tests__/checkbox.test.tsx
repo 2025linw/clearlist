@@ -16,6 +16,29 @@ describe('<Checkbox /> Content', () => {
   });
 });
 
+describe('<Checkbox /> Style', () => {
+  const theme = buildTheme('default', 'light');
+
+  test.each([
+    { disabled: false, colorKey: 'text' },
+    { disabled: true, colorKey: 'subtle' },
+  ] as const)(
+    'uses $colorKey color when disabled=$disabled',
+    async ({ disabled, colorKey }) => {
+      await renderWithProviders(
+        <Checkbox
+          disabled={disabled}
+          testID="test"
+        />,
+      );
+
+      const checkboxIcon = screen.getByTestId('test-icon');
+
+      expect(checkboxIcon).toHaveStyle({ color: theme.palette[colorKey] });
+    },
+  );
+});
+
 describe('<Checkbox /> Action', () => {
   test('works correctly', async () => {
     const user = userEvent.setup();
@@ -51,27 +74,4 @@ describe('<Checkbox /> Action', () => {
 
     expect(mockOnChange).not.toHaveBeenCalled();
   });
-});
-
-describe('<Checkbox /> Style', () => {
-  const theme = buildTheme('default', 'light');
-
-  test.each([
-    { disabled: false, colorKey: 'text' },
-    { disabled: true, colorKey: 'subtle' },
-  ] as const)(
-    'uses $colorKey color when disabled=$disabled',
-    async ({ disabled, colorKey }) => {
-      await renderWithProviders(
-        <Checkbox
-          disabled={disabled}
-          testID="test"
-        />,
-      );
-
-      const checkboxIcon = screen.getByTestId('test-icon');
-
-      expect(checkboxIcon).toHaveStyle({ color: theme.palette[colorKey] });
-    },
-  );
 });

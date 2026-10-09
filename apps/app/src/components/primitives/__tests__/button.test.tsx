@@ -62,6 +62,126 @@ describe('<Button /> Content', () => {
   });
 });
 
+describe('<Button /> Style', () => {
+  const theme = buildTheme('default', 'light');
+
+  test('icon only button is square', async () => {
+    await renderWithProviders(<Button icon={<Icon name="add" />} />);
+
+    const button = screen.getByRole('button');
+    const style = StyleSheet.flatten(button.props.style);
+
+    expect(style.width).toEqual(expect.any(Number));
+    expect(style.width).toBeGreaterThan(0);
+    expect(style.height).toBe(style.width);
+  });
+
+  test('default scheme is primary', async () => {
+    await renderWithProviders(<Button>Test</Button>);
+
+    const button = screen.getByRole('button');
+
+    const componentStyle = theme.components.Button.scheme.primary;
+    const buttonContainerStyle = {
+      backgroundColor: componentStyle.backgroundColor,
+      borderColor: componentStyle.borderColor,
+    };
+
+    expect(button).toHaveStyle(buttonContainerStyle);
+  });
+
+  test.each(['primary', 'secondary', 'tertiary', 'success', 'danger'] as const)(
+    '%s scheme styles',
+    async (schemeName) => {
+      await renderWithProviders(<Button scheme={schemeName}>Test</Button>);
+
+      const button = screen.getByRole('button');
+      const text = screen.getByText('Test');
+
+      const componentStyle = theme.components.Button.scheme[schemeName];
+      const buttonContainerStyle = {
+        backgroundColor: componentStyle.backgroundColor,
+        borderColor: componentStyle.borderColor,
+      };
+      const buttonTextStyle = {
+        color: componentStyle.color,
+      };
+
+      expect(button).toHaveStyle(buttonContainerStyle);
+      expect(text).toHaveStyle(buttonTextStyle);
+    },
+  );
+
+  test('disabled style', async () => {
+    await renderWithProviders(<Button disabled>Test</Button>);
+
+    const button = screen.getByRole('button');
+    const text = screen.getByText('Test');
+
+    const componentStyle = theme.components.Button.scheme.disabled;
+    const buttonContainerStyle = {
+      backgroundColor: componentStyle.backgroundColor,
+      borderColor: componentStyle.borderColor,
+    };
+    const buttonTextStyle = {
+      color: componentStyle.color,
+    };
+
+    expect(button).toHaveStyle(buttonContainerStyle);
+    expect(text).toHaveStyle(buttonTextStyle);
+  });
+
+  test('hover style', async () => {
+    // NOTE: only testing primary
+
+    await renderWithProviders(<Button testOnly_hovered={true}>Test</Button>);
+
+    const button = screen.getByRole('button');
+
+    const componentStyle = theme.components.Button.scheme.primary;
+    const buttonHoverStyle = {
+      backgroundColor: componentStyle.hovered.backgroundColor,
+    };
+
+    expect(button).toHaveStyle(buttonHoverStyle);
+  });
+
+  test('press style', async () => {
+    // NOTE: only testing primary
+
+    await renderWithProviders(<Button testOnly_pressed={true}>Test</Button>);
+
+    const button = screen.getByRole('button');
+
+    const componentStyle = theme.components.Button.scheme.primary;
+    const buttonPressStyle = {
+      backgroundColor: componentStyle.pressed.backgroundColor,
+    };
+
+    expect(button).toHaveStyle(buttonPressStyle);
+  });
+
+  test.each(['primary', 'secondary', 'tertiary'] as const)(
+    // NOTE: only testing primary, secondary, and tertiary,
+    // as they are the only buttons that would have special handling of borders
+    'border prop overrides defaults for %s scheme',
+    async (schemeName) => {
+      await renderWithProviders(
+        <Button
+          scheme={schemeName}
+          hasBorder
+        >
+          Test
+        </Button>,
+      );
+
+      const button = screen.getByRole('button');
+
+      expect(button).toHaveStyle({ borderWidth: 1 });
+    },
+  );
+});
+
 describe('<Button /> Action', () => {
   test('onPress works correctly', async () => {
     const user = userEvent.setup();
@@ -197,124 +317,4 @@ describe('<Button /> Action', () => {
     expect(mockOnPress).not.toHaveBeenCalled();
     expect(mockOnLongPress).not.toHaveBeenCalled();
   });
-});
-
-describe('<Button /> Style', () => {
-  const theme = buildTheme('default', 'light');
-
-  test('icon only button is square', async () => {
-    await renderWithProviders(<Button icon={<Icon name="add" />} />);
-
-    const button = screen.getByRole('button');
-    const style = StyleSheet.flatten(button.props.style);
-
-    expect(style.width).toEqual(expect.any(Number));
-    expect(style.width).toBeGreaterThan(0);
-    expect(style.height).toBe(style.width);
-  });
-
-  test('default scheme is primary', async () => {
-    await renderWithProviders(<Button>Test</Button>);
-
-    const button = screen.getByRole('button');
-
-    const componentStyle = theme.components.Button.scheme.primary;
-    const buttonContainerStyle = {
-      backgroundColor: componentStyle.backgroundColor,
-      borderColor: componentStyle.borderColor,
-    };
-
-    expect(button).toHaveStyle(buttonContainerStyle);
-  });
-
-  test.each(['primary', 'secondary', 'tertiary', 'success', 'danger'] as const)(
-    '%s scheme styles',
-    async (schemeName) => {
-      await renderWithProviders(<Button scheme={schemeName}>Test</Button>);
-
-      const button = screen.getByRole('button');
-      const text = screen.getByText('Test');
-
-      const componentStyle = theme.components.Button.scheme[schemeName];
-      const buttonContainerStyle = {
-        backgroundColor: componentStyle.backgroundColor,
-        borderColor: componentStyle.borderColor,
-      };
-      const buttonTextStyle = {
-        color: componentStyle.color,
-      };
-
-      expect(button).toHaveStyle(buttonContainerStyle);
-      expect(text).toHaveStyle(buttonTextStyle);
-    },
-  );
-
-  test('disabled style', async () => {
-    await renderWithProviders(<Button disabled>Test</Button>);
-
-    const button = screen.getByRole('button');
-    const text = screen.getByText('Test');
-
-    const componentStyle = theme.components.Button.scheme.disabled;
-    const buttonContainerStyle = {
-      backgroundColor: componentStyle.backgroundColor,
-      borderColor: componentStyle.borderColor,
-    };
-    const buttonTextStyle = {
-      color: componentStyle.color,
-    };
-
-    expect(button).toHaveStyle(buttonContainerStyle);
-    expect(text).toHaveStyle(buttonTextStyle);
-  });
-
-  test('hover style', async () => {
-    // NOTE: only testing primary
-
-    await renderWithProviders(<Button testOnly_hovered={true}>Test</Button>);
-
-    const button = screen.getByRole('button');
-
-    const componentStyle = theme.components.Button.scheme.primary;
-    const buttonHoverStyle = {
-      backgroundColor: componentStyle.hovered.backgroundColor,
-    };
-
-    expect(button).toHaveStyle(buttonHoverStyle);
-  });
-
-  test('press style', async () => {
-    // NOTE: only testing primary
-
-    await renderWithProviders(<Button testOnly_pressed={true}>Test</Button>);
-
-    const button = screen.getByRole('button');
-
-    const componentStyle = theme.components.Button.scheme.primary;
-    const buttonPressStyle = {
-      backgroundColor: componentStyle.pressed.backgroundColor,
-    };
-
-    expect(button).toHaveStyle(buttonPressStyle);
-  });
-
-  test.each(['primary', 'secondary', 'tertiary'] as const)(
-    // NOTE: only testing primary, secondary, and tertiary,
-    // as they are the only buttons that would have special handling of borders
-    'border prop overrides defaults for %s scheme',
-    async (schemeName) => {
-      await renderWithProviders(
-        <Button
-          scheme={schemeName}
-          hasBorder
-        >
-          Test
-        </Button>,
-      );
-
-      const button = screen.getByRole('button');
-
-      expect(button).toHaveStyle({ borderWidth: 1 });
-    },
-  );
 });
