@@ -20,7 +20,7 @@ type TextInputProps = RNTextInputProps & {
 export default function TextInput({
   onChangeText,
   style,
-  editable,
+  editable = true,
   disabled,
   ...props
 }: TextInputProps) {
