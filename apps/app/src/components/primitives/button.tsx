@@ -77,7 +77,9 @@ export default function Button({
       style={(state) => [
         styles.container,
         iconOnly && styles.iconContainer,
-        (props.testOnly_hovered || (Platform.OS === 'web' && state.hovered)) &&
+        (props.testOnly_hovered ||
+          (Platform.OS === 'web' &&
+            (state as typeof state & { hovered?: boolean }).hovered)) &&
           styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
