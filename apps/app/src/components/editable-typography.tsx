@@ -121,7 +121,6 @@ export function Demo() {
       <EditableTypography
         value="Disabled - display mode"
         disabled={true}
-        editable={false}
       />
 
       <EditableTypography
@@ -146,7 +145,6 @@ export function Demo() {
       <EditableTypography
         value="Disabled - editing mode"
         disabled={true}
-        editable={false}
         testOnly_editing
       />
     </View>
