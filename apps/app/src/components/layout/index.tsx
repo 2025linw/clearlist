@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { type PropsWithChildren, type ReactElement } from 'react';
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
-import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
@@ -17,14 +16,12 @@ type LayoutProps = PropsWithChildren<{
   headerText?: string;
   headerIcon?: ReactElement<IconProps>;
   style?: StyleProp<ViewStyle>;
-  safeAreaEdges?: Edge[];
 }>;
 
 export default function Layout({
   children,
   showBackButton = false,
   showOptionButton: hasOptions = false,
-  safeAreaEdges = ['top', 'bottom'],
   ...props
 }: LayoutProps) {
   const router = useRouter();
@@ -38,10 +35,7 @@ export default function Layout({
     showBack || props.headerIcon || props.headerText || hasOptions;
 
   return (
-    <SafeAreaView
-      edges={safeAreaEdges}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       {hasHeader && (
         <Header
           text={props.headerText}
@@ -50,7 +44,7 @@ export default function Layout({
       )}
 
       <View style={[styles.content, props.style]}>{children}</View>
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { type ReactElement, cloneElement } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
@@ -23,8 +24,10 @@ type HeaderProps = {
 export default function Header(props: HeaderProps) {
   const router = useRouter();
   const theme = useTheme();
-  const styles = buildStyles(theme);
   const { gtTablet } = useBreakpoints();
+  const { top } = useSafeAreaInsets();
+
+  const styles = buildStyles(theme, top);
 
   const showBack = router.canGoBack() && !gtTablet;
 
@@ -72,11 +75,12 @@ export default function Header(props: HeaderProps) {
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, topInset: number) {
   return StyleSheet.create({
     container: {
-      height: HEADER_HEIGHT,
+      height: HEADER_HEIGHT + topInset,
 
+      paddingTop: topInset,
       marginBottom: theme.spacings.x2,
 
       flexDirection: 'row',
