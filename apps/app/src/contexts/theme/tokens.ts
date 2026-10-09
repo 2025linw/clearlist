@@ -1,7 +1,8 @@
-import { Platform } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 const base = 4;
 export const spacings = {
+  thin: 2 * StyleSheet.hairlineWidth,
   x1: base * 1,
   x2: base * 2,
   x3: base * 3,

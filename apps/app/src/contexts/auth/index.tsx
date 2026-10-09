@@ -1,5 +1,5 @@
 import {
-  PropsWithChildren,
+  type PropsWithChildren,
   createContext,
   useCallback,
   useContext,
@@ -8,13 +8,17 @@ import {
   useState,
 } from 'react';
 
-import { apiFetch } from '@lib/api';
+import { useToast } from '@hooks/use-toast';
 import { authClient } from '@lib/auth-client';
-import toast from '@lib/toast';
+import { apiFetch } from '@lib/fetch';
 
 import { API_URL } from '@/constants';
 
-import { ApiContextType, AuthContextType, LoginInfo } from './types';
+import {
+  type ApiContextType,
+  type AuthContextType,
+  type LoginInfo,
+} from './types';
 
 const AuthContext = createContext<AuthContextType>({
   loaded: false,
@@ -28,6 +32,8 @@ const ApiContext = createContext<ApiContextType>({
 });
 
 export function Provider({ children }: PropsWithChildren) {
+  const toast = useToast();
+
   const [user, setUser] = useState<AuthContextType>({
     loaded: false,
     currentSession: undefined,
@@ -75,7 +81,7 @@ export function Provider({ children }: PropsWithChildren) {
     };
 
     getSession();
-  }, []);
+  }, [toast]);
 
   const createAccount = useCallback<ApiContextType['createAccount']>(
     async (params) => {
@@ -104,39 +110,42 @@ export function Provider({ children }: PropsWithChildren) {
       });
       return true;
     },
-    [],
+    [toast],
   );
 
-  const login = useCallback<ApiContextType['login']>(async (params) => {
-    const { data, error } = await authClient.signIn.email({
-      email: params.email,
-      password: params.password,
-    });
-    if (error) {
-      toast.error('Unable to login to account');
+  const login = useCallback<ApiContextType['login']>(
+    async (params) => {
+      const { data, error } = await authClient.signIn.email({
+        email: params.email,
+        password: params.password,
+      });
+      if (error) {
+        toast.error('Unable to login to account');
 
-      return false;
-    }
+        return false;
+      }
 
-    const res = await apiFetch(API_URL + '/api/me');
-    if (res.status !== 200) {
-      toast.error('Unable to access application account');
+      const res = await apiFetch(API_URL + '/api/me');
+      if (res.status !== 200) {
+        toast.error('Unable to access application account');
 
-      throw false;
-    }
+        throw false;
+      }
 
-    setUser({
-      loaded: true,
-      currentSession: data.token!,
-      hasSession: true,
-    });
-    return true;
-  }, []);
+      setUser({
+        loaded: true,
+        currentSession: data.token!,
+        hasSession: true,
+      });
+      return true;
+    },
+    [toast],
+  );
 
   const logout = useCallback<ApiContextType['logout']>(async () => {
     const { error } = await authClient.signOut();
     if (error) {
-      toast.error('Unable to logout of account');
+      toast.error('Unable to sign out. Please try again.');
 
       return;
     }
@@ -146,7 +155,7 @@ export function Provider({ children }: PropsWithChildren) {
       currentSession: undefined,
       hasSession: false,
     });
-  }, []);
+  }, [toast]);
 
   const api = useMemo(
     () => ({

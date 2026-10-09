@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
-import { PropsWithChildren, ReactElement } from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
-import { Edge, SafeAreaView } from 'react-native-safe-area-context';
+import { type PropsWithChildren, type ReactElement } from 'react';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
-import { IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitives/icon';
 
 import Header from './header';
 
@@ -46,7 +46,6 @@ export default function Layout({
         <Header
           text={props.headerText}
           icon={props.headerIcon}
-          style={styles.header}
         />
       )}
 
@@ -62,23 +61,8 @@ function buildStyles(theme: Theme) {
 
       backgroundColor: theme.palette.background,
     },
-    header: {
-      position: 'absolute',
-      top: 0,
-    },
     content: {
       flex: 1,
-    },
-    headerButton: {
-      width: 56,
-      height: 56,
-
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerItem: {
-      alignItems: 'center',
-      justifyContent: 'center',
     },
   });
 }

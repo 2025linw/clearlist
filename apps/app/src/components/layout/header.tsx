@@ -1,13 +1,13 @@
 import { useRouter } from 'expo-router';
-import { ReactElement, cloneElement } from 'react';
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
+import { type ReactElement, cloneElement } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import Button from '@components/primitives/button';
-import Icon, { IconProps } from '@components/primitives/icon';
+import Icon, { type IconProps } from '@components/primitives/icon';
 import Typography from '@components/primitives/typography';
 
 const HEADER_HEIGHT = 56;
@@ -18,7 +18,6 @@ const BUTTON_ICON_SIZE = 40;
 type HeaderProps = {
   text?: string;
   icon?: ReactElement<IconProps>;
-  style?: StyleProp<ViewStyle>;
 };
 
 export default function Header(props: HeaderProps) {
@@ -83,14 +82,21 @@ function buildStyles(theme: Theme) {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
+
+      backgroundColor: theme.palette.surface,
     },
     side: {
+      flexShrink: 0,
       width: HEADER_HEIGHT,
       aspectRatio: 1,
     },
     content: {
+      flex: 1,
+      minWidth: 0,
+
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'center',
       gap: 10,
     },
     button: {

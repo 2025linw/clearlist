@@ -1,19 +1,21 @@
-import { ReactElement, cloneElement } from 'react';
+import { type ReactElement } from 'react';
+import { cloneElement } from 'react';
 import {
-  ColorValue,
-  Pressable,
-  PressableProps,
-  StyleProp,
-  StyleSheet,
-  TextStyle,
-  View,
+  type ColorValue,
+  Platform,
+  type PressableProps,
+  type StyleProp,
+  type TextStyle,
 } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useTheme, useThemeMode } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
 
-import Icon, { IconProps } from '@components/primitives/icon';
+import Icon, { type IconProps } from '@components/primitives/icon';
 import Typography from '@components/primitives/typography';
+
+import { type ElementProps } from './types';
 
 type ButtonSchemes = keyof Omit<
   Theme['components']['Button']['scheme'],
@@ -30,13 +32,13 @@ type ButtonContent =
       icon: ReactElement<IconProps>;
     };
 
-export type ButtonProps = Omit<PressableProps, 'children'> &
+export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
   ButtonContent & {
     scheme?: ButtonSchemes;
     hasBorder?: boolean;
     rounded?: boolean;
-  } & {
-    typographyStyle?: StyleProp<TextStyle>;
+    textStyle?: StyleProp<TextStyle>;
+    testOnly_hovered?: null | boolean | undefined;
   };
 
 export default function Button({
@@ -58,9 +60,11 @@ export default function Button({
     },
   );
 
+  const iconComponentStyle = theme.components.Button.icon;
   const icon = props.icon
     ? cloneElement(props.icon, {
-        style: styles.icon,
+        size: props.icon?.props.size ?? iconComponentStyle.size,
+        color: styles.icon.color,
       })
     : undefined;
 
@@ -73,16 +77,19 @@ export default function Button({
       style={(state) => [
         styles.container,
         iconOnly && styles.iconContainer,
+        (props.testOnly_hovered || (Platform.OS === 'web' && state.hovered)) &&
+          styles.hoveredStyle,
         state.pressed && styles.pressedStyle,
         typeof style === 'function' ? style(state) : style,
       ]}
+      role="button"
     >
       {icon}
 
       {children && (
         <Typography
           variant="button"
-          style={[styles.typography, props.typographyStyle]}
+          style={[styles.typography, props.textStyle]}
           selectable={false}
         >
           {children}
@@ -106,10 +113,17 @@ function buildStyles(
   const componentStyle = theme.components.Button;
   const componentScheme = componentStyle.scheme[scheme];
 
+  // Default border to true for secondary, otherwise honor hasBorder or false
   const useBorder =
     hasBorder !== undefined ? hasBorder : scheme === 'secondary' ? true : false;
 
   const padding = theme.spacings.x2;
+
+  // Container size (width and height) for icon only button
+  const iconOnlySize =
+    (iconStyle.size ?? componentStyle.icon.size) +
+    2 * padding +
+    (useBorder ? 2 * BORDER_WIDTH : 0);
 
   return StyleSheet.create({
     container: {
@@ -119,74 +133,56 @@ function buildStyles(
       alignItems: 'center',
       gap: theme.spacings.x2,
 
-      backgroundColor: componentScheme.backgroundColor,
+      borderWidth: useBorder ? BORDER_WIDTH : 0,
       borderRadius: rounded ? theme.rounded.full : theme.rounded.base,
-      ...(useBorder
-        ? {
-            borderWidth: BORDER_WIDTH,
-            borderColor: componentScheme.borderColor,
-          }
-        : {}),
+      borderColor: componentScheme.borderColor,
+
+      backgroundColor: componentScheme.backgroundColor,
     },
     iconContainer: {
-      width:
-        (iconStyle.size ?? componentStyle.icon.size) +
-        2 * padding +
-        (useBorder ? 2 * BORDER_WIDTH : 0),
-      aspectRatio: 1,
+      width: iconOnlySize,
+      height: iconOnlySize,
 
       justifyContent: 'center',
     },
-    hoveredStyle: {
-      backgroundColor: componentScheme.hovered.backgroundColor,
-    },
-    pressedStyle: {
-      backgroundColor: componentScheme.pressed.backgroundColor,
-    },
+    hoveredStyle: componentScheme.hovered,
+    pressedStyle: componentScheme.pressed,
     typography: {
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
     },
     icon: {
-      fontSize: iconStyle.size ?? componentStyle.icon.size,
       color: iconStyle.color ?? componentStyle.scheme[scheme].color,
     },
   });
 }
 
 export function Demo() {
-  const [themeMode, setThemeMode] = useThemeMode();
-
   return (
-    /* eslint-disable react-native/no-inline-styles */
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { gap: 16, alignItems: 'flex-start', padding: 10 },
-      ]}
-    >
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Button>Default</Button>
+      <Button icon={<Icon name="home-outline" />} />
+      <Button icon={<Icon name="add" />}>Button with Icon</Button>
+
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>
       <Button scheme="tertiary">Tertiary</Button>
 
+      <Button
+        scheme="success"
+        icon={<Icon name="checkmark-circle" />}
+      >
+        Success
+      </Button>
       <Button
         scheme="danger"
         icon={<Icon name="warning" />}
       >
         Danger
       </Button>
-      <Button disabled>Disabled</Button>
-      <Button icon={<Icon name="home-outline" />} />
-      <Button icon={<Icon name="add" />}>Button with Icon</Button>
 
-      <Button
-        style={{ position: 'absolute', bottom: 15 }}
-        onPress={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
-      >
-        Toggle Theme
-      </Button>
+      <Button disabled>Disabled</Button>
     </View>
-    /* eslint-enable react-native/no-inline-styles */
   );
 }

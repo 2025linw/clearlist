@@ -9,7 +9,7 @@ import {
   typographyVariants,
   zHeight,
 } from './tokens';
-import { ColorVariantName, Palette, ThemeMode } from './types';
+import { type ColorVariantName, type Palette, type ThemeMode } from './types';
 
 export const variants = {
   default: brand,
@@ -32,11 +32,12 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
       // TODO: all primitives to this theme, also add toast
       Typography: {
         palette: {
-          primary: { color: palette.primary },
-
           text: { color: palette.text },
           subtle: { color: palette.subtle },
 
+          primary: { color: palette.primary },
+
+          success: { color: palette.success },
           danger: { color: palette.danger },
         },
         variants: typographyVariants,
@@ -92,13 +93,13 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           success: {
             backgroundColor: palette.success,
             borderColor: palette.border,
-            color: palette.text,
+            color: '#fff',
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: palette.colors.green['green-10'],
             },
             pressed: {
-              backgroundColor: color(themeColors.primary['primary-10'])
+              backgroundColor: color(palette.colors.green['green-10'])
                 .darken(0.08)
                 .saturate(0.1)
                 .hex(),
@@ -110,28 +111,25 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
             color: '#fff',
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: palette.colors.red['red-10'],
             },
             pressed: {
-              backgroundColor: color(palette.danger)
+              backgroundColor: color(palette.colors.red['red-10'])
                 .darken(0.08)
                 .saturate(0.1)
                 .hex(),
             },
           },
           disabled: {
-            backgroundColor: palette.surface,
+            backgroundColor: themeColors.secondary['secondary-3'],
             borderColor: palette.border,
             color: palette.subtle,
 
             hovered: {
-              backgroundColor: themeColors.primary['primary-10'],
+              backgroundColor: themeColors.secondary['secondary-3'],
             },
             pressed: {
-              backgroundColor: color(themeColors.primary['primary-10'])
-                .darken(0.08)
-                .saturate(0.1)
-                .hex(),
+              backgroundColor: themeColors.secondary['secondary-3'],
             },
           },
         },
@@ -140,8 +138,54 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
         },
       },
       TextInput: {
-        input: { color: palette.text },
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: palette.border,
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+        },
+        disabled: {
+          backgroundColor: themeColors.secondary['secondary-3'],
+        },
+        input: {
+          ...typographyVariants.text,
+          color: palette.text,
+        },
         placeholder: { color: palette.subtle },
+      },
+      EditableTypography: {
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: 'transparent',
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+        },
+        state: {
+          editing: {
+            borderColor: palette.border,
+          },
+          disabled: {
+            backgroundColor: themeColors.secondary['secondary-3'],
+          },
+        },
+        text: typographyVariants.text,
+      },
+      Toast: {
+        size: typographyVariants.button.fontSize,
+        palette: {
+          default: {
+            color: palette.text,
+          },
+          success: {
+            color: palette.success,
+          },
+          warn: {
+            color: palette.warning,
+          },
+          error: {
+            color: palette.error,
+          },
+        },
       },
     },
   } as const;

@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import HorizontalDivider from '@components/primitives/horizontal-divider';
@@ -36,6 +36,7 @@ export default function ListNavigator({
   width = 240,
   onWidthChange,
 }: ListNavigatorProps) {
+  const theme = useTheme();
   const { top, bottom } = useSafeAreaInsets();
   const { gtTablet } = useBreakpoints();
 
@@ -43,7 +44,6 @@ export default function ListNavigator({
   const sidebarWidth = useSharedValue(width);
   const startWidth = useSharedValue(width);
 
-  const theme = useTheme();
   const styles = buildStyles(theme);
 
   const tapGesture = Gesture.Tap()
@@ -108,7 +108,7 @@ function buildStyles(theme: Theme) {
 
       height: '100%',
 
-      backgroundColor: theme.palette.background,
+      backgroundColor: theme.palette.surface,
     },
     collapsed: {
       maxWidth: COLLAPSED_WIDTH,

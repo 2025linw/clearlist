@@ -9,7 +9,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 
 import Button from '@components/primitives/button';
 import Icon from '@components/primitives/icon';
@@ -35,10 +35,11 @@ export default function CardButton({
   onRestoreTask,
 }: CardButtonProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const progress = useSharedValue(0);
+
+  const styles = buildStyles(theme);
 
   useEffect(() => {
     progress.value = withTiming(menuOpen ? 1 : 0, {
@@ -71,10 +72,7 @@ export default function CardButton({
   }));
 
   return (
-    <View
-      style={styles.menuContainer}
-      pointerEvents="box-none"
-    >
+    <View style={styles.menuContainer}>
       {menuOpen && (
         <Animated.View style={[styles.actionButtonContainer, trashButtonStyle]}>
           <Button
@@ -117,6 +115,8 @@ function buildStyles(theme: Theme) {
     menuContainer: {
       width: MENU_SIZE,
       height: MENU_SIZE,
+
+      pointerEvents: 'box-none',
     },
     mainButtonContainer: {
       position: 'absolute',

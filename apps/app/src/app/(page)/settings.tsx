@@ -13,11 +13,17 @@ import Typography from '@components/primitives/typography';
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { logout } = useSessionApi();
+  const { logout: logoutApi } = useSessionApi();
   const { hasSession } = useSession();
 
   const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
+
+  function logout() {
+    logoutApi().finally(() => {
+      router.replace('/login');
+    });
+  }
 
   return hasSession ? (
     <Layout
@@ -68,20 +74,8 @@ export default function SettingsPage() {
         <>
           <HorizontalDivider />
 
-          <Button onPress={() => router.navigate('/settings/typography-debug')}>
-            Debug (Text)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/button-debug')}>
-            Debug (Button)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/spacing-debug')}>
-            Debug (Spacing)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/toast-debug')}>
-            Debug (Toast)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/date-debug')}>
-            Debug (Date)
+          <Button onPress={() => router.push('/settings/debug')}>
+            App Debug
           </Button>
         </>
       )}
@@ -101,8 +95,6 @@ const styles = StyleSheet.create({
   buttonRow: {
     display: 'flex',
     flexDirection: 'row',
-    // justifyContent: 'space-evenly',
-    // alignItems: 'stretch',
   },
   button: {
     flex: 1,

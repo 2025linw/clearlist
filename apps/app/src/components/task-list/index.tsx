@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ListRenderItemInfo, StyleSheet, View } from 'react-native';
+import { type ListRenderItemInfo, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { LinearTransition } from 'react-native-reanimated';
+import Animated, {
+  LinearTransition,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { task } from '@clearlist/types';
+import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
-import dayjs from '@lib/datetime';
+import { type Theme } from '@contexts/theme/types';
+import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
 
@@ -35,20 +38,20 @@ export default function TaskList({
   onTaskRestore,
 }: TaskListProp) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
   const taskAdded = useRef<string | null>(null);
   const [expandedTask, setExpandedTask] = useState<task.Task | null>(null);
-
-  const activeExpandedTask = data?.some(({ id }) => id === expandedTask?.id)
-    ? expandedTask
-    : null;
-
   const [dateModal, setDateModal] = useState<{
     taskId: string;
     state: 'start' | 'deadline';
     initialDate?: dayjs.Dayjs;
   } | null>(null);
+  const touchedExpandedCard = useSharedValue(false);
+
+  const styles = buildStyles(theme);
+  const activeExpandedTask = data?.some(({ id }) => id === expandedTask?.id)
+    ? expandedTask
+    : null;
 
   const handleTaskPress = useCallback(
     (id: string) => {
@@ -60,48 +63,6 @@ export default function TaskList({
     },
     [data, activeExpandedTask],
   );
-
-  const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<task.Task>) => {
-      const expanded = item.id === activeExpandedTask?.id;
-
-      return (
-        <Card
-          task={item}
-          expanded={expanded}
-
-          onPress={() => handleTaskPress(item.id)}
-
-          onTaskUpdate={(patch) => onTaskUpdate?.(item.id, patch)}
-          onTaskComplete={() => onTaskComplete?.(item.id)}
-          onTaskReopen={() => onTaskReopen?.(item.id)}
-
-          onPressStartDate={(date) => {
-            setDateModal({
-              taskId: item.id,
-              state: 'start',
-              initialDate: date,
-            });
-          }}
-          onPressDeadline={(date) => {
-            setDateModal({
-              taskId: item.id,
-              state: 'deadline',
-              initialDate: date,
-            });
-          }}
-        />
-      );
-    },
-    [
-      activeExpandedTask,
-      handleTaskPress,
-      onTaskComplete,
-      onTaskReopen,
-      onTaskUpdate,
-    ],
-  );
-
   const addTask = useCallback(() => {
     onAddTask?.((id) => {
       taskAdded.current = id;
@@ -119,12 +80,77 @@ export default function TaskList({
 
   const tapGesture = Gesture.Tap()
     .maxDistance(5)
-    .onEnd(() => {
-      scheduleOnRN(setExpandedTask, null);
+    .cancelsTouchesInView(false)
+    .onEnd((_e, success) => {
+      if (success && !touchedExpandedCard.get()) {
+        scheduleOnRN(setExpandedTask, null);
+      }
     });
 
+  const renderItem = useCallback(
+    ({ item }: ListRenderItemInfo<task.Task>) => {
+      const expanded = item.id === activeExpandedTask?.id;
+
+      return (
+        <View
+          onTouchStart={() => {
+            touchedExpandedCard.set(expanded);
+          }}
+          onStartShouldSetResponderCapture={() => {
+            if (expanded) {
+              touchedExpandedCard.set(true);
+            }
+
+            return false;
+          }}
+        >
+          <Card
+            task={item}
+            expanded={expanded}
+
+            onPress={() => handleTaskPress(item.id)}
+
+            onTaskUpdate={(patch) => onTaskUpdate?.(item.id, patch)}
+            onTaskComplete={() => onTaskComplete?.(item.id)}
+            onTaskReopen={() => onTaskReopen?.(item.id)}
+
+            onPressStartDate={(date) => {
+              setDateModal({
+                taskId: item.id,
+                state: 'start',
+                initialDate: date,
+              });
+            }}
+            onPressDeadline={(date) => {
+              setDateModal({
+                taskId: item.id,
+                state: 'deadline',
+                initialDate: date,
+              });
+            }}
+          />
+        </View>
+      );
+    },
+    [
+      touchedExpandedCard,
+      activeExpandedTask,
+      handleTaskPress,
+      onTaskComplete,
+      onTaskReopen,
+      onTaskUpdate,
+    ],
+  );
+
   return (
-    <View style={styles.container}>
+    <View
+      style={styles.container}
+      onStartShouldSetResponderCapture={() => {
+        touchedExpandedCard.set(false);
+
+        return false;
+      }}
+    >
       <GestureDetector gesture={tapGesture}>
         <Animated.FlatList
           data={data}

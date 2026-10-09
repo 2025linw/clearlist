@@ -1,18 +1,18 @@
-import { ReactElement } from 'react';
+import { type ReactElement } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { task } from '@clearlist/types';
+import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 import * as TaskHook from '@hooks/use-tasks';
 import dayjs from '@lib/datetime';
 import { getCategoryQueryMap } from '@services/helpers';
-import { Category } from '@services/types';
+import { type Category } from '@services/types';
 
 import Layout from '@components/layout';
-import { IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitives/icon';
 import TaskList from '@components/task-list';
 
 const requiredTask: task.CreateRequest = {

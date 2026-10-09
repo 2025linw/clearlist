@@ -9,7 +9,7 @@ import {
   trash,
   update,
 } from '@services/tasks';
-import { TaskQuery } from '@services/types';
+import { type TaskQuery } from '@services/types';
 
 export function useTasks(query: TaskQuery) {
   return useQuery({

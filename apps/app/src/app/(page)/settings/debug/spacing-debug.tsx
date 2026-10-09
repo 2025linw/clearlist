@@ -73,6 +73,6 @@ export default function SpacingDebug() {
 
 const styles = StyleSheet.create({
   box: {
-    backgroundColor: 'red',
+    backgroundColor: 'lightblue',
   },
 });

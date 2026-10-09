@@ -4,7 +4,8 @@ import { StyleSheet, View } from 'react-native';
 
 import { useSessionApi } from '@contexts/auth';
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
+import { useToast } from '@hooks/use-toast';
 
 import FormField from '@components/forms/form-field';
 import Button from '@components/primitives/button';
@@ -17,51 +18,59 @@ type LoginFormProps = {
   type: State;
 };
 
-export default function LoginForm(props: LoginFormProps) {
-  const theme = useTheme();
-  const styles = buildStyles(theme);
+export default function LoginForm({ type }: LoginFormProps) {
   const router = useRouter();
-
+  const theme = useTheme();
+  const toast = useToast();
   const { createAccount, login: loginApi } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
-  const [errorText, setErrorText] = useState('');
-
   const [email, setEmail] = useState('will@email.com');
   const [password, setPassword] = useState('testpass');
-  const [isPasswordFocused, setPasswordFocused] = useState(false);
+  const [isPasswordShown] = useState(false);
+  // const [isPasswordShown, setPasswordShown] = useState(false);
 
-  const login = useCallback(
-    (info: { email: string; password: string }) => {
-      loginApi(info).then(
-        (success) => {
-          if (success) router.replace('/(page)');
-        },
-        (err) => {
-          setErrorText(err);
-        },
-      );
-    },
-    [router, loginApi, setErrorText],
-  );
+  const styles = buildStyles(theme);
 
   const register = useCallback(
     (info: { email: string; password: string }) => {
-      createAccount(info).then(
-        (success) => {
-          if (success) router.replace('/(page)');
-        },
-        (err) => {
-          setErrorText(err);
-        },
-      );
+      createAccount(info)
+        .then(
+          (success) => {
+            router.setParams({ animation: 'none' });
+
+            if (success) router.replace('/(page)/main');
+          },
+          (err) => {
+            toast.error(`Error registering: ${err}`);
+          },
+        )
+        .finally(() => setLoading(false));
     },
-    [router, createAccount, setErrorText],
+    [router, toast, createAccount],
+  );
+
+  const login = useCallback(
+    (info: { email: string; password: string }) => {
+      loginApi(info)
+        .then(
+          (success) => {
+            router.setParams({ animation: 'none' });
+
+            if (success) router.replace('/(page)/main');
+          },
+          (err) => {
+            toast.error(`Error logging in: ${err}`);
+          },
+        )
+        .finally(() => setLoading(false));
+    },
+    [router, toast, loginApi],
   );
 
   return (
     <View style={styles.container}>
-      <View style={styles.loginBox}>
+      <View style={[styles.box, styles.loginBox]}>
         <View style={styles.inputContainer}>
           <FormField
             label={'Email'}
@@ -88,11 +97,11 @@ export default function LoginForm(props: LoginFormProps) {
               value={password}
               onChangeText={setPassword}
               autoCapitalize="none"
-              autoComplete="new-password"
+              autoComplete={
+                type === 'register' ? 'new-password' : 'current-password'
+              }
               autoCorrect={false}
-              secureTextEntry={!isPasswordFocused}
-              onFocus={() => setPasswordFocused(true)}
-              onBlur={() => setPasswordFocused(false)}
+              secureTextEntry={!isPasswordShown}
             />
           </FormField>
         </View>
@@ -104,70 +113,67 @@ export default function LoginForm(props: LoginFormProps) {
             if (isLoading) return;
             setLoading(true);
 
-            try {
-              if (props.type === 'login') {
-                login({ email, password });
-              } else {
-                register({ email, password });
-              }
-            } catch (e) {
-              setErrorText(`${JSON.stringify(e)}`);
-            } finally {
-              setLoading(false);
-            }
+            (type === 'register' ? register : login)({ email, password });
           }}
+          style={styles.button}
         >
-          {props.type === 'login' ? 'Login' : 'Register'}
+          {type === 'register' ? 'Register' : 'Login'}
         </Button>
       </View>
 
-      <Button
-        onPress={() =>
-          router.replace(props.type === 'login' ? '/register' : '/login')
-        }
-      >
-        {props.type === 'login'
-          ? "Don't have an account? Register"
-          : 'Have an account? Login'}
-      </Button>
+      <View style={styles.box}>
+        <Typography>
+          {type === 'register' ? 'Have an account?' : "Don't have an account?"}
+        </Typography>
 
-      <View style={styles.msgBox}>
-        <Typography palette="danger">{errorText}</Typography>
+        <Button
+          scheme="tertiary"
+          hasBorder
+          onPress={() =>
+            router.replace(type === 'register' ? '/login' : '/register')
+          }
+          style={styles.button}
+        >
+          {type === 'register' ? 'Login' : 'Register'}
+        </Button>
       </View>
     </View>
   );
 }
 
 function buildStyles(theme: Theme) {
+  const gap = theme.spacings.x4;
+
   return StyleSheet.create({
     container: {
       width: '100%',
+
       padding: theme.spacings.x4,
 
       justifyContent: 'space-between',
+      gap,
+    },
+    box: {
+      padding: theme.spacings.x3,
+
+      gap,
     },
     loginBox: {
       borderRadius: theme.rounded.lg,
-      padding: theme.spacings.x4,
+      borderWidth: 1,
+      borderColor: theme.palette.border,
 
-      gap: theme.spacings.x3,
-
-      backgroundColor: theme.palette.subtle,
+      backgroundColor: theme.palette.surface,
     },
     inputContainer: {
-      padding: theme.spacings.x2,
-
       justifyContent: 'center',
       alignItems: 'center',
-      gap: 10,
     },
     loginField: {
-      padding: 5,
-
-      gap: 10,
+      margin: theme.spacings.x2,
     },
-    msgBox: {
-      height: '10%',
+    button: {
+      justifyContent: 'center',
     },
   });
 }

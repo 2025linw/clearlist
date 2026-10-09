@@ -1,10 +1,12 @@
 /*
  * This theming was inspired from: https://github.com/tilap/expo-minimal-boilerplate/blob/main/src/contexts/theme/buildTheme.ts
  */
-import { ColorValue } from 'react-native';
+import { type ColorValue } from 'react-native';
 
-import { buildTheme, variants } from './settings';
-import { typographyVariants } from './tokens';
+import { type colors } from '@contexts/theme/colors';
+
+import { type buildTheme, type variants } from './settings';
+import { type typographyVariants } from './tokens';
 
 export type Theme = ReturnType<typeof buildTheme>;
 
@@ -37,6 +39,8 @@ export type Palette = {
   warning: ColorValue;
   error: ColorValue;
   danger: ColorValue;
+
+  colors: typeof colors;
 };
 
 export type ThemeMode = 'light' | 'dark';

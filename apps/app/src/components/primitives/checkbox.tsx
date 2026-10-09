@@ -1,47 +1,72 @@
 import { useState } from 'react';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import { type GestureResponderEvent, Pressable, View } from 'react-native';
+
+import { useTheme } from '@contexts/theme';
 
 import Icon from '@components/primitives/icon';
 
 type CheckboxProps = {
   checked?: boolean;
   disabled?: boolean;
-  onCheck?: () => void;
-  onUncheck?: () => void;
+  onChange?: (state: boolean) => void;
+  testID?: string;
 };
 
 export default function Checkbox({
-  checked = false,
-  disabled = false,
-  onCheck,
-  onUncheck,
+  checked,
+  disabled,
+  onChange,
+  ...props
 }: CheckboxProps) {
+  const theme = useTheme();
+
   const [localState, setLocalState] = useState(checked);
 
-  const tapGesture = Gesture.Tap()
-    .enabled(!disabled)
-    .onEnd((_e, success) => {
-      if (!success) return;
+  function onPress(e: GestureResponderEvent) {
+    e.stopPropagation();
 
-      const next = !localState;
-      scheduleOnRN(setLocalState, next);
+    if (disabled) return;
 
-      const handler = checked ? onUncheck : onCheck;
-      if (handler) {
-        scheduleOnRN(handler);
-      }
-    });
+    const next = !localState;
+
+    onChange?.(next);
+    setLocalState(next);
+  }
+
+  const iconName = localState
+    ? 'checkbox'
+    : disabled
+      ? 'square'
+      : 'square-outline';
 
   return (
-    <GestureDetector gesture={tapGesture}>
-      <Animated.View>
-        <Icon
-          name={localState ? 'checkbox' : 'square-outline'}
-          size={20}
-        />
-      </Animated.View>
-    </GestureDetector>
+    <Pressable
+      role="checkbox"
+      disabled={disabled}
+      onPress={onPress}
+      testID={props.testID}
+    >
+      <Icon
+        name={iconName}
+        size={20}
+        color={disabled ? theme.palette.subtle : theme.palette.text}
+        testID={props.testID ? `${props.testID}-icon` : undefined}
+      />
+    </Pressable>
+  );
+}
+
+export function Demo() {
+  return (
+    // eslint-disable-next-line react-native/no-inline-styles
+    <View style={{ gap: 16, padding: 10 }}>
+      <Checkbox />
+      <Checkbox checked={true} />
+      <Checkbox disabled />
+      <Checkbox
+        checked={true}
+        disabled
+      />
+    </View>
   );
 }

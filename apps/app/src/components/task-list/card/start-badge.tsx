@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import dayjs, { getDayOfWeek } from '@lib/datetime';
 
 import Icon from '@components/primitives/icon';

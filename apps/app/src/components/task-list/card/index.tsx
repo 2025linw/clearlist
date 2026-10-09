@@ -1,18 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
 
-import { task } from '@clearlist/types';
+import { type task } from '@clearlist/types';
 
 import { useTheme } from '@contexts/theme';
-import { Theme } from '@contexts/theme/types';
+import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
 import dayjs from '@lib/datetime';
 
+import EditableTypography from '@components/editable-typography';
 import Checkbox from '@components/primitives/checkbox';
-import EditableTypography from '@components/text/editable-typography';
 
 import DeadlineBadge from './deadline-badge';
 import DeadlineButtonLabel from './deadline-button-label';
@@ -46,18 +44,20 @@ export default function TaskCard({
   ...props
 }: TaskCardProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
   const wasExpanded = useRef(expanded);
-
-  const initialDraft: Draft = {
+  const draftRef = useRef<Draft>({
     title: task.title,
     notes: task.notes,
-  };
+  });
+  const [draft, setDraft] = useState<
+    Pick<task.UpdateRequest, 'title' | 'notes'>
+  >({
+    title: task.title,
+    notes: task.notes,
+  });
 
-  const [draft, setDraft] =
-    useState<Pick<task.UpdateRequest, 'title' | 'notes'>>(initialDraft);
-  const draftRef = useRef<Draft>(initialDraft);
+  const styles = buildStyles(theme);
 
   const { run: scheduleUpdate, flush: flushUpdate } = useDebouncedCallback(
     (patch: Draft) => {
@@ -88,14 +88,11 @@ export default function TaskCard({
     wasExpanded.current = expanded;
   }, [expanded, flushUpdate]);
 
-  const tap = Gesture.Tap()
-    .enabled(!disabled)
-    .onEnd(() => {
-      if (onPress) scheduleOnRN(onPress);
-    });
-
   return (
-    <GestureDetector gesture={tap}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+    >
       <Animated.View
         style={[
           styles.container,
@@ -108,25 +105,31 @@ export default function TaskCard({
         <View style={styles.mainRow}>
           <Checkbox
             checked={!!task.completedAt}
-            onCheck={props.onTaskComplete}
-            onUncheck={props.onTaskReopen}
+            onChange={(checked) => {
+              const handler = checked
+                ? props.onTaskComplete
+                : props.onTaskReopen;
+
+              handler?.();
+            }}
           />
 
           {task.start && !expanded && (
             <StartBadge date={dayjs(task.start.value)} />
           )}
 
-          <EditableTypography
-            value={draft.title}
-            onChangeText={(title) => {
-              updateDraft({ title });
-            }}
-            onSave={flushUpdate}
-            placeholder="New Task"
-            disabled={disabled || !expanded}
-            style={styles.titleTypography}
-            containerStyle={styles.titleTypography}
-          />
+          <View style={styles.titleContainer}>
+            <EditableTypography
+              value={draft.title}
+              onChangeText={(title) => {
+                updateDraft({ title });
+              }}
+              onSave={flushUpdate}
+              placeholder="New Task"
+              disabled={disabled || !expanded}
+              style={styles.titleTypography}
+            />
+          </View>
 
           {task.deadline && !expanded && (
             <DeadlineBadge date={dayjs(task.deadline)} />
@@ -180,7 +183,7 @@ export default function TaskCard({
           </Animated.View>
         )}
       </Animated.View>
-    </GestureDetector>
+    </Pressable>
   );
 }
 
@@ -205,9 +208,11 @@ function buildStyles(theme: Theme) {
       alignItems: 'center',
       gap: theme.spacings.x2,
     },
-    titleTypography: {
+    titleContainer: {
       flex: 1,
-
+    },
+    titleTypography: {
+      backgroundColor: 'transparent',
       fontSize: 20,
     },
     fieldPanel: {
