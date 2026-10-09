@@ -78,4 +78,19 @@ describe('<Icon /> Style', () => {
     expect(style.width).toStrictEqual(40);
     expect(style.height).toStrictEqual(40);
   });
+
+  test('caller can override style', async () => {
+    await renderWithProviders(
+      <Icon
+        name="add"
+        // eslint-disable-next-line react-native/no-inline-styles
+        style={{ backgroundColor: 'red' }}
+        testID="icon"
+      />,
+    );
+
+    const icon = screen.getByTestId('icon');
+
+    expect(icon).toHaveStyle({ backgroundColor: 'red' });
+  });
 });

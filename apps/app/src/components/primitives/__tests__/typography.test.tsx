@@ -56,4 +56,20 @@ describe('<Typography /> Style', () => {
       );
     },
   );
+
+  test('caller can override style', async () => {
+    await renderWithProviders(
+      // eslint-disable-next-line react-native/no-inline-styles
+      <Typography style={{ backgroundColor: 'yellow', color: 'purple' }}>
+        Test
+      </Typography>,
+    );
+
+    const typography = screen.getByText('Test');
+
+    expect(typography).toHaveStyle({
+      backgroundColor: 'yellow',
+      color: 'purple',
+    });
+  });
 });

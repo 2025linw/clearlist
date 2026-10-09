@@ -180,6 +180,25 @@ describe('<Button /> Style', () => {
       expect(button).toHaveStyle({ borderWidth: 1 });
     },
   );
+
+  test('caller can override style', async () => {
+    await renderWithProviders(
+      <Button
+        // eslint-disable-next-line react-native/no-inline-styles
+        style={{ backgroundColor: 'orange' }}
+        // eslint-disable-next-line react-native/no-inline-styles
+        textStyle={{ color: 'green' }}
+      >
+        Test
+      </Button>,
+    );
+
+    const button = screen.getByRole('button');
+    const text = screen.getByText('Test');
+
+    expect(button).toHaveStyle({ backgroundColor: 'orange' });
+    expect(text).toHaveStyle({ color: 'green' });
+  });
 });
 
 describe('<Button /> Action', () => {
