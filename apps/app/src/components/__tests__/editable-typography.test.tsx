@@ -86,7 +86,7 @@ describe('<EditableTypography /> Content', () => {
       />,
     );
 
-    expect(screen.queryByText('value')).toBeVisible();
+    expect(screen.getByText('value')).toBeVisible();
     expect(screen.queryByText('defaultValue')).toBeNull();
   });
 
@@ -99,7 +99,7 @@ describe('<EditableTypography /> Content', () => {
       />,
     );
 
-    expect(screen.queryByDisplayValue('value')).toBeVisible();
+    expect(screen.getByDisplayValue('value')).toBeVisible();
     expect(screen.queryByDisplayValue('defaultValue')).toBeNull();
   });
 });
