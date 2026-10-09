@@ -58,7 +58,7 @@ export default function Checkbox({
 
 export function Demo() {
   return (
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, padding: 10 }}>
       <Checkbox />
       <Checkbox checked={true} />

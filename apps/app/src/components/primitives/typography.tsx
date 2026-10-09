@@ -41,7 +41,7 @@ export default function Typography({
 
 export function Demo() {
   return (
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Typography>Default Text</Typography>
       <Typography variant="h1">Variant h1</Typography>

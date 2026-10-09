@@ -159,7 +159,7 @@ function buildStyles(
 
 export function Demo() {
   return (
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Button>Default</Button>
       <Button icon={<Icon name="home-outline" />} />

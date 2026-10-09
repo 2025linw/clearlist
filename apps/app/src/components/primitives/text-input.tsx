@@ -57,7 +57,7 @@ function buildStyles(theme: Theme, disabled?: boolean) {
 
 export function Demo() {
   return (
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <TextInput editable={false} />
       <TextInput
