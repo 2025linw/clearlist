@@ -32,10 +32,10 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
       // TODO: all primitives to this theme, also add toast
       Typography: {
         palette: {
-          primary: { color: palette.primary },
-
           text: { color: palette.text },
           subtle: { color: palette.subtle },
+
+          primary: { color: palette.primary },
 
           success: { color: palette.success },
           danger: { color: palette.danger },
