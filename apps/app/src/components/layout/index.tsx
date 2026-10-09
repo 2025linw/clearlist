@@ -46,7 +46,6 @@ export default function Layout({
         <Header
           text={props.headerText}
           icon={props.headerIcon}
-          style={styles.header}
         />
       )}
 
@@ -62,23 +61,8 @@ function buildStyles(theme: Theme) {
 
       backgroundColor: theme.palette.background,
     },
-    header: {
-      position: 'absolute',
-      top: 0,
-    },
     content: {
       flex: 1,
-    },
-    headerButton: {
-      width: 56,
-      height: 56,
-
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    headerItem: {
-      alignItems: 'center',
-      justifyContent: 'center',
     },
   });
 }
