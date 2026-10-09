@@ -15,9 +15,11 @@ import Typography from '@components/primitives/typography';
 
 type EditableTypographyProps = {
   value?: string;
+  defaultValue?: string;
   onChangeText?: (value?: string) => void;
   onSave?: (value?: string) => void;
   placeholder?: string;
+  editable?: boolean;
   disabled?: boolean;
   multiline?: boolean;
   style?: StyleProp<TextStyle>;
@@ -27,36 +29,44 @@ type EditableTypographyProps = {
 
 export default function EditableTypography({
   value,
+  defaultValue,
   onChangeText,
   onSave,
   placeholder,
+  disabled,
+  editable = true,
   ...props
 }: EditableTypographyProps) {
   const theme = useTheme();
 
-  const [text, setText] = useState(value ?? '');
+  const [text, setText] = useState(defaultValue);
   const [editing, setEditing] = useState(props.testOnly_editing ?? false);
 
-  const styles = buildStyles(theme, editing);
+  const styles = buildStyles(theme, editing, disabled);
+
+  const displayedText = value ?? text;
+  const isEditable = editable && !disabled;
 
   if (editing) {
     return (
       <TextInput
-        value={text}
+        value={displayedText ?? ''}
+        placeholder={placeholder}
+        editable={isEditable}
+        disabled={disabled}
         onChangeText={(text: string) => {
           setText(text);
 
           onChangeText?.(text);
         }}
-        placeholder={placeholder}
         onBlur={() => {
           setEditing(props.testOnly_editing ?? false);
 
-          onSave?.(text);
+          onSave?.(value ?? text);
         }}
         autoFocus={props.testOnly_editing ? false : true}
         multiline={props.multiline}
-        style={[styles.container, styles.text, props.style]}
+        style={[styles.input, props.style]}
         testID={props.testID}
       />
     );
@@ -67,31 +77,30 @@ export default function EditableTypography({
       onPress={() => {
         setEditing(true);
       }}
-      disabled={props.disabled}
-      style={styles.container}
+      disabled={!isEditable}
     >
       <Typography
-        palette={text ? 'text' : 'subtle'}
-        style={[styles.text, props.style]}
+        palette={displayedText ? 'text' : 'subtle'}
+        style={[styles.input, props.style]}
         testID={props.testID}
       >
-        {text || placeholder || ''}
+        {displayedText || placeholder || ''}
       </Typography>
     </Pressable>
   );
 }
 
-function buildStyles(theme: Theme, editing: boolean) {
+function buildStyles(theme: Theme, editing: boolean, disabled?: boolean) {
   const componentStyle = theme.components.EditableTypography;
 
-  const { borderColor, ...container } = componentStyle.container;
+  const state = disabled ? 'disabled' : editing ? 'editing' : undefined;
 
   return StyleSheet.create({
-    container: {
-      ...container,
-      borderColor: editing ? borderColor : 'transparent',
+    input: {
+      ...componentStyle.container,
+      ...componentStyle.text,
+      ...(state ? componentStyle.state[state] : {}),
     },
-    text: componentStyle.input,
   });
 }
 
@@ -99,12 +108,45 @@ export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
-      <EditableTypography />
-      <EditableTypography value="With initial value" />
-
-      <EditableTypography testOnly_editing />
+      <EditableTypography editable={false} />
       <EditableTypography
-        value="With initial value"
+        value="Has value - display mode"
+        editable={false}
+      />
+      <EditableTypography
+        defaultValue="Has default value - display mode"
+        editable={false}
+      />
+      <EditableTypography placeholder="Has placeholder - display mode" />
+      <EditableTypography
+        value="Disabled - display mode"
+        disabled={true}
+        editable={false}
+      />
+
+      <EditableTypography
+        testOnly_editing
+        editable={false}
+      />
+      <EditableTypography
+        value="Has value - editing mode"
+        testOnly_editing
+        editable={false}
+      />
+      <EditableTypography
+        defaultValue="Has default value - editing mode"
+        testOnly_editing
+        editable={false}
+      />
+      <EditableTypography
+        placeholder="Has placeholder - editing mode"
+        testOnly_editing
+        editable={false}
+      />
+      <EditableTypography
+        value="Disabled - editing mode"
+        disabled={true}
+        editable={false}
         testOnly_editing
       />
     </View>

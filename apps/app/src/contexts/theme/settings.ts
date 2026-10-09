@@ -156,14 +156,19 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
       EditableTypography: {
         container: {
           borderWidth: spacings.thin,
-          borderColor: palette.border,
+          borderColor: 'transparent',
           borderRadius: rounded.base,
           padding: spacings.x2,
         },
-        input: {
-          ...typographyVariants.text,
-          color: palette.text,
+        state: {
+          editing: {
+            borderColor: palette.border,
+          },
+          disabled: {
+            backgroundColor: themeColors.secondary['secondary-3'],
+          },
         },
+        text: typographyVariants.text,
       },
       Toast: {
         size: typographyVariants.button.fontSize,

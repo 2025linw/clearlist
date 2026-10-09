@@ -212,6 +212,7 @@ function buildStyles(theme: Theme) {
       flex: 1,
     },
     titleTypography: {
+      backgroundColor: 'transparent',
       fontSize: 20,
     },
     fieldPanel: {
