@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { useTheme, useThemeMode } from '@contexts/theme';
+import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
 import Icon, { type IconProps } from '@components/primitives/icon';
@@ -158,16 +158,9 @@ function buildStyles(
 }
 
 export function Demo() {
-  const [themeMode, setThemeMode] = useThemeMode();
-
   return (
     /* eslint-disable react-native/no-inline-styles */
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { gap: 16, alignItems: 'flex-start', padding: 10 },
-      ]}
-    >
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Button>Default</Button>
       <Button icon={<Icon name="home-outline" />} />
       <Button icon={<Icon name="add" />}>Button with Icon</Button>
@@ -189,13 +182,6 @@ export function Demo() {
         Danger
       </Button>
       <Button disabled>Disabled</Button>
-
-      <Button
-        style={{ position: 'absolute', bottom: 15 }}
-        onPress={() => setThemeMode(themeMode === 'light' ? 'dark' : 'light')}
-      >
-        Toggle Theme
-      </Button>
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );

@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  type GestureResponderEvent,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { type GestureResponderEvent, Pressable, View } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 
@@ -64,12 +59,7 @@ export default function Checkbox({
 export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
-    <View
-      style={[
-        StyleSheet.absoluteFill,
-        { gap: 16, alignItems: 'flex-start', padding: 10 },
-      ]}
-    >
+    <View style={{ gap: 16, padding: 10 }}>
       <Checkbox />
       <Checkbox checked={true} />
       <Checkbox disabled />

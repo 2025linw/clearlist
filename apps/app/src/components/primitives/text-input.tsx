@@ -4,6 +4,7 @@ import {
   type StyleProp,
   StyleSheet,
   type TextStyle,
+  View,
 } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
@@ -44,4 +45,16 @@ function buildStyles(theme: Theme) {
     typography: componentStyle.input,
     placeholder: componentStyle.placeholder,
   });
+}
+
+export function Demo() {
+  return (
+    /* eslint-disable react-native/no-inline-styles */
+    <View style={{ gap: 16, paddingHorizontal: 10 }}>
+      <TextInput />
+
+      <TextInput value="With initial value" />
+    </View>
+    /* eslint-enable react-native/no-inline-styles */
+  );
 }
