@@ -74,23 +74,8 @@ export default function SettingsPage() {
         <>
           <HorizontalDivider />
 
-          <Button onPress={() => router.navigate('/settings/typography-debug')}>
-            Debug (Typography)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/button-debug')}>
-            Debug (Button)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/checkbox-debug')}>
-            Debug (Checkbox)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/spacing-debug')}>
-            Debug (Spacing)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/toast-debug')}>
-            Debug (Toast)
-          </Button>
-          <Button onPress={() => router.navigate('/settings/date-debug')}>
-            Debug (Date)
+          <Button onPress={() => router.push('/settings/debug')}>
+            App Debug
           </Button>
         </>
       )}
