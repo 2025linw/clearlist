@@ -169,10 +169,19 @@ export function Demo() {
       ]}
     >
       <Button>Default</Button>
+      <Button icon={<Icon name="home-outline" />} />
+      <Button icon={<Icon name="add" />}>Button with Icon</Button>
+
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>
       <Button scheme="tertiary">Tertiary</Button>
 
+      <Button
+        scheme="success"
+        icon={<Icon name="checkmark-circle" />}
+      >
+        Success
+      </Button>
       <Button
         scheme="danger"
         icon={<Icon name="warning" />}
@@ -180,8 +189,6 @@ export function Demo() {
         Danger
       </Button>
       <Button disabled>Disabled</Button>
-      <Button icon={<Icon name="home-outline" />} />
-      <Button icon={<Icon name="add" />}>Button with Icon</Button>
 
       <Button
         style={{ position: 'absolute', bottom: 15 }}
