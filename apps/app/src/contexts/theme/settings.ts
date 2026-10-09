@@ -144,6 +144,9 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           borderRadius: rounded.base,
           padding: spacings.x2,
         },
+        disabled: {
+          backgroundColor: themeColors.secondary['secondary-3'],
+        },
         input: {
           ...typographyVariants.text,
           color: palette.text,

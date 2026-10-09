@@ -14,35 +14,42 @@ type TextInputProps = RNTextInputProps & {
   value?: string;
   onChangeText?: (value: string) => void;
   style?: StyleProp<TextStyle>;
+  disabled?: boolean;
 };
 
 export default function TextInput({
-  value,
   onChangeText,
   style,
+  editable,
+  disabled,
   ...props
 }: TextInputProps) {
   const theme = useTheme();
 
-  const styles = buildStyles(theme);
+  const styles = buildStyles(theme, disabled);
   const { color: placeholderTextColor } = styles.placeholder;
+
+  const isEditable = editable && !disabled;
 
   return (
     <RNTextInput
       {...props}
-      value={value}
       onChangeText={onChangeText}
       placeholderTextColor={placeholderTextColor}
       style={[styles.container, styles.text, style]}
+      editable={isEditable}
     />
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, disabled?: boolean) {
   const componentStyle = theme.components.TextInput;
 
   return StyleSheet.create({
-    container: componentStyle.container,
+    container: {
+      ...componentStyle.container,
+      ...(disabled ? componentStyle.disabled : undefined),
+    },
     text: componentStyle.input,
     placeholder: componentStyle.placeholder,
   });
@@ -52,9 +59,20 @@ export function Demo() {
   return (
     /* eslint-disable react-native/no-inline-styles */
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
-      <TextInput />
+      <TextInput editable={false} />
+      <TextInput
+        value="With initial value"
+        editable={false}
+      />
+      <TextInput
+        defaultValue="With initial default value"
+        editable={false}
+      />
 
-      <TextInput value="With initial value" />
+      <TextInput
+        value="Disabled"
+        disabled
+      />
     </View>
     /* eslint-enable react-native/no-inline-styles */
   );
