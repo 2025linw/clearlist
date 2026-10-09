@@ -33,7 +33,7 @@ export default function App() {
 
 function AppInner() {
   const { loaded: authLoaded } = useSession();
-  const { loaded: themeLoaded } = useThemeContext();
+  const { theme, loaded: themeLoaded } = useThemeContext();
   const { fontsLoaded, fontError } = useAppFonts();
 
   // Check when
@@ -52,7 +52,14 @@ function AppInner() {
 
   return (
     <>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: {
+            backgroundColor: theme.palette.background,
+          },
+        }}
+      >
         <Stack.Screen
           name="(public)/login"
           options={{ animation: 'none' }}
