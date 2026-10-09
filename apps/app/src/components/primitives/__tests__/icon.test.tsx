@@ -4,9 +4,9 @@ import { StyleSheet } from 'react-native';
 
 import { buildTheme } from '@contexts/theme/settings';
 
-import Icon from '@components/primitives/icon';
-
 import { renderWithProviders } from '@/test/render';
+
+import Icon from '../icon';
 
 describe('<Icon /> Content', () => {
   test('renders correctly', async () => {

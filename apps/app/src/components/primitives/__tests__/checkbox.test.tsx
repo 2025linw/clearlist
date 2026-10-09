@@ -2,9 +2,9 @@ import { screen, userEvent } from '@testing-library/react-native';
 
 import { buildTheme } from '@contexts/theme/settings';
 
-import Checkbox from '@components/primitives/checkbox';
-
 import { renderWithProviders } from '@/test/render';
+
+import Checkbox from '../checkbox';
 
 describe('<Checkbox /> Content', () => {
   test('renders correctly', async () => {

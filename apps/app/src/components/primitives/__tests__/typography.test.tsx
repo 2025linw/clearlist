@@ -2,9 +2,9 @@ import { screen } from '@testing-library/react-native';
 
 import { buildTheme } from '@contexts/theme/settings';
 
-import Typography from '@components/primitives/typography';
-
 import { renderWithProviders } from '@/test/render';
+
+import Typography from '../typography';
 
 describe('<Typography /> Content', () => {
   test('renders correctly', async () => {
