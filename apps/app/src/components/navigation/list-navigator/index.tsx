@@ -108,7 +108,7 @@ function buildStyles(theme: Theme) {
 
       height: '100%',
 
-      backgroundColor: theme.palette.background,
+      backgroundColor: theme.palette.surface,
     },
     collapsed: {
       maxWidth: COLLAPSED_WIDTH,
