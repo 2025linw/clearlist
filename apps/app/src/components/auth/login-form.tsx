@@ -19,19 +19,18 @@ type LoginFormProps = {
 };
 
 export default function LoginForm({ type }: LoginFormProps) {
-  const theme = useTheme();
-  const styles = buildStyles(theme);
   const router = useRouter();
+  const theme = useTheme();
   const toast = useToast();
-
   const { createAccount, login: loginApi } = useSessionApi();
 
   const [isLoading, setLoading] = useState(false);
-
   const [email, setEmail] = useState('will@email.com');
   const [password, setPassword] = useState('testpass');
   const [isPasswordShown] = useState(false);
   // const [isPasswordShown, setPasswordShown] = useState(false);
+
+  const styles = buildStyles(theme);
 
   const register = useCallback(
     (info: { email: string; password: string }) => {

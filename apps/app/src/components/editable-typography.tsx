@@ -33,10 +33,11 @@ export default function EditableTypography({
   ...props
 }: EditableTypographyProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
-  const [text, setText] = useState(value || '');
+  const [text, setText] = useState(value ?? '');
   const [editing, setEditing] = useState(props.testOnly_editing ?? false);
+
+  const styles = buildStyles(theme, editing);
 
   if (editing) {
     return (

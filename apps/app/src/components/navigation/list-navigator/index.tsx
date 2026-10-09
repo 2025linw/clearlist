@@ -36,6 +36,7 @@ export default function ListNavigator({
   width = 240,
   onWidthChange,
 }: ListNavigatorProps) {
+  const theme = useTheme();
   const { top, bottom } = useSafeAreaInsets();
   const { gtTablet } = useBreakpoints();
 
@@ -43,7 +44,6 @@ export default function ListNavigator({
   const sidebarWidth = useSharedValue(width);
   const startWidth = useSharedValue(width);
 
-  const theme = useTheme();
   const styles = buildStyles(theme);
 
   const tapGesture = Gesture.Tap()

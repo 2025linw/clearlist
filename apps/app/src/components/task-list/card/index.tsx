@@ -44,18 +44,20 @@ export default function TaskCard({
   ...props
 }: TaskCardProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
   const wasExpanded = useRef(expanded);
-
-  const initialDraft: Draft = {
+  const draftRef = useRef<Draft>({
     title: task.title,
     notes: task.notes,
-  };
+  });
+  const [draft, setDraft] = useState<
+    Pick<task.UpdateRequest, 'title' | 'notes'>
+  >({
+    title: task.title,
+    notes: task.notes,
+  });
 
-  const [draft, setDraft] =
-    useState<Pick<task.UpdateRequest, 'title' | 'notes'>>(initialDraft);
-  const draftRef = useRef<Draft>(initialDraft);
+  const styles = buildStyles(theme);
 
   const { run: scheduleUpdate, flush: flushUpdate } = useDebouncedCallback(
     (patch: Draft) => {
@@ -116,17 +118,18 @@ export default function TaskCard({
             <StartBadge date={dayjs(task.start.value)} />
           )}
 
-          <EditableTypography
-            value={draft.title}
-            onChangeText={(title) => {
-              updateDraft({ title });
-            }}
-            onSave={flushUpdate}
-            placeholder="New Task"
-            disabled={disabled || !expanded}
-            style={styles.titleTypography}
-            containerStyle={styles.titleTypography}
-          />
+          <View style={styles.titleContainer}>
+            <EditableTypography
+              value={draft.title}
+              onChangeText={(title) => {
+                updateDraft({ title });
+              }}
+              onSave={flushUpdate}
+              placeholder="New Task"
+              disabled={disabled || !expanded}
+              style={styles.titleTypography}
+            />
+          </View>
 
           {task.deadline && !expanded && (
             <DeadlineBadge date={dayjs(task.deadline)} />
@@ -205,9 +208,10 @@ function buildStyles(theme: Theme) {
       alignItems: 'center',
       gap: theme.spacings.x2,
     },
-    titleTypography: {
+    titleContainer: {
       flex: 1,
-
+    },
+    titleTypography: {
       fontSize: 20,
     },
     fieldPanel: {

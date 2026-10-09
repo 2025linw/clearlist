@@ -35,10 +35,11 @@ export default function CardButton({
   onRestoreTask,
 }: CardButtonProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const progress = useSharedValue(0);
+
+  const styles = buildStyles(theme);
 
   useEffect(() => {
     progress.value = withTiming(menuOpen ? 1 : 0, {
