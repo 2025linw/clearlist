@@ -134,7 +134,7 @@ describe('<Button /> Style', () => {
   test('hover style', async () => {
     // NOTE: only testing primary
 
-    await renderWithProviders(<Button testOnly_hovered={true}>Test</Button>);
+    await renderWithProviders(<Button testOnly_hovered>Test</Button>);
 
     const button = screen.getByRole('button');
 
@@ -149,7 +149,7 @@ describe('<Button /> Style', () => {
   test('press style', async () => {
     // NOTE: only testing primary
 
-    await renderWithProviders(<Button testOnly_pressed={true}>Test</Button>);
+    await renderWithProviders(<Button testOnly_pressed>Test</Button>);
 
     const button = screen.getByRole('button');
 
