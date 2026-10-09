@@ -75,7 +75,7 @@ export default function SettingsPage() {
           <HorizontalDivider />
 
           <Button onPress={() => router.navigate('/settings/typography-debug')}>
-            Debug (Text)
+            Debug (Typography)
           </Button>
           <Button onPress={() => router.navigate('/settings/button-debug')}>
             Debug (Button)

@@ -49,6 +49,7 @@ export function Demo() {
       <Typography palette="text">Palette text</Typography>
       <Typography palette="primary">Palette primary</Typography>
       <Typography palette="subtle">Palette subtle</Typography>
+      <Typography palette="success">Palette success</Typography>
       <Typography palette="danger">Palette danger</Typography>
     </View>
     /* eslint-enable react-native/no-inline-styles */
