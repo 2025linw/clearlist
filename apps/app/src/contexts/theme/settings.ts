@@ -147,6 +147,23 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
         },
         placeholder: { color: palette.subtle },
       },
+      Toast: {
+        size: typographyVariants.button.fontSize,
+        palette: {
+          default: {
+            color: palette.text,
+          },
+          success: {
+            color: palette.success,
+          },
+          warn: {
+            color: palette.warning,
+          },
+          error: {
+            color: palette.error,
+          },
+        },
+      },
     },
   } as const;
 }

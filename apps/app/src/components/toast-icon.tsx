@@ -18,19 +18,13 @@ const iconNames: Record<ToastType, IconName> = {
 export default function ToastIcon({ type }: ToastIconProps) {
   const theme = useTheme();
 
-  const size = theme.components.Typography.variants.text.fontSize + 4;
-  const colors = {
-    default: theme.palette.text,
-    success: theme.palette.success,
-    warn: theme.palette.warning,
-    error: theme.palette.error,
-  };
+  const componentStyle = theme.components.Toast;
 
   return (
     <Icon
       name={iconNames[type]}
-      size={size}
-      color={colors[type]}
+      size={componentStyle.size}
+      color={componentStyle.palette[type].color}
     />
   );
 }
