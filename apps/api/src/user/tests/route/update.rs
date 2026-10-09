@@ -62,7 +62,6 @@ mod success {
             .json::<Response<User>>()
             .await
             .unwrap();
-        assert_eq!(body.data.display_name, "Updated Name");
         assert_eq!(body.data.preferred_timezone.unwrap(), Tz::America__Chicago);
         assert_eq!(
             body.data.completed_task_retention.unwrap(),
@@ -84,24 +83,6 @@ mod error {
 
         let body = res.json::<ErrorResponse>().await.unwrap();
         assert_eq!(body.status, StatusCode::UNAUTHORIZED);
-    }
-
-    #[test]
-    async fn invalid_display_name() {
-        let client = init().await;
-
-        let res = client
-            .update(
-                true,
-                json!({
-                    "displayName": "New\nLines\nIn\nMiddle",
-                }),
-            )
-            .await;
-        assert_eq!(res.status(), StatusCode::BAD_REQUEST);
-
-        let body = res.json::<ErrorResponse>().await.unwrap();
-        assert_eq!(body.status, StatusCode::BAD_REQUEST);
     }
 
     #[test]

@@ -36,8 +36,6 @@ impl std::fmt::Display for UserID {
 pub struct UserModel {
     pub id: UserID,
 
-    pub display_name: String,
-
     pub preferred_timezone: Option<String>,
     pub completed_task_retention: Option<PgInterval>,
 
@@ -50,8 +48,6 @@ pub struct UserModel {
 #[serde(rename_all = "camelCase")]
 pub struct User {
     pub id: UserID,
-
-    pub display_name: String,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub preferred_timezone: Option<Tz>,
@@ -71,7 +67,6 @@ impl User {
 
         Self {
             id: value.id,
-            display_name: value.display_name,
             preferred_timezone,
             completed_task_retention,
             updated_at: value.updated_at,

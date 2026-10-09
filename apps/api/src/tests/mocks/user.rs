@@ -64,7 +64,6 @@ impl UserRepository for MockUserRepository {
 
         let user = UserModel {
             id: create_model.id,
-            display_name: create_model.display_name,
             preferred_timezone: None,
             completed_task_retention: None,
             updated_at: create_model.created_at,
@@ -97,9 +96,6 @@ impl UserRepository for MockUserRepository {
         }
 
         let mut user = user_opt.unwrap().clone();
-        if let Some(display_name) = update_model.display_name {
-            user.display_name = display_name;
-        }
         if let Some(preferred_timezone) = update_model.preferred_timezone {
             user.preferred_timezone = preferred_timezone;
         }

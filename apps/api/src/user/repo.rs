@@ -33,12 +33,11 @@ impl PgUserRepository {
 
     async fn create_model(conn: &mut PgConnection, create_model: CreateModel) -> Result<UserModel> {
         Ok(query_as::<UserModel>(
-            "INSERT INTO app.users (id, display_name, updated_at, created_at)
-            VALUES ($1, $2, $3, $3)
+            "INSERT INTO app.users (id, updated_at, created_at)
+            VALUES ($1, $2, $2)
             RETURNING *",
         )
         .bind(create_model.id)
-        .bind(create_model.display_name)
         .bind(create_model.created_at)
         .fetch_one(conn.as_mut())
         .await?)

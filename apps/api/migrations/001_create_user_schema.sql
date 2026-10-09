@@ -2,8 +2,6 @@
 CREATE TABLE app.users (
     id uuid PRIMARY KEY,
 
-    display_name text NOT NULL,
-
     preferred_timezone text,
     completed_task_retention interval,
 

@@ -36,13 +36,11 @@ impl<R: UserRepository> UserService<R> {
     pub async fn create(&self, provision_request: ProvisionRequest) -> Result<User> {
         let ProvisionRequest {
             id,
-            display_name,
             created_at,
         } = helpers::validate_create_request(provision_request)?;
 
         let create_model = CreateModel {
             id,
-            display_name,
             created_at,
         };
         self.repo
@@ -67,13 +65,11 @@ impl<R: UserRepository> UserService<R> {
         }
 
         let UpdateRequest {
-            display_name,
             preferred_timezone,
             completed_task_retention,
         } = helpers::validate_update_request(update_request)?;
 
         let update_model = UpdateModel {
-            display_name,
             preferred_timezone: preferred_timezone.map(|inner| inner.map(|tz| tz.to_string())),
             completed_task_retention: completed_task_retention
                 .map(|inner| inner.map(PgInterval::from)),

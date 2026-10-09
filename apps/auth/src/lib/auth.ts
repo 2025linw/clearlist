@@ -30,7 +30,6 @@ export const auth = betterAuth({
 
         const body = JSON.stringify({
           id: session.user.id,
-          displayName: session.user.name,
           createdAt: session.user.createdAt,
         });
 
