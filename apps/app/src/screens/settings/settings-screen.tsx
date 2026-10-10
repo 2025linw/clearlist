@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Keyboard, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import {
   useColorTheme,
@@ -9,7 +10,8 @@ import {
 } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
-import { type authClient } from '@lib/auth-client';
+import { useToast } from '@hooks/use-toast';
+import { authClient } from '@lib/auth-client';
 
 import Layout from '@components/layout';
 import Button from '@components/primitives/button';
@@ -26,13 +28,45 @@ type SettingsScreenProps = {
 export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
   const router = useRouter();
   const theme = useTheme();
+  const toast = useToast();
   const { getAllColorThemes } = useThemeContext();
   const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
   const { gtTablet } = useBreakpoints();
 
+  const [newPassword, setNewPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+
   const styles = buildStyles(theme, !gtTablet);
   const colorThemes = getAllColorThemes();
+
+  function changePassword() {
+    if (newPassword.length < 8) {
+      toast.error('New password must be longer than 8 characters');
+
+      return;
+    }
+
+    authClient
+      .changePassword({
+        newPassword: newPassword,
+        currentPassword: currentPassword,
+      })
+      .then(
+        (res) => {
+          if (res.error) {
+            toast.warn('Error in request: ' + res.error.message);
+          }
+        },
+        (err) => {
+          toast.error('Error sending request: ' + err);
+        },
+      )
+      .finally(() => {
+        setCurrentPassword('');
+        setNewPassword('');
+      });
+  }
 
   return (
     <Layout
@@ -41,77 +75,138 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
       style={styles.container}
       scrollable
     >
-      <View onTouchEnd={Keyboard.dismiss}>
+      <Typography variant="h1">{`Hello, ${user?.name}!`}</Typography>
+
+      <HorizontalDivider />
+
+      <View style={styles.panel}>
         <View>
-          <Typography variant="h1">{`Hello, ${user?.name}!`}</Typography>
+          <Typography
+            variant="h2"
+            style={styles.inputHeader}
+          >
+            Username
+          </Typography>
+          <TextInput defaultValue={user?.name} />
+        </View>
 
-          <View>
-            <Typography variant="h2">Username</Typography>
-            <TextInput defaultValue={user?.name} />
+        <View>
+          <Typography
+            variant="h2"
+            style={styles.inputHeader}
+          >
+            Email
+          </Typography>
+          <TextInput defaultValue={user?.email} />
+        </View>
 
-            <Typography variant="h2">Email</Typography>
-            <TextInput defaultValue={user?.email} />
+        <View>
+          <Typography
+            variant="h2"
+            style={styles.inputHeader}
+          >
+            Password
+          </Typography>
 
-            <Typography variant="h2">Password</Typography>
+          <View style={styles.inputPanel}>
             <TextInput
+              value={newPassword}
+              onChangeText={setNewPassword}
               placeholder="Enter New Password"
               secureTextEntry
+              maxLength={128}
             />
+
+            {!!newPassword && (
+              <>
+                <TextInput
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  placeholder="Enter Current Password"
+                  secureTextEntry
+                />
+                <Button onPress={changePassword}>Change Password</Button>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+
+      <HorizontalDivider />
+
+      <View style={styles.panel}>
+        <View>
+          <Typography
+            variant="h2"
+            style={styles.inputHeader}
+          >
+            Theme Mode
+          </Typography>
+
+          <View style={styles.inputPanel}>
+            <Button
+              scheme={themeMode === 'system' ? 'secondary' : 'tertiary'}
+              hasBorder
+              icon={<Icon name="laptop-outline" />}
+              onPress={() => setThemeMode('system')}
+            >
+              System
+            </Button>
+            <Button
+              scheme={themeMode === 'light' ? 'secondary' : 'tertiary'}
+              hasBorder
+              icon={<Icon name="sunny" />}
+              onPress={() => setThemeMode('light')}
+            >
+              Light
+            </Button>
+            <Button
+              scheme={themeMode === 'dark' ? 'secondary' : 'tertiary'}
+              hasBorder
+              icon={<Icon name="moon" />}
+              onPress={() => setThemeMode('dark')}
+            >
+              Dark
+            </Button>
           </View>
         </View>
 
-        <HorizontalDivider />
-
         <View>
-          <Typography variant="h2">Theme Mode</Typography>
-          <Button
-            scheme={themeMode === 'system' ? 'secondary' : 'tertiary'}
-            hasBorder
-            icon={<Icon name="laptop-outline" />}
-            onPress={() => setThemeMode('system')}
+          <Typography
+            variant="h2"
+            style={styles.inputHeader}
           >
-            System
-          </Button>
-          <Button
-            scheme={themeMode === 'light' ? 'secondary' : 'tertiary'}
-            hasBorder
-            icon={<Icon name="sunny" />}
-            onPress={() => setThemeMode('light')}
-          >
-            Light
-          </Button>
-          <Button
-            scheme={themeMode === 'dark' ? 'secondary' : 'tertiary'}
-            hasBorder
-            icon={<Icon name="moon" />}
-            onPress={() => setThemeMode('dark')}
-          >
-            Dark
-          </Button>
+            Color Theme
+          </Typography>
 
-          <Typography variant="h2">Color Theme</Typography>
-          {colorThemes.map(([colorThemeName, colorValue]) => (
-            <Button
-              key={colorThemeName}
-              scheme={colorTheme === colorThemeName ? 'secondary' : 'tertiary'}
-              hasBorder
-              icon={
-                <Icon
-                  name="square"
-                  color={colorValue}
-                />
-              }
-              onPress={() => setColorTheme(colorThemeName)}
-            >
-              {colorThemeName
-                .toLowerCase()
-                .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase())}
-            </Button>
-          ))}
+          <View style={styles.inputPanel}>
+            {colorThemes.map(([colorThemeName, colorValue]) => (
+              <Button
+                key={colorThemeName}
+                scheme={
+                  colorTheme === colorThemeName ? 'secondary' : 'tertiary'
+                }
+                hasBorder
+                icon={
+                  <Icon
+                    name="square"
+                    color={colorValue}
+                  />
+                }
+                onPress={() => setColorTheme(colorThemeName)}
+              >
+                {colorThemeName
+                  .toLowerCase()
+                  .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase())}
+              </Button>
+            ))}
+          </View>
         </View>
+      </View>
 
-        <HorizontalDivider />
+      <HorizontalDivider />
 
+      <View style={styles.panel}>
         {__DEV__ && (
           <Button onPress={() => router.push('/settings/debug')}>
             App Debug
@@ -128,6 +223,15 @@ function buildStyles(theme: Theme, isMobile: boolean) {
   return StyleSheet.create({
     container: {
       paddingHorizontal: isMobile ? theme.spacings.x2 : theme.spacings.x10,
+    },
+    panel: {
+      gap: theme.spacings.x4,
+    },
+    inputHeader: {
+      marginBottom: theme.spacings.x1,
+    },
+    inputPanel: {
+      gap: theme.spacings.x2,
     },
     buttonRow: {
       display: 'flex',
