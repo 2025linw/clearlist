@@ -71,9 +71,9 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
   return (
     <Layout
       headerText={'Settings'}
-      showBackButton={true}
-      style={styles.container}
+      showBackButton={!gtTablet}
       scrollable
+      style={styles.container}
     >
       <Typography variant="h1">{`Hello, ${user?.name}!`}</Typography>
 
@@ -206,9 +206,9 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
 
       <HorizontalDivider />
 
-      <View style={styles.panel}>
+      <View style={styles.inputPanel}>
         {__DEV__ && (
-          <Button onPress={() => router.push('/settings/debug')}>
+          <Button onPress={() => router.navigate('/settings/debug')}>
             App Debug
           </Button>
         )}

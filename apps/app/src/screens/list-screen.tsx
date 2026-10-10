@@ -75,7 +75,7 @@ export default function ListScreen(props: ListScreenProps) {
     <Layout
       headerText={props.listName}
       headerIcon={props.listIcon}
-      showBackButton
+      showBackButton={!gtTablet}
       style={styles.container}
     >
       <TaskList

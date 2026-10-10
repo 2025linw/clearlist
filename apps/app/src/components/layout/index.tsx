@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { type PropsWithChildren, type ReactElement } from 'react';
 import {
   ScrollView,
@@ -10,7 +9,6 @@ import {
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import { type IconProps } from '@components/primitives/icon';
 
@@ -27,20 +25,16 @@ type LayoutProps = PropsWithChildren<{
 
 export default function Layout({
   children,
-  showBackButton = false,
-  showOptionButton: hasOptions = false,
+  showBackButton,
+  showOptionButton,
   scrollable = false,
   ...props
 }: LayoutProps) {
-  const router = useRouter();
-
   const theme = useTheme();
   const styles = buildStyles(theme);
-  const { gtTablet } = useBreakpoints();
 
-  const showBack = showBackButton && router.canGoBack() && !gtTablet;
   const hasHeader =
-    showBack || props.headerIcon || props.headerText || hasOptions;
+    showBackButton || showOptionButton || props.headerText || props.headerIcon;
 
   return (
     <View style={styles.container}>
@@ -48,6 +42,7 @@ export default function Layout({
         <Header
           text={props.headerText}
           icon={props.headerIcon}
+          showBackButton={showBackButton}
         />
       )}
 

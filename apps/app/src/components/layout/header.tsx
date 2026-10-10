@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import Button from '@components/primitives/button';
 import Icon, { type IconProps } from '@components/primitives/icon';
@@ -19,17 +18,17 @@ const BUTTON_ICON_SIZE = 40;
 type HeaderProps = {
   text?: string;
   icon?: ReactElement<IconProps>;
+  showBackButton?: boolean;
 };
 
 export default function Header(props: HeaderProps) {
   const router = useRouter();
   const theme = useTheme();
-  const { gtTablet } = useBreakpoints();
   const { top } = useSafeAreaInsets();
 
   const styles = buildStyles(theme, top);
 
-  const showBack = router.canGoBack() && !gtTablet;
+  const showBackButton = props.showBackButton && router.canGoBack();
 
   const icon = props.icon
     ? cloneElement(props.icon, {
@@ -40,7 +39,7 @@ export default function Header(props: HeaderProps) {
   return (
     <View style={styles.container}>
       <View style={styles.side}>
-        {showBack && (
+        {showBackButton && (
           <Button
             scheme="tertiary"
             rounded

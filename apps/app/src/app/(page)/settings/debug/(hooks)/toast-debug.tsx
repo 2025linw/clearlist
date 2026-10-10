@@ -7,7 +7,10 @@ export default function ToastDebug() {
   const toast = useToast();
 
   return (
-    <Layout headerText="Toast Debug">
+    <Layout
+      headerText="Toast Debug"
+      showBackButton
+    >
       <Button onPress={() => toast.message('This is a default toast')}>
         Default
       </Button>

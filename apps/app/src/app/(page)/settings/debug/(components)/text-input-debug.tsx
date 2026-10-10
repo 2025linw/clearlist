@@ -3,7 +3,10 @@ import { Demo } from '@components/primitives/text-input';
 
 export default function TextInputDebug() {
   return (
-    <Layout headerText="TextInput Debug">
+    <Layout
+      headerText="TextInput Debug"
+      showBackButton
+    >
       <Demo />
     </Layout>
   );
