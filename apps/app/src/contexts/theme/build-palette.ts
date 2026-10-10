@@ -1,7 +1,7 @@
 import { colors } from './colors';
-import { type Palette, type ThemeColors } from './types';
+import { type Palette, type ThemeColor } from './types';
 
-export function buildPalette(themeColors: ThemeColors): Palette {
+export function buildPalette(themeColors: ThemeColor): Palette {
   return {
     primary: themeColors.primary['primary-9'],
 

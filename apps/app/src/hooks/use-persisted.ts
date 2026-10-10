@@ -4,11 +4,11 @@ import { type ColorVariantName, type ThemeMode } from '@contexts/theme/types';
 import * as Storage from '@lib/storage';
 
 type StorageSchema = {
-  systemTheme: 'system' | ThemeMode;
+  themeMode: 'system' | ThemeMode;
   colorTheme: ColorVariantName;
 };
 const storageDefaults: StorageSchema = {
-  systemTheme: 'system',
+  themeMode: 'system',
   colorTheme: 'default',
 };
 

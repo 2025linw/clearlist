@@ -1,12 +1,16 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Keyboard, StyleSheet, View } from 'react-native';
 
-import { useColorTheme, useTheme, useThemeMode } from '@contexts/theme';
+import {
+  useColorTheme,
+  useTheme,
+  useThemeContext,
+  useThemeMode,
+} from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 import { type authClient } from '@lib/auth-client';
 
-import FormField from '@components/forms/form-field';
 import Layout from '@components/layout';
 import Button from '@components/primitives/button';
 import HorizontalDivider from '@components/primitives/horizontal-divider';
@@ -22,11 +26,13 @@ type SettingsScreenProps = {
 export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
   const router = useRouter();
   const theme = useTheme();
+  const { getAllColorThemes } = useThemeContext();
   const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
   const { gtTablet } = useBreakpoints();
 
   const styles = buildStyles(theme, !gtTablet);
+  const colorThemes = getAllColorThemes();
 
   return (
     <Layout
@@ -34,83 +40,85 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
       showBackButton={true}
       style={styles.container}
     >
-      <View>
-        <Typography variant="h1">{`Hello, ${user?.name}!`}</Typography>
+      <View onTouchEnd={Keyboard.dismiss}>
+        <View>
+          <Typography variant="h1">{`Hello, ${user?.name}!`}</Typography>
+
+          <View>
+            <Typography variant="h2">Username</Typography>
+            <TextInput defaultValue={user?.name} />
+
+            <Typography variant="h2">Email</Typography>
+            <TextInput defaultValue={user?.email} />
+
+            <Typography variant="h2">Password</Typography>
+            <TextInput
+              placeholder="Enter New Password"
+              secureTextEntry
+            />
+          </View>
+        </View>
+
+        <HorizontalDivider />
 
         <View>
-          <Typography variant="h2">Username</Typography>
-          <TextInput defaultValue={user?.name} />
-
-          <Typography variant="h2">Email</Typography>
-          <TextInput defaultValue={user?.email} />
-
-          <Typography variant="h2">Password</Typography>
-          <TextInput
-            placeholder="Enter New Password"
-            secureTextEntry
-          />
-        </View>
-      </View>
-
-      <HorizontalDivider />
-
-      <View></View>
-
-      <HorizontalDivider />
-
-      <FormField label="Theme">
-        <View style={styles.buttonRow}>
+          <Typography variant="h2">Theme Mode</Typography>
           <Button
-            scheme={colorTheme === 'default' ? 'primary' : 'secondary'}
-            style={styles.button}
-            onPress={() => setColorTheme('default')}
-          >
-            Default
-          </Button>
-        </View>
-      </FormField>
-      <FormField label="Mode">
-        <View style={styles.buttonRow}>
-          <Button
+            scheme={themeMode === 'system' ? 'secondary' : 'tertiary'}
+            hasBorder
             icon={<Icon name="laptop-outline" />}
-            scheme={themeMode === 'system' ? 'primary' : 'secondary'}
-            style={styles.button}
             onPress={() => setThemeMode('system')}
           >
             System
           </Button>
           <Button
+            scheme={themeMode === 'light' ? 'secondary' : 'tertiary'}
+            hasBorder
             icon={<Icon name="sunny" />}
-            scheme={themeMode === 'light' ? 'primary' : 'secondary'}
-            style={styles.button}
             onPress={() => setThemeMode('light')}
           >
             Light
           </Button>
           <Button
+            scheme={themeMode === 'dark' ? 'secondary' : 'tertiary'}
+            hasBorder
             icon={<Icon name="moon" />}
-            scheme={themeMode === 'dark' ? 'primary' : 'secondary'}
-            style={styles.button}
             onPress={() => setThemeMode('dark')}
           >
             Dark
           </Button>
+
+          <Typography variant="h2">Color Theme</Typography>
+          {colorThemes.map(([colorThemeName, colorValue]) => (
+            <Button
+              key={colorThemeName}
+              scheme={colorTheme === colorThemeName ? 'secondary' : 'tertiary'}
+              hasBorder
+              icon={
+                <Icon
+                  name="square"
+                  color={colorValue}
+                />
+              }
+              onPress={() => setColorTheme(colorThemeName)}
+            >
+              {colorTheme
+                .toLowerCase()
+                .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase())}
+            </Button>
+          ))}
         </View>
-      </FormField>
 
-      {__DEV__ && (
-        <>
-          <HorizontalDivider />
+        <HorizontalDivider />
 
+        {__DEV__ && (
           <Button onPress={() => router.push('/settings/debug')}>
             App Debug
           </Button>
-        </>
-      )}
+        )}
 
-      <HorizontalDivider />
-
-      <Button onPress={logout}>Logout</Button>
+        <Button onPress={logout}>Logout</Button>
+      </View>
     </Layout>
   );
 }

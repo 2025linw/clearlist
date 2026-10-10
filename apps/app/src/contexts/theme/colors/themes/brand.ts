@@ -1,4 +1,4 @@
-import { type ThemeModes } from '../types';
+import { type ThemeModes } from '../../types';
 
 export const colors: ThemeModes = {
   light: {
@@ -61,4 +61,4 @@ export const colors: ThemeModes = {
       'secondary-12': '#EEE',
     },
   },
-};
+} as const;
