@@ -39,6 +39,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
       headerText={'Settings'}
       showBackButton={true}
       style={styles.container}
+      scrollable
     >
       <View onTouchEnd={Keyboard.dismiss}>
         <View>
