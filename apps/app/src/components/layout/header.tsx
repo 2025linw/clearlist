@@ -78,10 +78,10 @@ export default function Header(props: HeaderProps) {
 function buildStyles(theme: Theme, topInset: number) {
   return StyleSheet.create({
     container: {
-      height: HEADER_HEIGHT + topInset,
-
       paddingTop: topInset,
       marginBottom: theme.spacings.x2,
+
+      height: HEADER_HEIGHT + topInset,
 
       flexDirection: 'row',
       alignItems: 'center',
@@ -92,7 +92,7 @@ function buildStyles(theme: Theme, topInset: number) {
     side: {
       flexShrink: 0,
       width: HEADER_HEIGHT,
-      aspectRatio: 1,
+      height: HEADER_HEIGHT,
     },
     content: {
       flex: 1,
@@ -105,7 +105,7 @@ function buildStyles(theme: Theme, topInset: number) {
     },
     button: {
       width: BUTTON_SIZE,
-      aspectRatio: 1,
+      height: BUTTON_SIZE,
     },
   });
 }
