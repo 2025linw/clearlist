@@ -9,7 +9,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Provider as AuthProvider, useSession } from '@contexts/auth';
 import { Provider as ThemeProvider, useThemeContext } from '@contexts/theme';
 import { useAppFonts } from '@hooks/use-fonts';
-import ToastRenderer from '@lib/toast';
+import Toasts from '@lib/toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -75,7 +75,7 @@ function AppInner() {
         />
       </Stack>
 
-      <ToastRenderer />
+      <Toasts />
     </>
   );
 }
