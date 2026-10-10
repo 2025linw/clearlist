@@ -102,7 +102,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
               }
               onPress={() => setColorTheme(colorThemeName)}
             >
-              {colorTheme
+              {colorThemeName
                 .toLowerCase()
                 .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase())}
             </Button>

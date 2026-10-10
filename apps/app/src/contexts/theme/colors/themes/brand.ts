@@ -47,7 +47,7 @@ export const colors: ThemeModes = {
       'primary-12': '#D9E1F8',
     },
     secondary: {
-      'secondary-1': '#111',
+      'secondary-1': '#111111',
       'secondary-2': '#191919',
       'secondary-3': '#232323',
       'secondary-4': '#2A2A2A',
@@ -58,7 +58,7 @@ export const colors: ThemeModes = {
       'secondary-9': '#6E6E6E',
       'secondary-10': '#7C7C7C',
       'secondary-11': '#B4B4B4',
-      'secondary-12': '#EEE',
+      'secondary-12': '#EEEEEE',
     },
   },
 } as const;
