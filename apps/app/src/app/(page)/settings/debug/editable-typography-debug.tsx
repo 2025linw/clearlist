@@ -3,7 +3,7 @@ import Layout from '@components/layout';
 
 export default function EditableTypographyDebug() {
   return (
-    <Layout>
+    <Layout headerText="EditableTypography Debug">
       <Demo />
     </Layout>
   );

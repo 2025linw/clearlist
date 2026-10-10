@@ -5,7 +5,7 @@ import Typography from '@components/primitives/typography';
 
 export default function DateDebug() {
   return (
-    <Layout>
+    <Layout headerText="Date Debug">
       <Typography>{`getDateToday: ${getDateToday()}`}</Typography>
     </Layout>
   );

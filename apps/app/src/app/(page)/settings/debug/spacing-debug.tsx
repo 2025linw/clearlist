@@ -6,7 +6,7 @@ import Layout from '@components/layout';
 
 export default function SpacingDebug() {
   return (
-    <Layout>
+    <Layout headerText="Spacing Debug">
       <Text
         numberOfLines={1}
         style={[styles.box, { width: spacings.x1 }]}
