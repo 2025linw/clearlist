@@ -66,7 +66,15 @@ export function useToast() {
       success: ValueOrFunction<Element, T>;
       error: ValueOrFunction<Element, any>;
     },
-  ) => toast.promise(promise, msgs);
+  ) =>
+    toast.promise(promise, msgs, {
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.error,
+        },
+      },
+    });
 
   const dismiss = toast.dismiss;
   const remove = toast.remove;
