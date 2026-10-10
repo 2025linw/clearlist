@@ -1,6 +1,12 @@
 import { useRouter } from 'expo-router';
 import { type PropsWithChildren, type ReactElement } from 'react';
-import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+import {
+  ScrollView,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
@@ -16,12 +22,14 @@ type LayoutProps = PropsWithChildren<{
   headerText?: string;
   headerIcon?: ReactElement<IconProps>;
   style?: StyleProp<ViewStyle>;
+  scrollable?: boolean;
 }>;
 
 export default function Layout({
   children,
   showBackButton = false,
   showOptionButton: hasOptions = false,
+  scrollable = false,
   ...props
 }: LayoutProps) {
   const router = useRouter();
@@ -43,7 +51,17 @@ export default function Layout({
         />
       )}
 
-      <View style={[styles.content, props.style]}>{children}</View>
+      {scrollable ? (
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={[styles.scrollContent, props.style]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.content, props.style]}>{children}</View>
+      )}
     </View>
   );
 }
@@ -57,6 +75,9 @@ function buildStyles(theme: Theme) {
     },
     content: {
       flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
     },
   });
 }
