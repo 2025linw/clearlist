@@ -2,9 +2,7 @@ import { useEffect, useRef } from 'react';
 import {
   TextInput as RNTextInput,
   type TextInputProps as RNTextInputProps,
-  type StyleProp,
   StyleSheet,
-  type TextStyle,
   View,
 } from 'react-native';
 
@@ -12,9 +10,6 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
 type TextInputProps = RNTextInputProps & {
-  value?: string;
-  onChangeText?: (value: string) => void;
-  style?: StyleProp<TextStyle>;
   disabled?: boolean;
 };
 
