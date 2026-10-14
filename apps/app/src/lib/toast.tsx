@@ -11,13 +11,6 @@ export default function Toasts() {
 
   const defaultStyle: Toast['styles'] = {
     pressable: {
-      // clear default styles to use custom style
-      // also stops console WARN for deprecated shadow styles on web
-      shadowColor: undefined,
-      shadowOffset: undefined,
-      shadowOpacity: undefined,
-      shadowRadius: undefined,
-      elevation: undefined,
       ...theme.shadows.high,
     },
     view: {
