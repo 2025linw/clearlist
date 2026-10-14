@@ -1,7 +1,7 @@
 import color from 'color';
 
 import { buildPalette } from './build-palette';
-import { brand } from './colors';
+import { colorThemes } from './colors';
 import {
   rounded,
   shadows,
@@ -11,12 +11,8 @@ import {
 } from './tokens';
 import { type ColorVariantName, type Palette, type ThemeMode } from './types';
 
-export const variants = {
-  default: brand,
-} as const;
-
 export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
-  const themeColors = variants[variant][theme];
+  const themeColors = colorThemes[variant][theme];
   const palette: Palette = buildPalette(themeColors);
 
   return {

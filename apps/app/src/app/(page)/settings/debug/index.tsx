@@ -10,7 +10,7 @@ export default function DebugPage() {
   return (
     <Layout
       headerText={'Debug'}
-      showBackButton={true}
+      showBackButton
     >
       <Button onPress={() => router.navigate('/settings/debug/spacing-debug')}>
         Debug (Spacing)

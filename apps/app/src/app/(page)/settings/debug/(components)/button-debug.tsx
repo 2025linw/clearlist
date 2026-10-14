@@ -3,7 +3,10 @@ import { Demo } from '@components/primitives/button';
 
 export default function ButtonDemo() {
   return (
-    <Layout>
+    <Layout
+      headerText="Button Debug"
+      showBackButton
+    >
       <Demo />
     </Layout>
   );

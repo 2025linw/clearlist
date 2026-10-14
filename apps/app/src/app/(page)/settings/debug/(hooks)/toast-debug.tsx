@@ -3,11 +3,14 @@ import { useToast } from '@hooks/use-toast';
 import Layout from '@components/layout';
 import Button from '@components/primitives/button';
 
-export default function NotificationDebug() {
+export default function ToastDebug() {
   const toast = useToast();
 
   return (
-    <Layout>
+    <Layout
+      headerText="Toast Debug"
+      showBackButton
+    >
       <Button onPress={() => toast.message('This is a default toast')}>
         Default
       </Button>

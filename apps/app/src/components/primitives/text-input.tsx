@@ -1,9 +1,8 @@
+import { useEffect, useRef } from 'react';
 import {
   TextInput as RNTextInput,
   type TextInputProps as RNTextInputProps,
-  type StyleProp,
   StyleSheet,
-  type TextStyle,
   View,
 } from 'react-native';
 
@@ -11,9 +10,6 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
 type TextInputProps = RNTextInputProps & {
-  value?: string;
-  onChangeText?: (value: string) => void;
-  style?: StyleProp<TextStyle>;
   disabled?: boolean;
 };
 
@@ -26,18 +22,28 @@ export default function TextInput({
 }: TextInputProps) {
   const theme = useTheme();
 
+  const inputRef = useRef<RNTextInput>(null);
+
   const styles = buildStyles(theme, disabled);
   const { color: placeholderTextColor } = styles.placeholder;
 
   const isEditable = editable && !disabled;
 
+  useEffect(() => {
+    if (disabled) inputRef.current?.blur();
+  }, [disabled]);
+
   return (
     <RNTextInput
+      ref={inputRef}
       {...props}
       onChangeText={onChangeText}
       placeholderTextColor={placeholderTextColor}
       style={[styles.container, styles.text, style]}
       editable={isEditable}
+      autoFocus={!disabled && props.autoFocus}
+      contextMenuHidden={disabled || props.contextMenuHidden}
+      caretHidden={disabled || props.caretHidden}
     />
   );
 }
@@ -49,6 +55,7 @@ function buildStyles(theme: Theme, disabled?: boolean) {
     container: {
       ...componentStyle.container,
       ...(disabled ? componentStyle.disabled : undefined),
+      pointerEvents: disabled ? 'none' : 'auto',
     },
     text: componentStyle.input,
     placeholder: componentStyle.placeholder,
