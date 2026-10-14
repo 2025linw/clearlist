@@ -104,8 +104,8 @@ export default function TaskCard({
       >
         <View style={styles.mainRow}>
           <Checkbox
-            checked={!!task.completedAt}
-            onChange={(checked) => {
+            defaultValue={!!task.completedAt}
+            onValueChange={(checked) => {
               const handler = checked
                 ? props.onTaskComplete
                 : props.onTaskReopen;

@@ -6,34 +6,38 @@ import { useTheme } from '@contexts/theme';
 import Icon from '@components/primitives/icon';
 
 type CheckboxProps = {
-  checked?: boolean;
+  value?: boolean;
+  defaultValue?: boolean;
+  onValueChange?: (state: boolean) => void;
   disabled?: boolean;
-  onChange?: (state: boolean) => void;
   testID?: string;
 };
 
 export default function Checkbox({
-  checked,
+  value,
+  defaultValue,
   disabled,
-  onChange,
+  onValueChange,
   ...props
 }: CheckboxProps) {
   const theme = useTheme();
 
-  const [localState, setLocalState] = useState(checked);
+  const [checked, setChecked] = useState(defaultValue);
+
+  const checkedResolved = value ?? checked;
 
   function onPress(e: GestureResponderEvent) {
     e.stopPropagation();
 
     if (disabled) return;
 
-    const next = !localState;
+    const next = !checked;
 
-    onChange?.(next);
-    setLocalState(next);
+    onValueChange?.(next);
+    setChecked(next);
   }
 
-  const iconName = localState
+  const iconName = checkedResolved
     ? 'checkbox'
     : disabled
       ? 'square'
@@ -61,10 +65,11 @@ export function Demo() {
     // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, padding: 10 }}>
       <Checkbox />
-      <Checkbox checked={true} />
+      <Checkbox value={true} />
+      <Checkbox defaultValue={true} />
       <Checkbox disabled />
       <Checkbox
-        checked={true}
+        value={true}
         disabled
       />
     </View>
