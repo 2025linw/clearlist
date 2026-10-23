@@ -5,8 +5,8 @@ use crate::{
         types::{TaskID, route::CreateRequest},
     },
     tests::mocks::MockTaskRepository,
-    types::extract::UserContext,
     user::types::UserID,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

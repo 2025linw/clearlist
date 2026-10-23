@@ -2,8 +2,8 @@ use axum::http::StatusCode;
 use serde_json::json;
 
 use crate::{
-    types::extract::{ErrorResponse, Response},
     user::types::User,
+    utils::extract::{ErrorResponse, Response},
 };
 
 use super::{Client, init_test_setup};

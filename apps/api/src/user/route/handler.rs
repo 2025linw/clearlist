@@ -8,16 +8,16 @@ use crate::{
     error::route::Error,
     tag::repo::TagRepository,
     task::repo::TaskRepository,
-    types::{
-        extract::{Json, Session},
-        route::Response,
-    },
+    types::route::Response,
     user::{
         repo::UserRepository,
         service::UserService,
         types::route::{ProvisionRequest, UpdateRequest},
     },
-    utils::route::verify_webhook_signature,
+    utils::{
+        extract::{Json, Session},
+        route::verify_webhook_signature,
+    },
 };
 
 pub async fn provision_handler<U, T, Ta, C>(

@@ -68,7 +68,7 @@ export const auth = betterAuth({
   },
 
   advanced: {
-    cookiePrefix: 'clear-list',
+    cookiePrefix: 'clear_list',
     useSecureCookies: true,
     cookies: {
       session_token: {

@@ -11,6 +11,7 @@ export const authClient = createAuthClient({
     expoClient({
       scheme: 'clearlist',
       storagePrefix: 'clearlist',
+      cookiePrefix: 'clear_list',
       storage: SecureStore,
     }),
   ],

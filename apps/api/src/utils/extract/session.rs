@@ -140,7 +140,7 @@ where
     ) -> Result<Self, Self::Rejection> {
         let cookies = CookieJar::from_headers(&parts.headers);
         let session_id = cookies
-            .get(&"__Secure-clear-list.session_token")
+            .get(&"__Secure-clear_list.session_token")
             .ok_or_else(|| {
                 error!("cookie key was missing from config");
 

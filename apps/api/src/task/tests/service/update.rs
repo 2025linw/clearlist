@@ -16,8 +16,9 @@ use crate::{
         mocks::MockTaskRepository,
         test_data::{MULTILINE_TEST_INPUT, NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
-    types::{extract::UserContext, start::Start},
+    types::start::Start,
     user::types::UserID,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

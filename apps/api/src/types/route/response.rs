@@ -1,7 +1,7 @@
 use axum::{http::StatusCode, response::IntoResponse};
 use serde_json::{Map, Value};
 
-use crate::types::extract::Json;
+use crate::utils::extract::Json;
 
 pub struct Response {
     code: StatusCode,

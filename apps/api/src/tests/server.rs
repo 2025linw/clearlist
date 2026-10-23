@@ -17,7 +17,7 @@ use crate::{
 
 use auth::start_server as start_auth_server;
 
-pub const TEST_COOKIE_KEY: &str = "__Secure-clear-list.session_token";
+pub const TEST_COOKIE_KEY: &str = "__Secure-clear_list.session_token";
 pub const TEST_WEBHOOK_SECRET: &str = "test_secret";
 
 pub static TEST_USER_INFO: OnceLock<serde_json::Value> = OnceLock::new();
