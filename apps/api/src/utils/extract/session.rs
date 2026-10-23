@@ -139,11 +139,13 @@ where
         state: &GenericAppState<U, T, Ta, C>,
     ) -> Result<Self, Self::Rejection> {
         let cookies = CookieJar::from_headers(&parts.headers);
-        let session_id = cookies.get(&state.config.cookie_key).ok_or_else(|| {
-            error!("cookie key was missing from config");
+        let session_id = cookies
+            .get(&"__Secure-clear_list.session_token")
+            .ok_or_else(|| {
+                error!("cookie key was missing from config");
 
-            Error::Unauthenticated
-        })?;
+                Error::Unauthenticated
+            })?;
 
         let auth_req = reqwest::Client::new()
             .get(

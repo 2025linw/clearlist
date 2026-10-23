@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::{
     task::types::Task,
-    types::extract::{ErrorResponse, Response},
+    utils::extract::{ErrorResponse, Response},
 };
 
 use super::{Client, init_test_setup};

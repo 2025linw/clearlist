@@ -39,7 +39,7 @@ function buildStyles(theme: Theme) {
   return StyleSheet.create({
     container: {
       width: BUTTON_SIZE,
-      aspectRatio: 1,
+      height: BUTTON_SIZE,
 
       borderRadius: theme.rounded.full,
 

@@ -13,7 +13,7 @@ export const red: ColorScale<'red'> = {
   'red-10': '#DC3E42',
   'red-11': '#CE2C31',
   'red-12': '#641723',
-};
+} as const;
 
 export const orange: ColorScale<'orange'> = {
   'orange-1': '#FEFCFB',
@@ -28,7 +28,7 @@ export const orange: ColorScale<'orange'> = {
   'orange-10': '#EF5F00',
   'orange-11': '#CC4E00',
   'orange-12': '#582D1D',
-};
+} as const;
 
 export const yellow: ColorScale<'yellow'> = {
   'yellow-1': '#FDFDF9',
@@ -43,7 +43,7 @@ export const yellow: ColorScale<'yellow'> = {
   'yellow-10': '#FFDC00',
   'yellow-11': '#9E6C00',
   'yellow-12': '#473B1F',
-};
+} as const;
 
 export const amber: ColorScale<'amber'> = {
   'amber-1': '#FEFDFB',
@@ -58,7 +58,7 @@ export const amber: ColorScale<'amber'> = {
   'amber-10': '#FFBA18',
   'amber-11': '#AB6400',
   'amber-12': '#4F3422',
-};
+} as const;
 
 export const green: ColorScale<'green'> = {
   'green-1': '#FBFEFC',
@@ -73,7 +73,7 @@ export const green: ColorScale<'green'> = {
   'green-10': '#2B9A66',
   'green-11': '#218358',
   'green-12': '#193B2D',
-};
+} as const;
 
 export const blue: ColorScale<'blue'> = {
   'blue-1': '#FBFDFF',
@@ -88,7 +88,7 @@ export const blue: ColorScale<'blue'> = {
   'blue-10': '#0588F0',
   'blue-11': '#0D74CE',
   'blue-12': '#113264',
-};
+} as const;
 
 export const purple: ColorScale<'purple'> = {
   'purple-1': '#FEFCFE',
@@ -103,4 +103,4 @@ export const purple: ColorScale<'purple'> = {
   'purple-10': '#8347B9',
   'purple-11': '#8145B5',
   'purple-12': '#402060',
-};
+} as const;

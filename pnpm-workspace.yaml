@@ -3,10 +3,12 @@ packages:
   - "apps/app"
   - "packages/*"
 catalog:
-  better-auth: 1.7.3
-  "@better-auth/expo": 1.7.3
+  better-auth: 1.7.12
+  "@better-auth/expo": 1.7.12
+overrides:
+  '@react-native/metro-config': 0.86.3
 engineStrict: true
-strict-peer-dependencies: true
+strictPeerDependencies: true
 injectWorkspacePackages: true
 allowBuilds:
   msgpackr-extract: true

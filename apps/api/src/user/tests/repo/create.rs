@@ -34,10 +34,7 @@ mod success {
         };
         let test_user = user_repo.create(create_model.clone()).await.unwrap();
 
-        let CreateModel {
-            id,
-            created_at,
-        } = create_model;
+        let CreateModel { id, created_at } = create_model;
         assert_eq!(test_user.id, id);
         assert_eq!(test_user.updated_at, created_at);
         assert_eq!(test_user.created_at, created_at);

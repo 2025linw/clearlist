@@ -3,7 +3,7 @@ use serde_json::json;
 
 use crate::{
     tag::types::Tag,
-    types::extract::{ErrorResponse, Response},
+    utils::extract::{ErrorResponse, Response},
 };
 
 use super::{Client, init_test_setup};

@@ -33,7 +33,7 @@ export default [
       'react-native/no-inline-styles': 'warn',
       'local/no-single-style-array': 'warn',
       '@typescript-eslint/consistent-type-imports': [
-        'error',
+        'warn',
         {
           prefer: 'type-imports',
           fixStyle: 'inline-type-imports',

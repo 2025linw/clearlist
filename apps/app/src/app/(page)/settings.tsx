@@ -1,23 +1,15 @@
 import { useRouter } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
 
-import { useSession, useSessionApi } from '@contexts/auth';
-import { useColorTheme, useThemeMode } from '@contexts/theme';
+import { useSessionApi } from '@contexts/auth';
+import { authClient } from '@lib/auth-client';
 
-import FormField from '@components/forms/form-field';
-import Layout from '@components/layout';
-import Button from '@components/primitives/button';
-import HorizontalDivider from '@components/primitives/horizontal-divider';
-import Icon from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import SettingsScreen from '@screens/settings/settings-screen';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { logout: logoutApi } = useSessionApi();
-  const { hasSession } = useSession();
 
-  const [colorTheme, setColorTheme] = useColorTheme();
-  const [themeMode, setThemeMode] = useThemeMode();
+  const session = authClient.useSession();
 
   function logout() {
     logoutApi().finally(() => {
@@ -25,78 +17,10 @@ export default function SettingsPage() {
     });
   }
 
-  return hasSession ? (
-    <Layout
-      headerText={'Settings'}
-      showBackButton={true}
-    >
-      <FormField label="Theme">
-        <View style={styles.buttonRow}>
-          <Button
-            scheme={colorTheme === 'default' ? 'primary' : 'secondary'}
-            style={styles.button}
-            onPress={() => setColorTheme('default')}
-          >
-            Default
-          </Button>
-        </View>
-      </FormField>
-      <FormField label="Mode">
-        <View style={styles.buttonRow}>
-          <Button
-            icon={<Icon name="laptop-outline" />}
-            scheme={themeMode === 'system' ? 'primary' : 'secondary'}
-            style={styles.button}
-            onPress={() => setThemeMode('system')}
-          >
-            System
-          </Button>
-          <Button
-            icon={<Icon name="sunny" />}
-            scheme={themeMode === 'light' ? 'primary' : 'secondary'}
-            style={styles.button}
-            onPress={() => setThemeMode('light')}
-          >
-            Light
-          </Button>
-          <Button
-            icon={<Icon name="moon" />}
-            scheme={themeMode === 'dark' ? 'primary' : 'secondary'}
-            style={styles.button}
-            onPress={() => setThemeMode('dark')}
-          >
-            Dark
-          </Button>
-        </View>
-      </FormField>
-
-      {__DEV__ && (
-        <>
-          <HorizontalDivider />
-
-          <Button onPress={() => router.push('/settings/debug')}>
-            App Debug
-          </Button>
-        </>
-      )}
-
-      <HorizontalDivider />
-
-      <Button onPress={logout}>Logout</Button>
-    </Layout>
-  ) : (
-    <Layout>
-      <Typography>Loading...</Typography>
-    </Layout>
+  return (
+    <SettingsScreen
+      user={session.data?.user}
+      logout={logout}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  buttonRow: {
-    display: 'flex',
-    flexDirection: 'row',
-  },
-  button: {
-    flex: 1,
-  },
-});

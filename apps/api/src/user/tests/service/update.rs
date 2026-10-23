@@ -1,11 +1,6 @@
 use crate::{
-    error::{
-        Resource,
-        service::Error ,
-    },
-    tests::
-        mocks::MockUserRepository
-    ,
+    error::{Resource, service::Error},
+    tests::mocks::MockUserRepository,
     user::{
         service::UserService,
         types::{

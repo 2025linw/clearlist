@@ -3,7 +3,10 @@ import { Demo } from '@components/primitives/typography';
 
 export default function TypographyDebug() {
   return (
-    <Layout>
+    <Layout
+      headerText="Typography Debug"
+      showBackButton
+    >
       <Demo />
     </Layout>
   );

@@ -44,7 +44,7 @@ describe('<Checkbox /> Action', () => {
     const user = userEvent.setup();
 
     const mockOnChange = jest.fn((state) => state);
-    await renderWithProviders(<Checkbox onChange={mockOnChange} />);
+    await renderWithProviders(<Checkbox onValueChange={mockOnChange} />);
 
     const checkbox = screen.getByRole('checkbox');
 
@@ -62,7 +62,7 @@ describe('<Checkbox /> Action', () => {
     const mockOnChange = jest.fn((state) => state);
     await renderWithProviders(
       <Checkbox
-        onChange={mockOnChange}
+        onValueChange={mockOnChange}
         disabled
       />,
     );

@@ -44,7 +44,7 @@ export default function ListNavigator({
   const sidebarWidth = useSharedValue(width);
   const startWidth = useSharedValue(width);
 
-  const styles = buildStyles(theme);
+  const styles = buildStyles(theme, mode);
 
   const tapGesture = Gesture.Tap()
     .runOnJS(true)
@@ -100,7 +100,7 @@ export default function ListNavigator({
   }
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, mode: ListNavigatorMode) {
   return StyleSheet.create({
     container: {
       position: 'relative',
@@ -109,6 +109,8 @@ function buildStyles(theme: Theme) {
       height: '100%',
 
       backgroundColor: theme.palette.surface,
+
+      ...(mode !== 'mobile' ? theme.shadows.high : {}),
     },
     collapsed: {
       maxWidth: COLLAPSED_WIDTH,

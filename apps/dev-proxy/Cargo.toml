@@ -10,5 +10,5 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 ctrlc = "3.5.2"
 dotenvy = "0.15.7"
 nix = "0.31.3"
-tokio = { version = "1.52.3", features = ["full"] }
+tokio = { version = "1.54.1", features = ["full"] }
 tower = "0.5.3"

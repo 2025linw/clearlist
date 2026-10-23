@@ -6,7 +6,7 @@ use crate::{
         repo::{ConstraintViolation, Error as RepoError},
         service::{Error, Result},
     },
-    types::extract::UserContext,
+    utils::extract::UserContext,
 };
 
 use super::{

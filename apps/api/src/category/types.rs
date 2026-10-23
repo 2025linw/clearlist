@@ -6,7 +6,7 @@ use sqlx::prelude::{FromRow, Type};
 use uuid::Uuid;
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
 )]
 #[sqlx(transparent)]
 pub struct CategoryID(Uuid);

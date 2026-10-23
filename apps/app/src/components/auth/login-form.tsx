@@ -146,9 +146,9 @@ function buildStyles(theme: Theme) {
 
   return StyleSheet.create({
     container: {
-      width: '100%',
-
       padding: theme.spacings.x4,
+
+      width: '100%',
 
       justifyContent: 'space-between',
       gap,

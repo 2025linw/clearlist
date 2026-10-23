@@ -8,7 +8,7 @@ import { createAuthMiddleware } from 'better-auth/api';
 import { createHmac, randomUUID } from 'node:crypto';
 
 export const auth = betterAuth({
-  trustedOrigins: config.trustedOrigins,
+  trustedOrigins: config.allowedOrigins,
 
   database: new Pool({
     connectionString: config.databaseUrl,
@@ -53,10 +53,14 @@ export const auth = betterAuth({
           body,
         }).then(
           (res) => {
-            console.log('success: ' + res.status);
+            if (res.ok) {
+              console.log('provisioning succeeded: ' + res.status);
+            } else {
+              console.log('provisioning failed: ' + res.status);
+            }
           },
           (err) => {
-            console.error('fail' + err);
+            console.error('request failed: ' + err);
           },
         );
       }
@@ -64,12 +68,15 @@ export const auth = betterAuth({
   },
 
   advanced: {
+    cookiePrefix: 'clear_list',
     useSecureCookies: true,
-
-    defaultCookieAttributes: {
-      sameSite: 'lax',
-      secure: true,
-      httpOnly: true,
+    cookies: {
+      session_token: {
+        attributes: {
+          secure: true,
+          httpOnly: true,
+        },
+      },
     },
 
     database: {

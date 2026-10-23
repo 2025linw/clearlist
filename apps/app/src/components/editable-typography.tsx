@@ -117,9 +117,13 @@ export function Demo() {
         defaultValue="Has default value - display mode"
         editable={false}
       />
-      <EditableTypography placeholder="Has placeholder - display mode" />
+      <EditableTypography
+        placeholder="Has placeholder - display mode"
+        editable={false}
+      />
       <EditableTypography
         value="Disabled - display mode"
+        editable={false}
         disabled
       />
 
@@ -145,6 +149,7 @@ export function Demo() {
       <EditableTypography
         value="Disabled - editing mode"
         disabled
+        editable={false}
         testOnly_editing
       />
     </View>

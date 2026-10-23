@@ -3,7 +3,10 @@ import { Demo } from '@components/primitives/checkbox';
 
 export default function CheckboxDemo() {
   return (
-    <Layout>
+    <Layout
+      headerText="Checkbox Debug"
+      showBackButton
+    >
       <Demo />
     </Layout>
   );
