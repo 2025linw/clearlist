@@ -4,13 +4,13 @@
     "strict": true,
     "paths": {
       "@components/*": ["./src/components/*"],
-      "@screens/*": ["./src/screens/*"],
+      "#/*": ["./src/screens/*"],
       "@utils/*": ["./src/utils/*"],
       "@services/*": ["./src/services/*"],
       "@hooks/*": ["./src/hooks/*"],
       "@contexts/*": ["./src/contexts/*"],
       "@lib/*": ["./src/lib/*"],
-      "@/*": ["./src/*"]
+      "@testUtils/*": ["./src/testUtils/*"]
     },
     "types": ["jest"]
   },

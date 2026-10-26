@@ -4,7 +4,7 @@ import { StyleSheet } from 'react-native';
 
 import { buildTheme } from '@contexts/theme/settings';
 
-import { renderWithProviders } from '@/test/render';
+import { renderWithProviders } from '@testUtils/render';
 
 import Button from '../button';
 import Icon from '../icon';
