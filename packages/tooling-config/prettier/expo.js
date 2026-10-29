@@ -1,10 +1,8 @@
-// @ts-nocheck
-
 import sortImportsPlugin from '@trivago/prettier-plugin-sort-imports';
 
 import base from './base.js';
 
-export default {
+const config = {
   ...base,
 
   jsxSingleQuote: false,
@@ -26,3 +24,5 @@ export default {
   importOrderSeparation: true,
   importOrderSortSpecifiers: true,
 };
+
+export default config;

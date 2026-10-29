@@ -1,3 +1,3 @@
-import config from '@clearlist/eslint-config/expo';
+import config from '@clearlist/tooling-config/eslint/expo';
 
 export default config;

@@ -1,3 +1,3 @@
-import config from '@clearlist/eslint-config/node';
+import config from '@clearlist/tooling-config/eslint/node';
 
 export default config;

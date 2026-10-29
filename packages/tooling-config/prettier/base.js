@@ -1,6 +1,4 @@
-// @ts-nocheck
-
-export default {
+const config = {
   // Wrap width
   printWidth: 80,
 
@@ -24,3 +22,5 @@ export default {
   // Component function
   arrowParens: 'always',
 };
+
+export default config;
