@@ -15,9 +15,6 @@ export default (): ExpoConfig => ({
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      NSAppTransportSecurity: {
-        NSAllowsLocalNetworking: true,
-      },
     },
   },
   android: {
