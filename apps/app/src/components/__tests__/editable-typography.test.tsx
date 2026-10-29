@@ -4,7 +4,7 @@ import { buildTheme } from '@contexts/theme/settings';
 
 import { renderWithProviders } from '@testUtils/render';
 
-import EditableTypography from '../editable-typography';
+import EditableTypography from '../primitive/editable-typography';
 
 describe('<EditableTypography /> Content', () => {
   test('renders correctly', async () => {

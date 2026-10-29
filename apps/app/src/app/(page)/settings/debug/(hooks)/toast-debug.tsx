@@ -1,7 +1,7 @@
 import { useToast } from '@hooks/use-toast';
 
 import Layout from '@components/layout';
-import Button from '@components/primitives/button';
+import Button from '@components/primitive/button';
 
 export default function ToastDebug() {
   const toast = useToast();

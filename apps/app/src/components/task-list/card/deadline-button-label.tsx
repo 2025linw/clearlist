@@ -5,8 +5,8 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import dayjs from '@lib/datetime';
 
-import Button from '@components/primitives/button';
-import Icon from '@components/primitives/icon';
+import Button from '@components/primitive/button';
+import Icon from '@components/primitive/icon';
 
 type DeadlineButtonLabelProps = {
   date?: dayjs.Dayjs;

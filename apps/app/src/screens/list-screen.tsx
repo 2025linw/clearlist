@@ -12,7 +12,7 @@ import { getCategoryQueryMap } from '@services/helpers';
 import { type Category } from '@services/types';
 
 import Layout from '@components/layout';
-import { type IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitive/icon';
 import TaskList from '@components/task-list';
 
 const requiredTask: task.CreateRequest = {

@@ -12,7 +12,7 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
-import HorizontalDivider from '@components/primitives/horizontal-divider';
+import HorizontalDivider from '@components/primitive/horizontal-divider';
 
 import Button from './nav-button';
 

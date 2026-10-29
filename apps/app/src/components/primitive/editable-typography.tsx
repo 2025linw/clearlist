@@ -10,8 +10,8 @@ import {
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import TextInput from '@components/primitives/text-input';
-import Typography from '@components/primitives/typography';
+import TextInput from '@components/primitive/text-input';
+import Typography from '@components/primitive/typography';
 
 type EditableTypographyProps = {
   value?: string;

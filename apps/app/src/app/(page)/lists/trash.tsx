@@ -1,5 +1,5 @@
 import ListScreen from '#/list-screen';
-import Icon from '@components/primitives/icon';
+import Icon from '@components/primitive/icon';
 
 export default function TrashPage() {
   return (

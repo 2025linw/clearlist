@@ -8,9 +8,9 @@ import { type Theme } from '@contexts/theme/types';
 import { useToast } from '@hooks/use-toast';
 
 import FormField from '@components/forms/form-field';
-import Button from '@components/primitives/button';
-import TextInput from '@components/primitives/text-input';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import TextInput from '@components/primitive/text-input';
+import Typography from '@components/primitive/typography';
 
 export type State = 'login' | 'register';
 

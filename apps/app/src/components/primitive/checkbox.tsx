@@ -3,7 +3,7 @@ import { type GestureResponderEvent, Pressable, View } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 
-import Icon from '@components/primitives/icon';
+import Icon from '@components/primitive/icon';
 
 type CheckboxProps = {
   value?: boolean;

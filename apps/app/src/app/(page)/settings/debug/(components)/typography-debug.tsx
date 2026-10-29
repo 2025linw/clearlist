@@ -1,5 +1,5 @@
 import Layout from '@components/layout';
-import { Demo } from '@components/primitives/typography';
+import { Demo } from '@components/primitive/typography';
 
 export default function TypographyDebug() {
   return (

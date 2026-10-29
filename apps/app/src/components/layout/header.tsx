@@ -6,9 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Button from '@components/primitives/button';
-import Icon, { type IconProps } from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import Icon, { type IconProps } from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
 
 const HEADER_HEIGHT = 56;
 

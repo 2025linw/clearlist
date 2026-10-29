@@ -1,7 +1,7 @@
 import { getDateToday } from '@lib/datetime';
 
 import Layout from '@components/layout';
-import Typography from '@components/primitives/typography';
+import Typography from '@components/primitive/typography';
 
 export default function DateDebug() {
   return (

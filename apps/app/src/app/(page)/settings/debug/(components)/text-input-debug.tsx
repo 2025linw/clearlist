@@ -1,5 +1,5 @@
 import Layout from '@components/layout';
-import { Demo } from '@components/primitives/text-input';
+import { Demo } from '@components/primitive/text-input';
 
 export default function TextInputDebug() {
   return (

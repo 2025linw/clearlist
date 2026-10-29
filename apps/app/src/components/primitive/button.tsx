@@ -12,8 +12,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Icon, { type IconProps } from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import Icon, { type IconProps } from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
 
 import { type ElementProps } from './types';
 

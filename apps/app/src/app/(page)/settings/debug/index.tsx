@@ -1,8 +1,8 @@
 import { useRouter } from 'expo-router';
 
 import Layout from '@components/layout';
-import Button from '@components/primitives/button';
-import HorizontalDivider from '@components/primitives/horizontal-divider';
+import Button from '@components/primitive/button';
+import HorizontalDivider from '@components/primitive/horizontal-divider';
 
 export default function DebugPage() {
   const router = useRouter();

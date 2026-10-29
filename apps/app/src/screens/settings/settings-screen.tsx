@@ -14,11 +14,12 @@ import { useToast } from '@hooks/use-toast';
 import { authClient } from '@lib/auth-client';
 
 import Layout from '@components/layout';
-import Button from '@components/primitives/button';
-import HorizontalDivider from '@components/primitives/horizontal-divider';
-import Icon from '@components/primitives/icon';
-import TextInput from '@components/primitives/text-input';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import HorizontalDivider from '@components/primitive/horizontal-divider';
+import Icon from '@components/primitive/icon';
+import Select from '@components/primitive/select';
+import TextInput from '@components/primitive/text-input';
+import Typography from '@components/primitive/typography';
 
 type SettingsScreenProps = {
   user?: typeof authClient.$Infer.Session.user;

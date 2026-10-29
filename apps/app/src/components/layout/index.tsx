@@ -10,7 +10,7 @@ import {
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import { type IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitive/icon';
 
 import Header from './header';
 

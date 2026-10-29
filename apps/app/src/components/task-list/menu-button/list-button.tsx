@@ -6,7 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Icon from '@components/primitives/icon';
+import Icon from '@components/primitive/icon';
 
 import { BUTTON_SIZE, ICON_SIZE } from './constants';
 
