@@ -1,3 +1,3 @@
-import config from '@clearlist/prettier-config/base';
+import config from '@clearlist/tooling-config/prettier/node';
 
 export default config;

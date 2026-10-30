@@ -12,6 +12,7 @@ export function useToast() {
     toast(message, {
       duration: 2500,
       icon: <ToastIcon type="default" />,
+      disableShadow: true,
       styles: {
         view: {
           borderWidth: theme.spacings.thin,
@@ -24,6 +25,7 @@ export function useToast() {
     toast.success(message, {
       duration: 2500,
       icon: <ToastIcon type="success" />,
+      disableShadow: true,
       styles: {
         view: {
           borderWidth: theme.spacings.thin,
@@ -36,6 +38,7 @@ export function useToast() {
     toast.error(message, {
       duration: 5000,
       icon: <ToastIcon type="warn" />,
+      disableShadow: true,
       styles: {
         view: {
           borderWidth: theme.spacings.thin,
@@ -48,6 +51,7 @@ export function useToast() {
     toast.error(message, {
       duration: 10000,
       icon: <ToastIcon type="error" />,
+      disableShadow: true,
       styles: {
         view: {
           borderWidth: theme.spacings.thin,
@@ -63,7 +67,16 @@ export function useToast() {
       success: ValueOrFunction<Element, T>;
       error: ValueOrFunction<Element, any>;
     },
-  ) => toast.promise(promise, msgs);
+  ) =>
+    toast.promise(promise, msgs, {
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.error,
+        },
+      },
+    });
 
   const dismiss = toast.dismiss;
   const remove = toast.remove;

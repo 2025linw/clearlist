@@ -6,7 +6,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Icon from '@components/primitives/icon';
+import Icon from '@components/primitive/icon';
 
 import { BUTTON_SIZE, ICON_SIZE } from './constants';
 
@@ -39,7 +39,7 @@ function buildStyles(theme: Theme) {
   return StyleSheet.create({
     container: {
       width: BUTTON_SIZE,
-      aspectRatio: 1,
+      height: BUTTON_SIZE,
 
       borderRadius: theme.rounded.full,
 

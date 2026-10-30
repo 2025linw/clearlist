@@ -12,8 +12,7 @@ import { useToast } from '@hooks/use-toast';
 import { authClient } from '@lib/auth-client';
 import { apiFetch } from '@lib/fetch';
 
-import { API_URL } from '@/constants';
-
+import { API_URL } from '../../constants';
 import {
   type ApiContextType,
   type AuthContextType,

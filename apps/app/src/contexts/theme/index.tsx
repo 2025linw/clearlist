@@ -1,7 +1,8 @@
 import { type PropsWithChildren, createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 
-import usePersisted from '@hooks/use-persisted';
+import { getColorThemes } from '@contexts/theme/colors';
+import { usePersisted } from '@hooks/use-persisted';
 
 import { buildTheme } from './settings';
 import {
@@ -24,7 +25,7 @@ export function Provider({ children, ...props }: ProviderProps) {
     value: themeMode,
     setValue: _setThemeMode,
     loaded: themeLoaded,
-  } = usePersisted('systemTheme');
+  } = usePersisted('themeMode');
   const {
     value: colorTheme,
     setValue: _setColorTheme,
@@ -32,14 +33,14 @@ export function Provider({ children, ...props }: ProviderProps) {
   } = usePersisted('colorTheme');
 
   const systemTheme = useColorScheme();
-  const darkMode =
+  const resolvedThemeMode =
     themeMode === 'system'
       ? systemTheme === 'dark'
         ? 'dark'
         : 'light'
       : themeMode;
 
-  const theme = buildTheme(colorTheme, props.theme ?? darkMode);
+  const theme = buildTheme(colorTheme, props.theme ?? resolvedThemeMode);
 
   function setThemeMode(v: ThemeMode | 'system') {
     _setThemeMode(v);
@@ -56,6 +57,9 @@ export function Provider({ children, ...props }: ProviderProps) {
     _setColorTheme('default');
     props.onThemeVariantChange?.('default');
   }
+  function getAllColorThemes() {
+    return getColorThemes(resolvedThemeMode);
+  }
 
   const loaded = themeLoaded && colorLoaded;
 
@@ -70,6 +74,7 @@ export function Provider({ children, ...props }: ProviderProps) {
         colorTheme,
         setColorTheme,
         resetColorTheme,
+        getAllColorThemes,
       }}
     >
       {children}

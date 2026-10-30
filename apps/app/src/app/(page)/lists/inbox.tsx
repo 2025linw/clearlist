@@ -1,5 +1,5 @@
-import Icon from '@components/primitives/icon';
-import ListScreen from '@screens/list-screen';
+import ListScreen from '#/list-screen';
+import Icon from '@components/primitive/icon';
 
 export default function InboxPage() {
   return (

@@ -2,7 +2,7 @@ import { Redirect } from 'expo-router';
 
 import { useSession } from '@contexts/auth';
 
-import AuthScreen from '@screens/auth/auth-screen';
+import AuthScreen from '#/auth/auth-screen';
 
 export default function LoginPage() {
   const { hasSession } = useSession();

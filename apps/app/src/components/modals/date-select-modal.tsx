@@ -5,9 +5,9 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import dayjs, { getDateToday } from '@lib/datetime';
 
-import Button from '@components/primitives/button';
-import Icon from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import Icon from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
 
 export type Mode = 'start' | 'deadline';
 

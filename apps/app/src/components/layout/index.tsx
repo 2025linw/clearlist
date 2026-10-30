@@ -1,13 +1,16 @@
-import { useRouter } from 'expo-router';
 import { type PropsWithChildren, type ReactElement } from 'react';
-import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
-import { type Edge, SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ScrollView,
+  type StyleProp,
+  StyleSheet,
+  View,
+  type ViewStyle,
+} from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 
-import { type IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitive/icon';
 
 import Header from './header';
 
@@ -17,40 +20,44 @@ type LayoutProps = PropsWithChildren<{
   headerText?: string;
   headerIcon?: ReactElement<IconProps>;
   style?: StyleProp<ViewStyle>;
-  safeAreaEdges?: Edge[];
+  scrollable?: boolean;
 }>;
 
 export default function Layout({
   children,
-  showBackButton = false,
-  showOptionButton: hasOptions = false,
-  safeAreaEdges = ['top', 'bottom'],
+  showBackButton,
+  showOptionButton,
+  scrollable = false,
   ...props
 }: LayoutProps) {
-  const router = useRouter();
-
   const theme = useTheme();
   const styles = buildStyles(theme);
-  const { gtTablet } = useBreakpoints();
 
-  const showBack = showBackButton && router.canGoBack() && !gtTablet;
   const hasHeader =
-    showBack || props.headerIcon || props.headerText || hasOptions;
+    showBackButton || showOptionButton || props.headerText || props.headerIcon;
 
   return (
-    <SafeAreaView
-      edges={safeAreaEdges}
-      style={styles.container}
-    >
+    <View style={styles.container}>
       {hasHeader && (
         <Header
           text={props.headerText}
           icon={props.headerIcon}
+          showBackButton={showBackButton}
         />
       )}
 
-      <View style={[styles.content, props.style]}>{children}</View>
-    </SafeAreaView>
+      {scrollable ? (
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={[styles.scrollContent, props.style]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {children}
+        </ScrollView>
+      ) : (
+        <View style={[styles.content, props.style]}>{children}</View>
+      )}
+    </View>
   );
 }
 
@@ -63,6 +70,9 @@ function buildStyles(theme: Theme) {
     },
     content: {
       flex: 1,
+    },
+    scrollContent: {
+      flexGrow: 1,
     },
   });
 }

@@ -19,8 +19,8 @@ use crate::{
     tests::server::{
         TEST_COOKIE_KEY, auth::Client as AuthClient, get_test_user_info, start_test_servers,
     },
-    types::extract::Response,
     user::route::provision_handler,
+    utils::extract::Response,
 };
 
 async fn init_test_setup() -> Client {

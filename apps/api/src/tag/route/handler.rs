@@ -12,10 +12,8 @@ use crate::{
             route::{CreateRequest, URLQueryOpts, UpdateRequest},
         },
     },
-    types::{
-        extract::{Json, Path, Query, UserContext},
-        route::Response,
-    },
+    types::route::Response,
+    utils::extract::{Json, Path, Query, UserContext},
 };
 
 pub async fn list_handler<Ta, C>(

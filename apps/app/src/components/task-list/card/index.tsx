@@ -9,8 +9,8 @@ import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
 import dayjs from '@lib/datetime';
 
-import EditableTypography from '@components/editable-typography';
-import Checkbox from '@components/primitives/checkbox';
+import Checkbox from '@components/primitive/checkbox';
+import EditableTypography from '@components/primitive/editable-typography';
 
 import DeadlineBadge from './deadline-badge';
 import DeadlineButtonLabel from './deadline-button-label';
@@ -104,8 +104,8 @@ export default function TaskCard({
       >
         <View style={styles.mainRow}>
           <Checkbox
-            checked={!!task.completedAt}
-            onChange={(checked) => {
+            defaultValue={!!task.completedAt}
+            onValueChange={(checked) => {
               const handler = checked
                 ? props.onTaskComplete
                 : props.onTaskReopen;

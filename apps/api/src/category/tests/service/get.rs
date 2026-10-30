@@ -7,7 +7,7 @@ use crate::{
     },
     error::{Resource, service::Error},
     tests::mocks::category::MockCategoryRepository,
-    types::extract::UserContext,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

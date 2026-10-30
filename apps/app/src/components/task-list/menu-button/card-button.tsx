@@ -11,8 +11,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Button from '@components/primitives/button';
-import Icon from '@components/primitives/icon';
+import Button from '@components/primitive/button';
+import Icon from '@components/primitive/icon';
 
 import {
   ACTION_BUTTON_SIZE,
