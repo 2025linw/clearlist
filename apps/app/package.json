@@ -9,7 +9,7 @@
     "dev": "npm run start --",
     "prod": "dotenv -e .env.local -- expo start --no-dev",
     "export:web": "expo export --platform web",
-    "format": "prettier src --check",
+    "check": "tsc --noEmit",
     "lint": "expo lint",
     "test": "jest"
   },

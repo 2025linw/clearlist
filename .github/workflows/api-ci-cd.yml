@@ -59,26 +59,26 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout repository
+      - name: 🏗 Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Rust
+      - name: 🏗 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
 
-      - name: Run check
+      - name: 🧪 Run check
         run: cargo check --locked -p clearlist-api
 
-      - name: Run clippy
+      - name: 🧹 Run clippy
         if: github.event_name != 'pull_request' || github.base_ref != 'main'
         run: cargo clippy -p clearlist-api -- -D warnings
 
-      - name: Run clippy (strict)
+      - name: 🧹 Run clippy (strict)
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
         run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::print_stdout -D clippy::print_stderr
 
-      - name: Bootstrap database
+      - name: 📦 Bootstrap database
         env:
           PGUSER: test
           PGPASSWORD: test
@@ -87,12 +87,12 @@ jobs:
         run: |
           psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap_test.sql
 
-      - name: Run test
+      - name: 🧪 Run test
         env:
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
-      - name: Notify test results via Discord
+      - name: 📢 Notify test results via Discord
         if: always()
         uses: Ilshidur/action-discord@0.3.2
         env:
@@ -111,16 +111,16 @@ jobs:
       sha: ${{ steps.meta.outputs.sha }}
 
     steps:
-      - name: Checkout repository
+      - name: 🏗 Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Rust
+      - name: 🏗 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Build release
+      - name: 📦 Build release
         run: cargo build --release --locked -p clearlist-api
 
-      - name: Generate metadata
+      - name: 📦 Generate metadata
         id: meta
         run: |
           version=$(cargo metadata --no-deps --format-version 1 \
@@ -130,22 +130,22 @@ jobs:
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Create artifact folder
+      - name: 📦 Create artifact folder
         run: |
           mkdir artifact
           cp -rt artifact/ target/release/clearlist-api
 
-      - name: Archive artifacts
+      - name: 📦 Archive artifacts
         run: tar -czf clearlist-api.tar.gz -C artifact/ .
 
-      - name: Upload artifact
+      - name: 🚀 Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: clearlist-api
           path: clearlist-api.tar.gz
           retention-days: 7
 
-      - name: Notify test results via Discord
+      - name: 📢 Notify test results via Discord
         if: always()
         uses: Ilshidur/action-discord@0.3.2
         env:
@@ -165,7 +165,7 @@ jobs:
       SSH_OPTIONS: "-o BatchMode=yes -o ConnectTimeout=10  -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
 
     steps:
-      - name: Verify SSH connectivity
+      - name: 📋 Verify SSH connectivity
         run: |
           echo "Checking server is reachable..."
 
@@ -173,13 +173,13 @@ jobs:
 
           echo "Server is reachable."
 
-      - name: Download artifact
+      - name: 📦 Download artifact
         uses: actions/download-artifact@v8
         with:
           name: clearlist-api
           path: artifact/
 
-      - name: Upload archive
+      - name: 🚀 Upload archive
         run: |
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
@@ -188,7 +188,7 @@ jobs:
             artifact/clearlist-api.tar.gz \
             "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
 
-      - name: Deploy server
+      - name: 🚀 Deploy server
         env:
           DEPLOY_SCRIPT: ${{ secrets.API_DEPLOY_SCRIPT }}
           VERSION: ${{ needs.build.outputs.version }}
@@ -199,7 +199,7 @@ jobs:
             "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
 
-      - name: Notify test results via Discord
+      - name: 📢 Notify test results via Discord
         if: always()
         uses: Ilshidur/action-discord@0.3.2
         env:
