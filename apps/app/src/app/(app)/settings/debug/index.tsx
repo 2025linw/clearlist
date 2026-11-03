@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 
 import Layout from '@components/layout';
 import Button from '@components/primitive/button';
@@ -55,8 +55,7 @@ export default function DebugPage() {
 
       <Button
         onPress={() => {
-          // @ts-expect-error: not found page test
-          router.navigate('/invalid-route');
+          router.navigate('/invalid-route' as Href);
         }}
       >
         Invalid Route Debug
