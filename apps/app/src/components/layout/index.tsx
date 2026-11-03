@@ -6,12 +6,14 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
 import { type IconProps } from '@components/primitive/icon';
 
+import { HEADER_HEIGHT } from './constants';
 import Header from './header';
 
 type LayoutProps = PropsWithChildren<{
@@ -20,6 +22,7 @@ type LayoutProps = PropsWithChildren<{
   headerText?: string;
   headerIcon?: ReactElement<IconProps>;
   style?: StyleProp<ViewStyle>;
+  safeArea?: boolean;
   scrollable?: boolean;
 }>;
 
@@ -27,14 +30,19 @@ export default function Layout({
   children,
   showBackButton,
   showOptionButton,
+  safeArea = true,
   scrollable = false,
   ...props
 }: LayoutProps) {
   const theme = useTheme();
-  const styles = buildStyles(theme);
+  const insets = useSafeAreaInsets();
 
   const hasHeader =
-    showBackButton || showOptionButton || props.headerText || props.headerIcon;
+    showBackButton ||
+    showOptionButton ||
+    !!props.headerText ||
+    !!props.headerIcon;
+  const styles = buildStyles(theme, safeArea ? insets : undefined, hasHeader);
 
   return (
     <View style={styles.container}>
@@ -43,6 +51,7 @@ export default function Layout({
           text={props.headerText}
           icon={props.headerIcon}
           showBackButton={showBackButton}
+          style={styles.header}
         />
       )}
 
@@ -61,12 +70,23 @@ export default function Layout({
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(
+  theme: Theme,
+  insets: ReturnType<typeof useSafeAreaInsets> | undefined,
+  hasHeader: boolean | undefined,
+) {
   return StyleSheet.create({
     container: {
       flex: 1,
 
+      paddingTop: insets && !hasHeader ? insets.top : 0,
+
       backgroundColor: theme.palette.background,
+    },
+    header: {
+      paddingTop: insets?.top ?? 0,
+
+      height: HEADER_HEIGHT + (insets?.top ?? 0),
     },
     content: {
       flex: 1,

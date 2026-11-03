@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { type ReactElement, cloneElement } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
@@ -10,7 +9,7 @@ import Button from '@components/primitive/button';
 import Icon, { type IconProps } from '@components/primitive/icon';
 import Typography from '@components/primitive/typography';
 
-const HEADER_HEIGHT = 56;
+import { HEADER_HEIGHT } from './constants';
 
 const BUTTON_SIZE = 56;
 const BUTTON_ICON_SIZE = 40;
@@ -19,14 +18,14 @@ type HeaderProps = {
   text?: string;
   icon?: ReactElement<IconProps>;
   showBackButton?: boolean;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Header(props: HeaderProps) {
   const router = useRouter();
   const theme = useTheme();
-  const { top } = useSafeAreaInsets();
 
-  const styles = buildStyles(theme, top);
+  const styles = buildStyles(theme);
 
   const showBackButton = props.showBackButton && router.canGoBack();
 
@@ -37,13 +36,13 @@ export default function Header(props: HeaderProps) {
     : null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, props.style]}>
       <View style={styles.side}>
         {showBackButton && (
           <Button
             scheme="tertiary"
             rounded
-            icon={
+            leftIcon={
               <Icon
                 name="arrow-back-circle"
                 color={theme.palette.primary}
@@ -74,13 +73,10 @@ export default function Header(props: HeaderProps) {
   );
 }
 
-function buildStyles(theme: Theme, topInset: number) {
+function buildStyles(theme: Theme, topInset?: number) {
   return StyleSheet.create({
     container: {
-      paddingTop: topInset,
       marginBottom: theme.spacings.x2,
-
-      height: HEADER_HEIGHT + topInset,
 
       flexDirection: 'row',
       alignItems: 'center',
