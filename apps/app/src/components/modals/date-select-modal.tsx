@@ -45,7 +45,7 @@ export default function DateSelectModal({
           <View style={styles.header}>
             <Button
               scheme="danger"
-              icon={<Icon name="trash-bin" />}
+              leftIcon={<Icon name="trash-bin" />}
               style={styles.headerButton}
               onPress={() => props.onDateSelect?.(null)}
             />
@@ -55,7 +55,7 @@ export default function DateSelectModal({
             <Button
               scheme="secondary"
               hasBorder={false}
-              icon={<Icon name="close" />}
+              leftIcon={<Icon name="close" />}
               style={styles.headerButton}
               onPress={props.dismiss}
             />

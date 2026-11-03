@@ -1,6 +1,9 @@
-import { Host, Picker } from '@expo/ui';
+import { Picker } from '@expo/ui/community/picker';
 import { useState } from 'react';
 
+import { useTheme } from '@contexts/theme';
+
+import { buildStyles } from './style';
 import { type SelectProps, type SelectValue } from './types';
 
 export default function Select({
@@ -10,10 +13,13 @@ export default function Select({
   onValueChange,
   placeholder,
 }: SelectProps) {
+  const theme = useTheme();
+
   const [internalValue, setInternalValue] = useState<SelectValue | ''>(
     defaultValue ?? '',
   );
 
+  const styles = buildStyles(theme);
   const isControlled = value !== undefined;
   const selectedValue = isControlled ? value : internalValue;
 
@@ -24,24 +30,25 @@ export default function Select({
   }
 
   return (
-    <Host>
-      <Picker
-        selectedValue={selectedValue}
-        onValueChange={handleChange}
-      >
-        <Picker.Item
-          label={placeholder ?? '-'}
-          value=""
-        />
+    <Picker
+      selectedValue={selectedValue}
+      onValueChange={handleChange}
+      style={styles.container}
+    >
+      <Picker.Item
+        label={placeholder ?? '-'}
+        value=""
+        style={styles.option}
+      />
 
-        {data.map(({ label, value }) => (
-          <Picker.Item
-            key={value}
-            label={label ?? value}
-            value={value}
-          />
-        ))}
-      </Picker>
-    </Host>
+      {data.map(({ label, value }) => (
+        <Picker.Item
+          key={value}
+          label={label ?? value}
+          value={value}
+          style={styles.option}
+        />
+      ))}
+    </Picker>
   );
 }

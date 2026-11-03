@@ -26,7 +26,7 @@ export default function DeadlineButtonLabel({
       <Button
         scheme="tertiary"
         textStyle={styles.text}
-        icon={
+        leftIcon={
           <Icon
             name="flag"
             size={22}

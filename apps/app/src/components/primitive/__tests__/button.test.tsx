@@ -22,7 +22,7 @@ describe('<Button /> Content', () => {
   test('renders correctly with only icon', async () => {
     await renderWithProviders(
       <Button
-        icon={
+        leftIcon={
           <Icon
             name="add"
             testID="button-icon"
@@ -41,7 +41,7 @@ describe('<Button /> Content', () => {
   test('renders correctly with both icon and text', async () => {
     await renderWithProviders(
       <Button
-        icon={
+        leftIcon={
           <Icon
             name="add"
             testID="button-icon"
@@ -66,7 +66,7 @@ describe('<Button /> Style', () => {
   const theme = buildTheme('default', 'light');
 
   test('icon only button is square', async () => {
-    await renderWithProviders(<Button icon={<Icon name="add" />} />);
+    await renderWithProviders(<Button leftIcon={<Icon name="add" />} />);
 
     const button = screen.getByRole('button');
     const style = StyleSheet.flatten(button.props.style);

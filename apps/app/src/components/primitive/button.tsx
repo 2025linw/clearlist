@@ -1,4 +1,4 @@
-import { type ReactElement } from 'react';
+import { type ReactElement, type ReactNode } from 'react';
 import { cloneElement } from 'react';
 import {
   type ColorValue,
@@ -24,12 +24,16 @@ type ButtonSchemes = keyof Omit<
 
 type ButtonContent =
   | {
-      children: string;
-      icon?: ReactElement<IconProps>;
+      // Button with text (optional left and right icons)
+      children: ReactNode;
+      leftIcon?: ReactElement<IconProps>;
+      rightIcon?: ReactElement<IconProps>;
     }
   | {
+      // Icon only
       children?: never;
-      icon: ReactElement<IconProps>;
+      leftIcon: ReactElement<IconProps>;
+      rightIcon?: never;
     };
 
 export type ButtonProps = Omit<PressableProps, 'children' | ElementProps> &
@@ -49,26 +53,36 @@ export default function Button({
   ...props
 }: ButtonProps) {
   const theme = useTheme();
+
+  const iconOnly = !!props.leftIcon && !children;
   const styles = buildStyles(
     theme,
     disabled ? 'disabled' : scheme,
     props.rounded,
     props.hasBorder,
+    iconOnly,
     {
-      size: props.icon?.props.size,
-      color: props.icon?.props.color,
+      size: props.leftIcon?.props.size,
+      color: props.leftIcon?.props.color,
+    },
+    {
+      size: props.rightIcon?.props.size,
+      color: props.rightIcon?.props.color,
     },
   );
-
   const iconComponentStyle = theme.components.Button.icon;
-  const icon = props.icon
-    ? cloneElement(props.icon, {
-        size: props.icon?.props.size ?? iconComponentStyle.size,
-        color: styles.icon.color,
+  const leftIcon = props.leftIcon
+    ? cloneElement(props.leftIcon, {
+        size: props.leftIcon?.props.size ?? iconComponentStyle.size,
+        color: styles.leftIcon.color,
       })
     : undefined;
-
-  const iconOnly = !!icon && !children;
+  const rightIcon = props.rightIcon
+    ? cloneElement(props.rightIcon, {
+        size: props.rightIcon?.props.size ?? iconComponentStyle.size,
+        color: styles.leftIcon.color,
+      })
+    : undefined;
 
   return (
     <Pressable
@@ -76,7 +90,6 @@ export default function Button({
       disabled={disabled}
       style={(state) => [
         styles.container,
-        iconOnly && styles.iconContainer,
         (props.testOnly_hovered ||
           (Platform.OS === 'web' &&
             (state as typeof state & { hovered?: boolean }).hovered)) &&
@@ -86,17 +99,27 @@ export default function Button({
       ]}
       role="button"
     >
-      {icon}
+      {leftIcon}
 
       {children && (
-        <Typography
-          variant="button"
-          style={[styles.typography, props.textStyle]}
-          selectable={false}
-        >
-          {children}
-        </Typography>
+        <View style={styles.textContainer}>
+          {typeof children === 'string' ? (
+            <Typography
+              variant="button"
+              style={[styles.typography, props.textStyle]}
+              selectable={false}
+              numberOfLines={1}
+              ellipsizeMode="clip"
+            >
+              {children}
+            </Typography>
+          ) : (
+            children
+          )}
+        </View>
       )}
+
+      {rightIcon}
     </Pressable>
   );
 }
@@ -107,7 +130,12 @@ function buildStyles(
   scheme: ButtonSchemes | 'disabled',
   rounded: boolean | undefined,
   hasBorder: boolean | undefined,
-  iconStyle: {
+  iconOnly: boolean,
+  leftIconStyle: {
+    size?: number;
+    color?: ColorValue;
+  },
+  rightIconStyle: {
     size?: number;
     color?: ColorValue;
   },
@@ -123,7 +151,7 @@ function buildStyles(
 
   // Container size (width and height) for icon only button
   const iconOnlySize =
-    (iconStyle.size ?? componentStyle.icon.size) +
+    (leftIconStyle.size ?? componentStyle.icon.size) +
     2 * padding +
     (useBorder ? 2 * BORDER_WIDTH : 0);
 
@@ -133,6 +161,7 @@ function buildStyles(
 
       flexDirection: 'row',
       alignItems: 'center',
+      justifyContent: 'space-between',
       gap: theme.spacings.x2,
 
       borderWidth: useBorder ? BORDER_WIDTH : 0,
@@ -140,12 +169,17 @@ function buildStyles(
       borderColor: componentScheme.borderColor,
 
       backgroundColor: componentScheme.backgroundColor,
-    },
-    iconContainer: {
-      width: iconOnlySize,
-      height: iconOnlySize,
+      ...(iconOnly
+        ? {
+            width: iconOnlySize,
+            height: iconOnlySize,
 
-      justifyContent: 'center',
+            justifyContent: 'center',
+          }
+        : {}),
+    },
+    textContainer: {
+      flex: 1,
     },
     hoveredStyle: componentScheme.hovered,
     pressedStyle: componentScheme.pressed,
@@ -153,8 +187,13 @@ function buildStyles(
       color: componentStyle.scheme[scheme].color,
       userSelect: 'none',
     },
-    icon: {
-      color: iconStyle.color ?? componentStyle.scheme[scheme].color,
+    leftIcon: {
+      color: leftIconStyle.color ?? componentScheme.color,
+      fontSize: leftIconStyle.size ?? componentStyle.icon.size,
+    },
+    rightIcon: {
+      color: rightIconStyle.color ?? componentScheme.color,
+      fontSize: rightIconStyle.size ?? componentStyle.icon.size,
     },
   });
 }
@@ -164,8 +203,14 @@ export function Demo() {
     // eslint-disable-next-line react-native/no-inline-styles
     <View style={{ gap: 16, paddingHorizontal: 10 }}>
       <Button>Default</Button>
-      <Button icon={<Icon name="home-outline" />} />
-      <Button icon={<Icon name="add" />}>Button with Icon</Button>
+      <Button leftIcon={<Icon name="home-outline" />} />
+      <Button leftIcon={<Icon name="add" />}>Button with Left Icon</Button>
+      <Button
+        leftIcon={<Icon name="add" />}
+        rightIcon={<Icon name="chevron-forward" />}
+      >
+        Button with Left and Right Icon
+      </Button>
 
       <Button scheme="primary">Primary</Button>
       <Button scheme="secondary">Secondary</Button>
@@ -173,13 +218,13 @@ export function Demo() {
 
       <Button
         scheme="success"
-        icon={<Icon name="checkmark-circle" />}
+        leftIcon={<Icon name="checkmark-circle" />}
       >
         Success
       </Button>
       <Button
         scheme="danger"
-        icon={<Icon name="warning" />}
+        leftIcon={<Icon name="warning" />}
       >
         Danger
       </Button>

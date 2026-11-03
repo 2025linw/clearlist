@@ -77,7 +77,7 @@ export default function CardButton({
         <Animated.View style={[styles.actionButtonContainer, trashButtonStyle]}>
           <Button
             rounded
-            icon={
+            leftIcon={
               <Icon
                 name={deleted ? 'return-up-back' : 'trash'}
                 size={ACTION_ICON_SIZE}
@@ -95,7 +95,7 @@ export default function CardButton({
           <Animated.View>
             <Button
               rounded
-              icon={
+              leftIcon={
                 <Icon
                   name={menuOpen ? 'close' : 'menu'}
                   size={ICON_SIZE}

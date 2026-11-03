@@ -25,7 +25,7 @@ export default function NavButton({
   return (
     <Button
       scheme="tertiary"
-      icon={
+      leftIcon={
         <Icon
           name={props.iconName || 'list-outline'}
           color={props.iconColor || 'gray'}
