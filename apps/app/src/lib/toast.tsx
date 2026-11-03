@@ -1,15 +1,18 @@
 import {
+  Toasts as LibToasts,
   type Toast,
   ToastPosition,
-  Toasts,
 } from '@backpackapp-io/react-native-toast';
 
 import { useTheme } from '@contexts/theme';
 
-export default function ToastRenderer() {
+export default function Toasts() {
   const theme = useTheme();
 
   const defaultStyle: Toast['styles'] = {
+    pressable: {
+      ...theme.shadows.high,
+    },
     view: {
       backgroundColor: theme.palette.surface,
     },
@@ -22,7 +25,7 @@ export default function ToastRenderer() {
   };
 
   return (
-    <Toasts
+    <LibToasts
       defaultPosition={ToastPosition.BOTTOM}
       overrideDarkMode={theme.darkMode}
       defaultStyle={defaultStyle}

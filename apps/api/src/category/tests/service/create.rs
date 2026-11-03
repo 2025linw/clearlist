@@ -7,8 +7,8 @@ use crate::{
         mocks::category::MockCategoryRepository,
         test_data::{NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
-    types::extract::UserContext,
     user::types::UserID,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

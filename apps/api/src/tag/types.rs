@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(
-    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Type,
 )]
 #[sqlx(transparent)]
 pub struct TagID(Uuid);

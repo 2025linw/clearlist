@@ -4,24 +4,22 @@
   "engines": {
     "node": "^24.16.0"
   },
-  "packageManager": "pnpm@11.3.0",
+  "packageManager": "pnpm@12.15.0",
   "scripts": {
     "auth:export": "pnpm --filter @clearlist/auth run export",
     "auth:migrate": "pnpm --filter @clearlist/auth run migrate",
-    "auth:tsc": "pnpm --filter @clearlist/auth run tsc",
+    "auth:check": "pnpm --filter @clearlist/auth run check",
     "auth:lint": "pnpm --filter @clearlist/auth run lint",
     "auth:format": "pnpm --filter @clearlist/auth run format",
     "auth:test": "pnpm --filter @clearlist/auth run test",
     "app:export:web": "pnpm --filter @clearlist/app run export:web",
+    "app:check": "pnpm --filter @clearlist/app run check",
     "app:lint": "pnpm --filter @clearlist/app run lint",
     "app:format": "pnpm --filter @clearlist/app run format",
     "app:test": "pnpm --filter @clearlist/app run test"
   },
   "devDependencies": {
-    "@clearlist/eslint-config": "workspace:*",
-    "@clearlist/prettier-config": "workspace:*",
-    "@clearlist/types": "workspace:*",
-    "eslint": "^9.39.5",
-    "prettier": "^3.9.9"
+    "eslint": "catalog:",
+    "prettier": "catalog:"
   }
 }

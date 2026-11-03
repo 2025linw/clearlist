@@ -12,7 +12,7 @@ import { getCategoryQueryMap } from '@services/helpers';
 import { type Category } from '@services/types';
 
 import Layout from '@components/layout';
-import { type IconProps } from '@components/primitives/icon';
+import { type IconProps } from '@components/primitive/icon';
 import TaskList from '@components/task-list';
 
 const requiredTask: task.CreateRequest = {
@@ -33,10 +33,10 @@ type ListScreenProps = {
 };
 
 export default function ListScreen(props: ListScreenProps) {
-  const { gtMobile } = useBreakpoints();
-
   const theme = useTheme();
-  const styles = buildStyles(theme);
+  const { gtTablet } = useBreakpoints();
+
+  const styles = buildStyles(theme, !gtTablet);
 
   const searchQuery = getCategoryQueryMap()[props.category];
 
@@ -75,9 +75,8 @@ export default function ListScreen(props: ListScreenProps) {
     <Layout
       headerText={props.listName}
       headerIcon={props.listIcon}
-      showBackButton
-      safeAreaEdges={['top']}
-      style={gtMobile ? styles.container : styles.containerMobile}
+      showBackButton={!gtTablet}
+      style={styles.container}
     >
       <TaskList
         data={queryTasks.data?.data.tasks}
@@ -101,13 +100,10 @@ export default function ListScreen(props: ListScreenProps) {
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, isMobile: boolean) {
   return StyleSheet.create({
-    containerMobile: {
-      paddingHorizontal: theme.spacings.x2,
-    },
     container: {
-      paddingHorizontal: theme.spacings.x16,
+      paddingHorizontal: isMobile ? theme.spacings.x2 : theme.spacings.x10,
     },
   });
 }

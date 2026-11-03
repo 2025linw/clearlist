@@ -7,7 +7,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import Typography from '@components/primitives/typography';
+import Typography from '@components/primitive/typography';
 
 // TODO: Add label orientation (top or left (default))
 

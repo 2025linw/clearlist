@@ -16,8 +16,10 @@ use uuid::Uuid;
 
 use crate::{
     tests::server::{TEST_COOKIE_KEY, TEST_WEBHOOK_SECRET},
-    types::extract::Json,
-    utils::route::{WEBHOOK_ID, WEBHOOK_SIGNATURE, WEBHOOK_TIMESTAMP, create_webhook_signature},
+    utils::{
+        extract::Json,
+        route::{WEBHOOK_ID, WEBHOOK_SIGNATURE, WEBHOOK_TIMESTAMP, create_webhook_signature},
+    },
 };
 
 #[derive(Debug, Clone, Serialize)]

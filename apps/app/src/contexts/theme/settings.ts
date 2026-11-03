@@ -1,7 +1,7 @@
 import color from 'color';
 
 import { buildPalette } from './build-palette';
-import { brand } from './colors';
+import { colorThemes } from './colors';
 import {
   rounded,
   shadows,
@@ -11,12 +11,8 @@ import {
 } from './tokens';
 import { type ColorVariantName, type Palette, type ThemeMode } from './types';
 
-export const variants = {
-  default: brand,
-} as const;
-
 export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
-  const themeColors = variants[variant][theme];
+  const themeColors = colorThemes[variant][theme];
   const palette: Palette = buildPalette(themeColors);
 
   return {
@@ -143,6 +139,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           borderColor: palette.border,
           borderRadius: rounded.base,
           padding: spacings.x2,
+          backgroundColor: palette.surface,
         },
         disabled: {
           backgroundColor: themeColors.secondary['secondary-3'],
@@ -159,6 +156,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           borderColor: 'transparent',
           borderRadius: rounded.base,
           padding: spacings.x2,
+          backgroundColor: palette.surface,
         },
         state: {
           editing: {
@@ -169,6 +167,17 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           },
         },
         text: typographyVariants.text,
+      },
+      Select: {
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: palette.border,
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+          backgroundColor: palette.surface,
+          color: palette.text,
+        },
+        option: typographyVariants.text,
       },
       Toast: {
         size: typographyVariants.button.fontSize,

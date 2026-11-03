@@ -7,7 +7,8 @@ use crate::{
         repo::{ConstraintViolation, Error as RepoError},
         service::{Error, Result},
     },
-    types::{extract::UserContext, repo::Pagination},
+    types::repo::Pagination,
+    utils::extract::UserContext,
 };
 
 use super::{

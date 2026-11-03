@@ -17,7 +17,7 @@ use crate::{
 
 use auth::start_server as start_auth_server;
 
-pub const TEST_COOKIE_KEY: &str = "test_cookie";
+pub const TEST_COOKIE_KEY: &str = "__Secure-clear_list.session_token";
 pub const TEST_WEBHOOK_SECRET: &str = "test_secret";
 
 pub static TEST_USER_INFO: OnceLock<serde_json::Value> = OnceLock::new();
@@ -51,7 +51,6 @@ pub async fn start_test_servers(create_router: CreateRouterFn) -> TestServerIP {
     let auth_addr = start_auth_server(api_addr).await;
 
     let config = Config::init(
-        TEST_COOKIE_KEY.to_string(),
         Url::parse(&format!("http://{auth_addr}")).unwrap(),
         TEST_WEBHOOK_SECRET.to_string(),
     );

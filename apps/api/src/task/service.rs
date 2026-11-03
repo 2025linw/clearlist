@@ -11,7 +11,8 @@ use crate::{
         service::helpers::validate_set_tags,
         types::repo::{CreateModel, UpdateModel},
     },
-    types::{extract::UserContext, order::SortOrder, repo::Pagination, start::Start},
+    types::{order::SortOrder, repo::Pagination, start::Start},
+    utils::extract::UserContext,
 };
 
 use super::{

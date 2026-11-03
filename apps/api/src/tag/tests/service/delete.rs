@@ -7,7 +7,7 @@ use crate::{
         types::{TagID, route::CreateRequest},
     },
     tests::mocks::{MockTagRepository, category::MockCategoryRepository},
-    types::extract::UserContext,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

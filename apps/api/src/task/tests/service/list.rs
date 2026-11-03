@@ -13,8 +13,9 @@ use crate::{
         mocks::MockTaskRepository,
         test_data::{create_overspecified_deadline_range, create_overspecified_start_range},
     },
-    types::{extract::UserContext, order::SortOrder, query::DateFilter},
+    types::{order::SortOrder, query::DateFilter},
     user::types::UserID,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

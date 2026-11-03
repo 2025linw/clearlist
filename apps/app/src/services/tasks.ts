@@ -3,8 +3,7 @@ import { task } from '@clearlist/types';
 import { apiFetch } from '@lib/fetch';
 import { buildTaskQuery } from '@services/helpers';
 
-import { API_URL } from '@/constants';
-
+import { API_URL } from '../constants';
 import { type TaskQuery } from './types';
 
 export async function create(

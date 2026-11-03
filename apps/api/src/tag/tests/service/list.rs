@@ -14,7 +14,7 @@ use crate::{
         mocks::{MockTagRepository, category::MockCategoryRepository},
         test_data::NORMALIZATION_TEST_INPUT,
     },
-    types::extract::UserContext,
+    utils::extract::UserContext,
 };
 
 use super::init_test_setup;

@@ -14,7 +14,6 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@clearlist/eslint-config": "workspace:*",
-    "@clearlist/prettier-config": "workspace:*"
+    "@clearlist/tooling-config": "workspace:*"
   }
 }

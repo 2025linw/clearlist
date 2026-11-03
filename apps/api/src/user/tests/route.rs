@@ -1,5 +1,7 @@
 mod get;
 mod update;
+// TODO: add provisioning test
+// mod provision;
 
 use std::net::SocketAddr;
 

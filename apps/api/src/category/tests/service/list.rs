@@ -2,7 +2,7 @@ use chrono_tz::Tz;
 
 use crate::{
     category::service::CategoryService, error::service::Error,
-    tests::mocks::category::MockCategoryRepository, types::extract::UserContext,
+    tests::mocks::category::MockCategoryRepository, utils::extract::UserContext,
 };
 
 use super::init_test_setup;

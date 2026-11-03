@@ -45,10 +45,7 @@ mod success {
 
         let user = user_repo.get(test_user.id).await.unwrap().unwrap();
 
-        let CreateModel {
-            id,
-            created_at,
-        } = create_model;
+        let CreateModel { id, created_at } = create_model;
         assert_eq!(user.id, id);
         assert_eq!(user.created_at, created_at);
     }

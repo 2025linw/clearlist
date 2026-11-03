@@ -11,10 +11,8 @@ use crate::{
         },
     },
     error::route::Result,
-    types::{
-        extract::{Json, Path, UserContext},
-        route::Response,
-    },
+    types::route::Response,
+    utils::extract::{Json, Path, UserContext},
 };
 
 pub async fn list_handler<C>(

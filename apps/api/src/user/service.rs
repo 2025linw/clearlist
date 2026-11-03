@@ -34,15 +34,10 @@ impl<R: UserRepository> UserService<R> {
     }
 
     pub async fn create(&self, provision_request: ProvisionRequest) -> Result<User> {
-        let ProvisionRequest {
-            id,
-            created_at,
-        } = helpers::validate_create_request(provision_request)?;
+        let ProvisionRequest { id, created_at } =
+            helpers::validate_create_request(provision_request)?;
 
-        let create_model = CreateModel {
-            id,
-            created_at,
-        };
+        let create_model = CreateModel { id, created_at };
         self.repo
             .create(create_model)
             .await

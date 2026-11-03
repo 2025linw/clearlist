@@ -3,9 +3,8 @@
  */
 import { type ColorValue } from 'react-native';
 
-import { type colors } from '@contexts/theme/colors';
-
-import { type buildTheme, type variants } from './settings';
+import { type colorThemes, type colors, type getColorThemes } from './colors';
+import { type buildTheme } from './settings';
 import { type typographyVariants } from './tokens';
 
 export type Theme = ReturnType<typeof buildTheme>;
@@ -22,6 +21,7 @@ export type ThemeContextType = {
   colorTheme: ColorVariantName;
   setColorTheme: (_: ColorVariantName) => void;
   resetColorTheme: () => void;
+  getAllColorThemes: () => ReturnType<typeof getColorThemes>;
 };
 
 export type Palette = {
@@ -45,19 +45,19 @@ export type Palette = {
 
 export type ThemeMode = 'light' | 'dark';
 
-export type ColorVariantName = keyof typeof variants;
+export type ColorVariantName = keyof typeof colorThemes;
 
 export type ColorScale<T extends string> = {
   [K in `${T}-${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12}`]: ColorValue;
 };
 
-export type ThemeColors = {
+export type ThemeColor = {
   primary: ColorScale<'primary'>;
   secondary: ColorScale<'secondary'>;
 };
 
 export type ThemeModes = {
-  [K in ThemeMode]: ThemeColors;
+  [K in ThemeMode]: ThemeColor;
 };
 
 export type TypographyVariants = keyof typeof typographyVariants;

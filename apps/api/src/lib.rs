@@ -48,22 +48,19 @@ use crate::{
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    cookie_key: String,
     auth_server_url: Url,
     webhook_secret: String,
 }
 
 impl Config {
-    pub fn init(cookie_key: String, auth_server_url: Url, webhook_secret: String) -> Self {
+    pub fn init(auth_server_url: Url, webhook_secret: String) -> Self {
         Self {
-            cookie_key,
             auth_server_url,
             webhook_secret,
         }
     }
 
     pub fn from_env() -> Self {
-        let cookie_key = env::var("COOKIE_KEY").unwrap_or("better-auth.session_token".to_string());
         let auth_server_url =
             Url::parse(&env::var("AUTH_URL").expect("AUTH_URL not found in environment variables"))
                 .expect("AUTH_URL should be a valid URL format");
@@ -71,7 +68,6 @@ impl Config {
             env::var("WEBHOOK_SECRET").expect("WEBHOOK_SECRET not found in environment variables");
 
         Self {
-            cookie_key,
             auth_server_url,
             webhook_secret,
         }

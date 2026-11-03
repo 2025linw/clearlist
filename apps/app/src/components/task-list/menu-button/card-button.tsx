@@ -11,8 +11,8 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 
-import Button from '@components/primitives/button';
-import Icon from '@components/primitives/icon';
+import Button from '@components/primitive/button';
+import Icon from '@components/primitive/icon';
 
 import {
   ACTION_BUTTON_SIZE,
@@ -77,7 +77,7 @@ export default function CardButton({
         <Animated.View style={[styles.actionButtonContainer, trashButtonStyle]}>
           <Button
             rounded
-            icon={
+            leftIcon={
               <Icon
                 name={deleted ? 'return-up-back' : 'trash'}
                 size={ACTION_ICON_SIZE}
@@ -95,7 +95,7 @@ export default function CardButton({
           <Animated.View>
             <Button
               rounded
-              icon={
+              leftIcon={
                 <Icon
                   name={menuOpen ? 'close' : 'menu'}
                   size={ICON_SIZE}

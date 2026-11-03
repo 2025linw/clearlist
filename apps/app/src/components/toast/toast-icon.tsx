@@ -1,6 +1,6 @@
 import { useTheme } from '@contexts/theme';
 
-import Icon, { type IconName } from '@components/primitives/icon';
+import Icon, { type IconName } from '@components/primitive/icon';
 
 type ToastType = 'default' | 'success' | 'warn' | 'error';
 

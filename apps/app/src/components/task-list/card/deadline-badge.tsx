@@ -4,7 +4,7 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import dayjs from '@lib/datetime';
 
-import Typography from '@components/primitives/typography';
+import Typography from '@components/primitive/typography';
 
 type DeadlineBadgeProps = {
   date: dayjs.Dayjs;

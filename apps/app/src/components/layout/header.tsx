@@ -1,16 +1,15 @@
 import { useRouter } from 'expo-router';
 import { type ReactElement, cloneElement } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import { useBreakpoints } from '@hooks/use-breakpoint';
 
-import Button from '@components/primitives/button';
-import Icon, { type IconProps } from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import Icon, { type IconProps } from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
 
-const HEADER_HEIGHT = 56;
+import { HEADER_HEIGHT } from './constants';
 
 const BUTTON_SIZE = 56;
 const BUTTON_ICON_SIZE = 40;
@@ -18,15 +17,17 @@ const BUTTON_ICON_SIZE = 40;
 type HeaderProps = {
   text?: string;
   icon?: ReactElement<IconProps>;
+  showBackButton?: boolean;
+  style?: StyleProp<ViewStyle>;
 };
 
 export default function Header(props: HeaderProps) {
   const router = useRouter();
   const theme = useTheme();
-  const styles = buildStyles(theme);
-  const { gtTablet } = useBreakpoints();
 
-  const showBack = router.canGoBack() && !gtTablet;
+  const styles = buildStyles(theme);
+
+  const showBackButton = props.showBackButton && router.canGoBack();
 
   const icon = props.icon
     ? cloneElement(props.icon, {
@@ -35,13 +36,13 @@ export default function Header(props: HeaderProps) {
     : null;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, props.style]}>
       <View style={styles.side}>
-        {showBack && (
+        {showBackButton && (
           <Button
             scheme="tertiary"
             rounded
-            icon={
+            leftIcon={
               <Icon
                 name="arrow-back-circle"
                 color={theme.palette.primary}
@@ -72,11 +73,9 @@ export default function Header(props: HeaderProps) {
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, topInset?: number) {
   return StyleSheet.create({
     container: {
-      height: HEADER_HEIGHT,
-
       marginBottom: theme.spacings.x2,
 
       flexDirection: 'row',
@@ -88,7 +87,7 @@ function buildStyles(theme: Theme) {
     side: {
       flexShrink: 0,
       width: HEADER_HEIGHT,
-      aspectRatio: 1,
+      height: HEADER_HEIGHT,
     },
     content: {
       flex: 1,
@@ -101,7 +100,7 @@ function buildStyles(theme: Theme) {
     },
     button: {
       width: BUTTON_SIZE,
-      aspectRatio: 1,
+      height: BUTTON_SIZE,
     },
   });
 }

@@ -4,7 +4,7 @@ use serde_json::json;
 use crate::{
     tag::types::TagID,
     task::types::{Task, TaskID},
-    types::extract::{ErrorResponse, Response},
+    utils::extract::{ErrorResponse, Response},
 };
 
 use super::{Client, init_test_setup};

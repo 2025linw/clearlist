@@ -5,9 +5,9 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import dayjs, { getDateToday } from '@lib/datetime';
 
-import Button from '@components/primitives/button';
-import Icon from '@components/primitives/icon';
-import Typography from '@components/primitives/typography';
+import Button from '@components/primitive/button';
+import Icon from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
 
 export type Mode = 'start' | 'deadline';
 
@@ -45,7 +45,7 @@ export default function DateSelectModal({
           <View style={styles.header}>
             <Button
               scheme="danger"
-              icon={<Icon name="trash-bin" />}
+              leftIcon={<Icon name="trash-bin" />}
               style={styles.headerButton}
               onPress={() => props.onDateSelect?.(null)}
             />
@@ -55,7 +55,7 @@ export default function DateSelectModal({
             <Button
               scheme="secondary"
               hasBorder={false}
-              icon={<Icon name="close" />}
+              leftIcon={<Icon name="close" />}
               style={styles.headerButton}
               onPress={props.dismiss}
             />

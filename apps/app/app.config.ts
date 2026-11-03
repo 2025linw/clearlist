@@ -15,9 +15,6 @@ export default (): ExpoConfig => ({
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
-      NSAppTransportSecurity: {
-        NSAllowsLocalNetworking: true,
-      },
     },
   },
   android: {
@@ -31,7 +28,7 @@ export default (): ExpoConfig => ({
     predictiveBackGestureEnabled: false,
   },
   web: {
-    output: 'static',
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [
