@@ -39,7 +39,7 @@ export default function LoginForm({ type }: LoginFormProps) {
           (success) => {
             router.setParams({ animation: 'none' });
 
-            if (success) router.replace('/(page)/main');
+            if (success) router.replace('/');
           },
           (err) => {
             toast.error(`Error registering: ${err}`);
@@ -57,7 +57,7 @@ export default function LoginForm({ type }: LoginFormProps) {
           (success) => {
             router.setParams({ animation: 'none' });
 
-            if (success) router.replace('/(page)/main');
+            if (success) router.replace('/');
           },
           (err) => {
             toast.error(`Error logging in: ${err}`);

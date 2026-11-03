@@ -13,7 +13,7 @@ export default function DebugPage() {
       showBackButton
     >
       <Button onPress={() => router.navigate('/settings/debug/spacing-debug')}>
-        Debug (Spacing)
+        Spacing Debug
       </Button>
 
       <HorizontalDivider />
@@ -21,34 +21,45 @@ export default function DebugPage() {
       <Button
         onPress={() => router.navigate('/settings/debug/typography-debug')}
       >
-        Debug (Typography)
+        Typography Debug
       </Button>
       <Button onPress={() => router.navigate('/settings/debug/button-debug')}>
-        Debug (Button)
+        Button Debug
       </Button>
       <Button onPress={() => router.navigate('/settings/debug/checkbox-debug')}>
-        Debug (Checkbox)
+        Checkbox Debug
       </Button>
       <Button
         onPress={() => router.navigate('/settings/debug/text-input-debug')}
       >
-        Debug (Text Input)
+        Text Input Debug
       </Button>
       <Button
         onPress={() =>
           router.navigate('/settings/debug/editable-typography-debug')
         }
       >
-        Debug (Editable Typography)
+        Editable Typography Debug
       </Button>
 
       <HorizontalDivider />
 
-      <Button onPress={() => router.navigate('/settings/debug/toast-debug')}>
-        Debug (Toast)
-      </Button>
       <Button onPress={() => router.navigate('/settings/debug/date-debug')}>
-        Debug (Date)
+        Date Debug
+      </Button>
+      <Button onPress={() => router.navigate('/settings/debug/toast-debug')}>
+        Toast Debug
+      </Button>
+
+      <HorizontalDivider />
+
+      <Button
+        onPress={() => {
+          // @ts-expect-error: not found page test
+          router.navigate('/invalid-route');
+        }}
+      >
+        Invalid Route Debug
       </Button>
     </Layout>
   );

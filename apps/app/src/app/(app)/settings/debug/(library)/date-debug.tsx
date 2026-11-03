@@ -8,6 +8,7 @@ export default function DateDebug() {
     <Layout
       headerText="Date Debug"
       showBackButton
+      scrollable
     >
       <Typography>{`getDateToday: ${getDateToday()}`}</Typography>
     </Layout>

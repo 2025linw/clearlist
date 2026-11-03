@@ -70,7 +70,7 @@ function AppInner() {
         />
 
         <Stack.Screen
-          name="(page)"
+          name="(app)"
           options={{ title: 'Home' }}
         />
       </Stack>
