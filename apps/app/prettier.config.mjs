@@ -1,3 +1,3 @@
-import config from '@clearlist/prettier-config/expo';
+import config from '@clearlist/tooling-config/prettier/expo';
 
 export default config;

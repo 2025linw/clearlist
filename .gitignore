@@ -3,9 +3,10 @@
 # VSCode config files
 .vscode
 
-# Environment Files
+# Environment Files (allow templates and production environment)
 *.env*
 !*.env*.template
+!*.env.production
 
 # Dependency artifacts
 node_modules/

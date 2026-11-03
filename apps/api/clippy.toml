@@ -1,0 +1,6 @@
+disallowed-types = [
+    { path = "axum::extract::Path", reason = "Use crate::type::extract::Path so extraction failures return 401 with JSON response body" },
+    { path = "axum::extract::Query", reason = "Use crate::type::extract::Query so extraction failures return 401 with JSON response body" },
+    { path = "serde_qs::axum::QsForm", reason = "Use crate::type::extract::Query so extraction failures return 401 with JSON response body" },
+    { path = "axum::Json", reason = "Use crate::type::extract::Json so extraction failures return 401 with JSON response body" },
+]

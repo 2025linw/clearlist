@@ -1,0 +1,44 @@
+name: Deploy web app deploy script
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-deploy-script.yml"
+      - "scripts/deploy-web.sh"
+  workflow_dispatch:
+
+jobs:
+  required:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - run: shellcheck scripts/deploy-web.sh
+
+  deploy-script:
+    name: Deploy script
+    runs-on: self-hosted
+    if: github.event_name == 'workflow_dispatch'
+    needs: required
+
+    env:
+      SSH_HOST: ${{ secrets.WEB_DEPLOY_HOST }}
+      SSH_USER: ${{ secrets.WEB_DEPLOY_USER }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Upload script
+        run: |
+          scp scripts/deploy-web.sh \
+            "$SSH_USER@$SSH_HOST:/tmp/clearlist-web/"
+
+      - name: Install deploy script
+        run: |
+          ssh "$SSH_USER@$SSH_HOST" \
+            'mkdir -p /opt/clearlist-web/scripts &&
+            install -m 755 /tmp/clearlist-web/deploy-web.sh /opt/clearlist-web/scripts/deploy.sh'

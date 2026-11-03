@@ -10,14 +10,14 @@ const app = express();
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || config.trustedOrigins.includes(origin)) {
+      if (!origin || config.allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
       }
     },
     allowedHeaders: ['Content-Type', 'Authorization'],
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
     credentials: true,
   }),
 );

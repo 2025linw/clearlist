@@ -11,12 +11,18 @@ on:
       - "apps/api/**"
       - "!apps/api/**/*.md"
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/api-ci-cd.yml"
       - "Cargo.toml"
       - "Cargo.lock"
       - "apps/api/**"
       - "!apps/api/**/*.md"
+  workflow_dispatch:
+
+env:
+  DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
 
 permissions:
   contents: read
@@ -26,8 +32,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check-skip:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - name: Skip CI check
+        run: echo "Proceeding with workflow"
+
   ci:
     name: CI
+    needs: check-skip
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -45,39 +59,51 @@ jobs:
           --health-retries 5
 
     steps:
-      - name: Checkout repository
+      - name: 🏗 Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Rust
+      - name: 🏗 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           components: clippy
 
-      - name: Run check
+      - name: 🧪 Run check
         run: cargo check --locked -p clearlist-api
 
-      - name: Run clippy
+      - name: 🧹 Run clippy
+        if: github.event_name != 'pull_request' || github.base_ref != 'main'
         run: cargo clippy -p clearlist-api -- -D warnings
 
-      - name: Bootstrap database
+      - name: 🧹 Run clippy (strict)
+        if: github.event_name == 'pull_request' && github.base_ref == 'main'
+        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::print_stdout -D clippy::print_stderr
+
+      - name: 📦 Bootstrap database
         env:
-          PGHOST: localhost
-          PGDATABASE: testdb
           PGUSER: test
           PGPASSWORD: test
+          PGHOST: localhost
+          PGDATABASE: testdb
         run: |
           psql -v ON_ERROR_STOP=1 -f apps/api/bootstrap_test.sql
 
-      - name: Run test
+      - name: 🧪 Run test
         env:
-          MIGRATION_URL: postgresql://test:test@localhost/testdb
           DATABASE_URL: postgresql://test:test@localhost/testdb
         run: cargo test --locked -p clearlist-api
 
+      - name: 📢 Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API tests ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   build:
     name: Build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: ci
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.meta.outputs.version }}
@@ -85,16 +111,16 @@ jobs:
       sha: ${{ steps.meta.outputs.sha }}
 
     steps:
-      - name: Checkout repository
+      - name: 🏗 Checkout repository
         uses: actions/checkout@v6
 
-      - name: Set up Rust
+      - name: 🏗 Setup Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
-      - name: Build release
+      - name: 📦 Build release
         run: cargo build --release --locked -p clearlist-api
 
-      - name: Generate metadata
+      - name: 📦 Generate metadata
         id: meta
         run: |
           version=$(cargo metadata --no-deps --format-version 1 \
@@ -104,51 +130,79 @@ jobs:
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      - name: Create artifact folder
+      - name: 📦 Create artifact folder
         run: |
           mkdir artifact
-          cp -t artifact/ target/release/clearlist-api
+          cp -rt artifact/ target/release/clearlist-api
 
-      - name: Archive artifacts
+      - name: 📦 Archive artifacts
         run: tar -czf clearlist-api.tar.gz -C artifact/ .
 
-      - name: Upload artifact
+      - name: 🚀 Upload artifact
         uses: actions/upload-artifact@v7
         with:
           name: clearlist-api
           path: clearlist-api.tar.gz
           retention-days: 7
 
+      - name: 📢 Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API build ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"
+
   deploy:
     name: CD
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
+    if: (github.event_name == 'push' && (github.ref == 'refs/heads/main')) || github.event_name == 'workflow_dispatch'
     runs-on: self-hosted
 
+    env:
+      SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
+      SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+      SSH_OPTIONS: "-o BatchMode=yes -o ConnectTimeout=10  -o ServerAliveInterval=15 -o ServerAliveCountMax=3"
+
     steps:
-      - name: Download artifact
+      - name: 📋 Verify SSH connectivity
+        run: |
+          echo "Checking server is reachable..."
+
+          ssh $SSH_OPTIONS "$SSH_USER@$SSH_HOST" true
+
+          echo "Server is reachable."
+
+      - name: 📦 Download artifact
         uses: actions/download-artifact@v8
         with:
           name: clearlist-api
           path: artifact/
 
-      - name: Upload archive
-        env:
-          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
-          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
+      - name: 🚀 Upload archive
         run: |
-          ssh "$SSH_USER@$SSH_HOST" "mkdir -p /tmp/clearlist-api"
-          scp artifact/clearlist-api.tar.gz \
+          ssh $SSH_OPTIONS \
+            "$SSH_USER@$SSH_HOST" \
+            "mkdir -p /tmp/clearlist-api"
+          scp $SSH_OPTIONS \
+            artifact/clearlist-api.tar.gz \
             "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
 
-      - name: Deploy server
+      - name: 🚀 Deploy server
         env:
-          SSH_HOST: ${{ secrets.API_DEPLOY_HOST }}
-          SSH_USER: ${{ secrets.API_DEPLOY_USER }}
           DEPLOY_SCRIPT: ${{ secrets.API_DEPLOY_SCRIPT }}
           VERSION: ${{ needs.build.outputs.version }}
           TIMESTAMP: ${{ needs.build.outputs.timestamp }}
           SHA: ${{ needs.build.outputs.sha }}
         run: |
-          ssh "$SSH_USER@$SSH_HOST" \
+          ssh $SSH_OPTIONS \
+            "$SSH_USER@$SSH_HOST" \
             "$DEPLOY_SCRIPT '$VERSION' '$TIMESTAMP' '$SHA'"
+
+      - name: 📢 Notify test results via Discord
+        if: always()
+        uses: Ilshidur/action-discord@0.3.2
+        env:
+          DISCORD_WEBHOOK: ${{ env.DISCORD_WEBHOOK }}
+        with:
+          args: "API deploy ${{ job.status == 'success' && 'passed ✅' || 'failed ❌' }}"

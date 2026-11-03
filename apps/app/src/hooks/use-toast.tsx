@@ -1,0 +1,85 @@
+import { toast } from '@backpackapp-io/react-native-toast';
+import { type ValueOrFunction } from '@backpackapp-io/react-native-toast/lib/typescript/core/types';
+
+import { useTheme } from '@contexts/theme';
+
+import { ToastIcon } from '@components/toast';
+
+export function useToast() {
+  const theme = useTheme();
+
+  const message = (message: string) =>
+    toast(message, {
+      duration: 2500,
+      icon: <ToastIcon type="default" />,
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.border,
+        },
+      },
+    });
+
+  const success = (message: string) =>
+    toast.success(message, {
+      duration: 2500,
+      icon: <ToastIcon type="success" />,
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.success,
+        },
+      },
+    });
+
+  const warn = (message: string) =>
+    toast.error(message, {
+      duration: 5000,
+      icon: <ToastIcon type="warn" />,
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.warning,
+        },
+      },
+    });
+
+  const error = (message: string) =>
+    toast.error(message, {
+      duration: 10000,
+      icon: <ToastIcon type="error" />,
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.error,
+        },
+      },
+    });
+
+  const promise = <T, E>(
+    promise: Promise<T>,
+    msgs: {
+      loading: Element;
+      success: ValueOrFunction<Element, T>;
+      error: ValueOrFunction<Element, E>;
+    },
+  ) =>
+    toast.promise(promise, msgs, {
+      disableShadow: true,
+      styles: {
+        view: {
+          borderWidth: theme.spacings.thin,
+          borderColor: theme.palette.error,
+        },
+      },
+    });
+
+  const dismiss = toast.dismiss;
+  const remove = toast.remove;
+
+  return { message, success, warn, error, promise, dismiss, remove };
+}

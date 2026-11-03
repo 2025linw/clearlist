@@ -1,0 +1,1 @@
+export const CARD_TRANSITION_SPEED = 250;

@@ -4,12 +4,14 @@ import { Pool } from 'pg';
 import { expo } from '@better-auth/expo';
 
 import * as config from '../config.ts';
+import { createAuthMiddleware } from 'better-auth/api';
+import { createHmac, randomUUID } from 'node:crypto';
 
 export const auth = betterAuth({
-  trustedOrigins: config.trustedOrigins,
+  trustedOrigins: config.allowedOrigins,
 
   database: new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: config.databaseUrl,
     max: 10,
   }),
 
@@ -18,13 +20,63 @@ export const auth = betterAuth({
     enabled: true,
   },
 
-  advanced: {
-    useSecureCookies: true,
+  hooks: {
+    after: createAuthMiddleware(async (ctx) => {
+      if (ctx.path.startsWith('/sign-up')) {
+        const session = ctx.context.newSession;
+        if (!session) return;
 
-    defaultCookieAttributes: {
-      sameSite: 'lax',
-      secure: true,
-      httpOnly: true,
+        const secret = config.webhookSecret;
+
+        const body = JSON.stringify({
+          id: session.user.id,
+          createdAt: session.user.createdAt,
+        });
+
+        const webhookId = randomUUID();
+        const timestamp = Math.floor(Date.now() / 1000).toString();
+
+        const payload = `${webhookId}.${timestamp}.${body}`;
+
+        const signature = createHmac('sha256', secret)
+          .update(payload)
+          .digest('hex');
+
+        fetch(config.apiUrl + '/internal/users/provision', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Webhook-Id': webhookId,
+            'X-Webhook-Timestamp': timestamp,
+            'X-Webhook-Signature': `v1=${signature}`,
+          },
+          body,
+        }).then(
+          (res) => {
+            if (res.ok) {
+              console.log('provisioning succeeded: ' + res.status);
+            } else {
+              console.log('provisioning failed: ' + res.status);
+            }
+          },
+          (err) => {
+            console.error('request failed: ' + err);
+          },
+        );
+      }
+    }),
+  },
+
+  advanced: {
+    cookiePrefix: 'clear_list',
+    useSecureCookies: true,
+    cookies: {
+      session_token: {
+        attributes: {
+          secure: true,
+          httpOnly: true,
+        },
+      },
     },
 
     database: {

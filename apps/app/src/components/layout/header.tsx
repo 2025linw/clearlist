@@ -1,0 +1,106 @@
+import { useRouter } from 'expo-router';
+import { type ReactElement, cloneElement } from 'react';
+import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native';
+
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
+
+import Button from '@components/primitive/button';
+import Icon, { type IconProps } from '@components/primitive/icon';
+import Typography from '@components/primitive/typography';
+
+import { HEADER_HEIGHT } from './constants';
+
+const BUTTON_SIZE = 56;
+const BUTTON_ICON_SIZE = 40;
+
+type HeaderProps = {
+  text?: string;
+  icon?: ReactElement<IconProps>;
+  showBackButton?: boolean;
+  style?: StyleProp<ViewStyle>;
+};
+
+export default function Header(props: HeaderProps) {
+  const router = useRouter();
+  const theme = useTheme();
+
+  const styles = buildStyles(theme);
+
+  const showBackButton = props.showBackButton && router.canGoBack();
+
+  const icon = props.icon
+    ? cloneElement(props.icon, {
+        size: theme.components.Typography.variants.h1.fontSize + 4,
+      })
+    : null;
+
+  return (
+    <View style={[styles.container, props.style]}>
+      <View style={styles.side}>
+        {showBackButton && (
+          <Button
+            scheme="tertiary"
+            rounded
+            leftIcon={
+              <Icon
+                name="arrow-back-circle"
+                color={theme.palette.primary}
+                size={BUTTON_ICON_SIZE}
+              />
+            }
+            onPress={() => {
+              if (!router.canGoBack()) {
+                router.dismissTo('/');
+                return;
+              }
+
+              router.back();
+            }}
+            style={styles.button}
+          />
+        )}
+      </View>
+
+      <View style={styles.content}>
+        {icon}
+
+        {props.text && <Typography variant="h1">{props.text}</Typography>}
+      </View>
+
+      <View style={styles.side} />
+    </View>
+  );
+}
+
+function buildStyles(theme: Theme, topInset?: number) {
+  return StyleSheet.create({
+    container: {
+      marginBottom: theme.spacings.x2,
+
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+
+      backgroundColor: theme.palette.surface,
+    },
+    side: {
+      flexShrink: 0,
+      width: HEADER_HEIGHT,
+      height: HEADER_HEIGHT,
+    },
+    content: {
+      flex: 1,
+      minWidth: 0,
+
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 10,
+    },
+    button: {
+      width: BUTTON_SIZE,
+      height: BUTTON_SIZE,
+    },
+  });
+}

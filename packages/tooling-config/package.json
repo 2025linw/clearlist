@@ -1,0 +1,26 @@
+{
+  "name": "@clearlist/tooling-config",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./eslint/node": "./eslint/node.js",
+    "./eslint/expo": "./eslint/expo.js",
+    "./prettier/node": "./prettier/node.js",
+    "./prettier/expo": "./prettier/expo.js"
+  },
+  "dependencies": {
+    "@tanstack/eslint-plugin-query": "^5.105.0",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "eslint-config-expo": "^58.0.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.7",
+    "eslint-plugin-react-native": "^5.0.0",
+    "eslint-plugin-testing-library": "^7.16.2",
+    "globals": "^17.13.0",
+    "typescript-eslint": "^8.72.1"
+  },
+  "peerDependencies": {
+    "eslint": "catalog:",
+    "prettier": "catalog:"
+  }
+}
