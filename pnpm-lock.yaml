@@ -243,6 +243,9 @@ importers:
       '@tanstack/react-query':
         specifier: ^5.105.0
         version: 5.105.0(@types/react@19.2.18)(react@19.2.3)
+      '@vvo/tzdb':
+        specifier: ^6.202.0
+        version: 6.202.0
       better-auth:
         specifier: 'catalog:'
         version: 1.7.14(pg@8.23.1)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -2169,6 +2172,9 @@ packages:
     resolution: {integrity: sha512-nAB74NfSNKknqQ1RrYj6uz8FcXEomu/MATJZxh/x+BArzN2U3JbOYC0APYzUIGhVY3m5hRxA8VPNdPBoG8txlA==}
     cpu: [x64]
     os: [win32]
+
+  '@vvo/tzdb@6.202.0':
+    resolution: {integrity: sha512-MGsedU65ypk/Y7yrp+oOLBzhQj/124xvyoUzx7csPiBSf1b3lgTp5imatuWU4SF6s1Ue3I6GxC+GxE8R5O1l0w==}
 
   '@xmldom/xmldom@0.8.15':
     resolution: {integrity: sha512-/5NV/vDALVFDXgLmfsy9TRCBlKwO2LNBFzpzvb9iIj+jR+eSc6DLYYvVOdivT/jm7MtU6TebYuRmzEOI7w40UA==}
@@ -7965,6 +7971,8 @@ snapshots:
 
   '@unrs/resolver-binding-win32-x64-msvc@1.12.2':
     optional: true
+
+  '@vvo/tzdb@6.202.0': {}
 
   '@xmldom/xmldom@0.8.15': {}
 

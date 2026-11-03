@@ -1,6 +1,7 @@
+import { useCalendars } from 'expo-localization';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 
 import {
   useColorTheme,
@@ -17,9 +18,9 @@ import Layout from '@components/layout';
 import Button from '@components/primitive/button';
 import HorizontalDivider from '@components/primitive/horizontal-divider';
 import Icon from '@components/primitive/icon';
-import Select from '@components/primitive/select';
 import TextInput from '@components/primitive/text-input';
 import Typography from '@components/primitive/typography';
+import TimezoneSelect from '@components/time-zone-select';
 
 type SettingsScreenProps = {
   user?: typeof authClient.$Infer.Session.user;
@@ -34,9 +35,11 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
   const [colorTheme, setColorTheme] = useColorTheme();
   const [themeMode, setThemeMode] = useThemeMode();
   const { gtTablet } = useBreakpoints();
+  const calendars = useCalendars();
 
   const [newPassword, setNewPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
+  const [timezone, setTimezone] = useState(calendars[0].timeZone ?? '');
 
   const styles = buildStyles(theme, !gtTablet);
   const colorThemes = getAllColorThemes();
@@ -148,7 +151,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
             <Button
               scheme={themeMode === 'system' ? 'secondary' : 'tertiary'}
               hasBorder
-              icon={<Icon name="laptop-outline" />}
+              leftIcon={<Icon name="laptop-outline" />}
               onPress={() => setThemeMode('system')}
             >
               System
@@ -156,7 +159,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
             <Button
               scheme={themeMode === 'light' ? 'secondary' : 'tertiary'}
               hasBorder
-              icon={<Icon name="sunny" />}
+              leftIcon={<Icon name="sunny" />}
               onPress={() => setThemeMode('light')}
             >
               Light
@@ -164,7 +167,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
             <Button
               scheme={themeMode === 'dark' ? 'secondary' : 'tertiary'}
               hasBorder
-              icon={<Icon name="moon" />}
+              leftIcon={<Icon name="moon" />}
               onPress={() => setThemeMode('dark')}
             >
               Dark
@@ -188,7 +191,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
                   colorTheme === colorThemeName ? 'secondary' : 'tertiary'
                 }
                 hasBorder
-                icon={
+                leftIcon={
                   <Icon
                     name="square"
                     color={colorValue}
@@ -207,7 +210,21 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
 
       <HorizontalDivider />
 
-      <View style={styles.inputPanel}>
+      <View style={styles.panel}>
+        {Platform.OS === 'web' && (
+          <Typography variant="h2">Timezone</Typography>
+        )}
+
+        <TimezoneSelect
+          value={timezone}
+          onValueChange={(value) => setTimezone(value ?? '')}
+          // TODO: wire in settings to user preferences
+        />
+      </View>
+
+      <HorizontalDivider />
+
+      <View style={styles.panel}>
         {__DEV__ && (
           <Button onPress={() => router.navigate('/settings/debug')}>
             App Debug
