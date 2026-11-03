@@ -1,9 +1,11 @@
+import { useRouter } from 'expo-router';
 import {
   type PropsWithChildren,
   createContext,
   useCallback,
   useContext,
   useEffect,
+  useEffectEvent,
   useMemo,
   useState,
 } from 'react';
@@ -31,6 +33,7 @@ const ApiContext = createContext<ApiContextType>({
 });
 
 export function Provider({ children }: PropsWithChildren) {
+  const router = useRouter();
   const toast = useToast();
 
   const [user, setUser] = useState<AuthContextType>({
@@ -38,49 +41,6 @@ export function Provider({ children }: PropsWithChildren) {
     currentSession: undefined,
     hasSession: false,
   });
-
-  useEffect(() => {
-    const getSession = async () => {
-      const { data, error } = await authClient.getSession();
-      if (error) {
-        toast.error('Unable to connect to authentication service');
-
-        setUser({
-          loaded: true,
-          currentSession: undefined,
-          hasSession: false,
-        });
-
-        return;
-      }
-
-      if (!data) {
-        toast.error('Your session has expired');
-
-        setUser({
-          loaded: true,
-          currentSession: undefined,
-          hasSession: false,
-        });
-
-        return;
-      }
-
-      try {
-        await apiFetch(API_URL + '/api/me');
-      } catch {
-        toast.error('Unable to get user information');
-      }
-
-      setUser({
-        loaded: true,
-        currentSession: data.session.token,
-        hasSession: true,
-      });
-    };
-
-    getSession();
-  }, [toast]);
 
   const createAccount = useCallback<ApiContextType['createAccount']>(
     async (params) => {
@@ -111,7 +71,6 @@ export function Provider({ children }: PropsWithChildren) {
     },
     [toast],
   );
-
   const login = useCallback<ApiContextType['login']>(
     async (params) => {
       const { data, error } = await authClient.signIn.email({
@@ -140,7 +99,6 @@ export function Provider({ children }: PropsWithChildren) {
     },
     [toast],
   );
-
   const logout = useCallback<ApiContextType['logout']>(async () => {
     const { error } = await authClient.signOut();
     if (error) {
@@ -156,6 +114,10 @@ export function Provider({ children }: PropsWithChildren) {
     });
   }, [toast]);
 
+  const notifySessionError = useEffectEvent((message: string) => {
+    toast.error(message);
+  });
+
   const api = useMemo(
     () => ({
       createAccount,
@@ -164,6 +126,49 @@ export function Provider({ children }: PropsWithChildren) {
     }),
     [createAccount, login, logout],
   );
+
+  useEffect(() => {
+    const getSession = async () => {
+      const { data, error } = await authClient.getSession();
+      if (error) {
+        notifySessionError('Unable to connect to authentication service');
+
+        setUser({
+          loaded: true,
+          currentSession: undefined,
+          hasSession: false,
+        });
+
+        return;
+      }
+
+      if (!data) {
+        if (user.hasSession) notifySessionError('Your session has expired');
+
+        setUser({
+          loaded: true,
+          currentSession: undefined,
+          hasSession: false,
+        });
+
+        return;
+      }
+
+      try {
+        await apiFetch(API_URL + '/api/me');
+      } catch {
+        notifySessionError('Unable to get user information');
+      }
+
+      setUser({
+        loaded: true,
+        currentSession: data.session.token,
+        hasSession: true,
+      });
+    };
+
+    getSession();
+  }, [router, user.hasSession]);
 
   return (
     <AuthContext value={user}>
