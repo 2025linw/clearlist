@@ -11,9 +11,7 @@ import {
   type ThemeMode,
 } from './types';
 
-const ThemeContext = createContext<ThemeContextType>(
-  {} as unknown as ThemeContextType,
-); // TODO: fix this jank?
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 type ProviderProps = PropsWithChildren<{
   theme?: ThemeMode;
@@ -85,58 +83,38 @@ export function Provider({ children, ...props }: ProviderProps) {
 export function useThemeContext() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    throw new Error('useThemeContext must be used inside Theme Provider');
+    throw new Error('Theme Contexts must be used inside Theme Provider');
   }
 
   return ctx;
 }
 
 export function useTheme() {
-  try {
-    const { theme } = useThemeContext();
+  const { theme } = useThemeContext();
 
-    return theme;
-  } catch {
-    throw new Error('useTheme must be used inside Theme Provider');
-  }
+  return theme;
 }
 
 export function useColorTheme() {
-  try {
-    const { colorTheme, setColorTheme } = useThemeContext();
+  const { colorTheme, setColorTheme } = useThemeContext();
 
-    return [colorTheme, setColorTheme] as const;
-  } catch {
-    throw new Error('useColorTheme must be used inside Theme Provider');
-  }
+  return [colorTheme, setColorTheme] as const;
 }
 
 export function useResetColorTheme() {
-  try {
-    const { resetColorTheme } = useThemeContext();
+  const { resetColorTheme } = useThemeContext();
 
-    return resetColorTheme;
-  } catch {
-    throw new Error('useResetColorTheme must be used inside Theme Provider');
-  }
+  return resetColorTheme;
 }
 
 export function useThemeMode() {
-  try {
-    const { themeMode, setThemeMode } = useThemeContext();
+  const { themeMode, setThemeMode } = useThemeContext();
 
-    return [themeMode, setThemeMode] as const;
-  } catch {
-    throw new Error('useThemeMode must be used inside Theme Provider');
-  }
+  return [themeMode, setThemeMode] as const;
 }
 
 export function useResetThemeMode() {
-  try {
-    const { resetThemeMode } = useThemeContext();
+  const { resetThemeMode } = useThemeContext();
 
-    return resetThemeMode;
-  } catch {
-    throw new Error('useResetThemeMode must be used inside Theme Provider');
-  }
+  return resetThemeMode;
 }

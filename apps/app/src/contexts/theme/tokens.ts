@@ -2,6 +2,7 @@ import { Platform, StyleSheet } from 'react-native';
 
 const base = 4;
 export const spacings = {
+  min: StyleSheet.hairlineWidth,
   thin:
     Platform.OS === 'web'
       ? StyleSheet.hairlineWidth

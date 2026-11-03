@@ -139,6 +139,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           borderColor: palette.border,
           borderRadius: rounded.base,
           padding: spacings.x2,
+          backgroundColor: palette.surface,
         },
         disabled: {
           backgroundColor: themeColors.secondary['secondary-3'],
@@ -155,6 +156,7 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           borderColor: 'transparent',
           borderRadius: rounded.base,
           padding: spacings.x2,
+          backgroundColor: palette.surface,
         },
         state: {
           editing: {
@@ -165,6 +167,17 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
           },
         },
         text: typographyVariants.text,
+      },
+      Select: {
+        container: {
+          borderWidth: spacings.thin,
+          borderColor: palette.border,
+          borderRadius: rounded.base,
+          padding: spacings.x2,
+          backgroundColor: palette.surface,
+          color: palette.text,
+        },
+        option: typographyVariants.text,
       },
       Toast: {
         size: typographyVariants.button.fontSize,
