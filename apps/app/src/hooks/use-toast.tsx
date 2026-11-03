@@ -60,12 +60,12 @@ export function useToast() {
       },
     });
 
-  const promise = <T,>(
+  const promise = <T, E>(
     promise: Promise<T>,
     msgs: {
       loading: Element;
       success: ValueOrFunction<Element, T>;
-      error: ValueOrFunction<Element, any>;
+      error: ValueOrFunction<Element, E>;
     },
   ) =>
     toast.promise(promise, msgs, {
