@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { type ListRenderItemInfo, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-  LinearTransition,
+  FadeIn,
+  FadeOut,
   useSharedValue,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -15,7 +16,8 @@ import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
 
-import Card, { CARD_TRANSITION_SPEED } from './card';
+import Card from './card';
+import { CARD_TRANSITION_SPEED } from './constants';
 import MenuButton from './menu-button';
 
 type TaskListProp = {
@@ -46,7 +48,7 @@ export default function TaskList({
     state: 'start' | 'deadline';
     initialDate?: dayjs.Dayjs;
   } | null>(null);
-  const touchedExpandedCard = useSharedValue(false);
+  const touchedCard = useSharedValue(false);
 
   const styles = buildStyles(theme);
   const activeExpandedTask = data?.some(({ id }) => id === expandedTask?.id)
@@ -68,6 +70,14 @@ export default function TaskList({
       taskAdded.current = id;
     });
   }, [taskAdded, onAddTask]);
+  const tapGesture = Gesture.Tap()
+    .maxDistance(5)
+    .cancelsTouchesInView(false)
+    .onEnd((_e, success) => {
+      if (success && !touchedCard.get()) {
+        scheduleOnRN(setExpandedTask, null);
+      }
+    });
 
   useEffect(() => {
     const newTask = data?.find((task) => taskAdded.current === task.id);
@@ -78,28 +88,16 @@ export default function TaskList({
     taskAdded.current = null;
   }, [taskAdded, data]);
 
-  const tapGesture = Gesture.Tap()
-    .maxDistance(5)
-    .cancelsTouchesInView(false)
-    .onEnd((_e, success) => {
-      if (success && !touchedExpandedCard.get()) {
-        scheduleOnRN(setExpandedTask, null);
-      }
-    });
-
-  const renderItem = useCallback(
+  const renderTask = useCallback(
     ({ item }: ListRenderItemInfo<task.Task>) => {
       const expanded = item.id === activeExpandedTask?.id;
 
       return (
-        <View
-          onTouchStart={() => {
-            touchedExpandedCard.set(expanded);
-          }}
+        <Animated.View
+          entering={FadeIn.duration(CARD_TRANSITION_SPEED)}
+          exiting={FadeOut.duration(CARD_TRANSITION_SPEED)}
           onStartShouldSetResponderCapture={() => {
-            if (expanded) {
-              touchedExpandedCard.set(true);
-            }
+            touchedCard.set(true);
 
             return false;
           }}
@@ -129,11 +127,11 @@ export default function TaskList({
               });
             }}
           />
-        </View>
+        </Animated.View>
       );
     },
     [
-      touchedExpandedCard,
+      touchedCard,
       activeExpandedTask,
       handleTaskPress,
       onTaskComplete,
@@ -146,7 +144,7 @@ export default function TaskList({
     <View
       style={styles.container}
       onStartShouldSetResponderCapture={() => {
-        touchedExpandedCard.set(false);
+        touchedCard.set(false);
 
         return false;
       }}
@@ -155,9 +153,8 @@ export default function TaskList({
         <Animated.FlatList
           data={data}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
+          renderItem={renderTask}
           showsVerticalScrollIndicator={false}
-          itemLayoutAnimation={LinearTransition.duration(CARD_TRANSITION_SPEED)}
         />
       </GestureDetector>
 

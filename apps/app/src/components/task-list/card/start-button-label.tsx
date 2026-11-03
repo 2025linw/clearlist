@@ -26,7 +26,7 @@ export default function StartButtonLabel({
       <Button
         scheme="tertiary"
         textStyle={styles.text}
-        icon={
+        leftIcon={
           <Icon
             name="calendar-outline"
             size={22}

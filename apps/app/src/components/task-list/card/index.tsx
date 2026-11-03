@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { type task } from '@clearlist/types';
 
@@ -12,12 +17,11 @@ import dayjs from '@lib/datetime';
 import Checkbox from '@components/primitive/checkbox';
 import EditableTypography from '@components/primitive/editable-typography';
 
+import { CARD_TRANSITION_SPEED } from '../constants';
 import DeadlineBadge from './deadline-badge';
 import DeadlineButtonLabel from './deadline-button-label';
 import StartBadge from './start-badge';
 import StartButtonLabel from './start-button-label';
-
-export const CARD_TRANSITION_SPEED = 250;
 
 type Draft = Pick<task.UpdateRequest, 'title' | 'notes'>;
 
@@ -56,6 +60,9 @@ export default function TaskCard({
     title: task.title,
     notes: task.notes,
   });
+  const [panelHeight, setPanelHeight] = useState(0);
+  const animatedHeight = useSharedValue(0);
+  const animatedOpacity = useSharedValue(0);
 
   const styles = buildStyles(theme);
 
@@ -87,90 +94,98 @@ export default function TaskCard({
 
     wasExpanded.current = expanded;
   }, [expanded, flushUpdate]);
+  useEffect(() => {
+    const config = {
+      duration: CARD_TRANSITION_SPEED,
+      easing: Easing.linear,
+    };
+
+    animatedHeight.set(withTiming(expanded ? panelHeight : 0, config));
+    animatedOpacity.set(withTiming(expanded ? 1 : 0, config));
+  }, [expanded, panelHeight, animatedHeight, animatedOpacity]);
+
+  const panelAnimation = useAnimatedStyle(() => ({
+    height: animatedHeight.get(),
+    opacity: animatedOpacity.get(),
+  }));
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
+      style={[styles.container, expanded ? styles.expandedContainer : null]}
     >
-      <Animated.View
-        style={[
-          styles.container,
-          styles.layout,
-          expanded ? styles.expandedContainer : null,
-        ]}
-        entering={FadeIn}
-        exiting={FadeOut}
-      >
-        <View style={styles.mainRow}>
-          <Checkbox
-            defaultValue={!!task.completedAt}
-            onValueChange={(checked) => {
-              const handler = checked
-                ? props.onTaskComplete
-                : props.onTaskReopen;
+      <View style={styles.mainRow}>
+        <Checkbox
+          defaultValue={!!task.completedAt}
+          onValueChange={(checked) => {
+            const handler = checked ? props.onTaskComplete : props.onTaskReopen;
 
-              handler?.();
+            handler?.();
+          }}
+        />
+
+        {task.start && !expanded && (
+          <StartBadge date={dayjs(task.start.value)} />
+        )}
+
+        <View style={styles.titleContainer}>
+          <EditableTypography
+            value={draft.title}
+            onChangeText={(title) => {
+              updateDraft({ title });
             }}
+            onSave={flushUpdate}
+            placeholder="New Task"
+            disabled={disabled || !expanded}
+            style={styles.titleTypography}
           />
-
-          {task.start && !expanded && (
-            <StartBadge date={dayjs(task.start.value)} />
-          )}
-
-          <View style={styles.titleContainer}>
-            <EditableTypography
-              value={draft.title}
-              onChangeText={(title) => {
-                updateDraft({ title });
-              }}
-              onSave={flushUpdate}
-              placeholder="New Task"
-              disabled={disabled || !expanded}
-              style={styles.titleTypography}
-            />
-          </View>
-
-          {task.deadline && !expanded && (
-            <DeadlineBadge date={dayjs(task.deadline)} />
-          )}
         </View>
 
-        {expanded && (
-          <Animated.View
-            style={styles.layout}
-            entering={FadeIn.delay(100).duration(150)}
-            exiting={FadeOut.duration(100)}
-          >
-            <View style={styles.fieldPanel}>
-              <View style={styles.inputPanel}>
-                <EditableTypography
-                  value={draft.notes || undefined}
-                  onChangeText={(notes) => {
-                    updateDraft({ notes });
-                  }}
-                  onSave={flushUpdate}
-                  placeholder="Notes"
-                  disabled={disabled}
-                  multiline
-                />
-              </View>
-            </View>
+        {task.deadline && !expanded && (
+          <DeadlineBadge date={dayjs(task.deadline)} />
+        )}
+      </View>
 
-            <View style={styles.buttonSet}>
-              {!(task.completedAt && task.deletedAt) && (
-                <StartButtonLabel
-                  date={task.start?.value || undefined}
-                  onPress={() => props.onPressStartDate?.(task.start?.value)}
-                />
-              )}
-
-              <DeadlineButtonLabel
-                date={task.deadline || undefined}
-                onPress={() => props.onPressDeadline?.(task.deadline)}
+      <Animated.View
+        style={[styles.panelClip, panelAnimation]}
+        pointerEvents={expanded ? 'auto' : 'none'}
+      >
+        <View
+          style={styles.panelContent}
+          onLayout={({ nativeEvent }) => {
+            setPanelHeight(nativeEvent.layout.height);
+          }}
+        >
+          <View style={styles.fieldPanel}>
+            <View style={styles.inputPanel}>
+              <EditableTypography
+                value={draft.notes || undefined}
+                onChangeText={(notes) => {
+                  updateDraft({ notes });
+                }}
+                onSave={flushUpdate}
+                placeholder="Notes"
+                disabled={disabled}
+                multiline
               />
+            </View>
+          </View>
 
-              {/* <Button
+          <View style={styles.buttonSet}>
+            {!(task.completedAt && task.deletedAt) && (
+              <StartButtonLabel
+                date={task.start?.value || undefined}
+                onPress={() => props.onPressStartDate?.(task.start?.value)}
+              />
+            )}
+
+            <DeadlineButtonLabel
+              date={task.deadline || undefined}
+              onPress={() => props.onPressDeadline?.(task.deadline)}
+            />
+
+            {/* <Button
                 scheme="tertiary"
                 icon={
                   <Icon
@@ -179,9 +194,8 @@ export default function TaskCard({
                   />
                   }
                   /> */}
-            </View>
-          </Animated.View>
-        )}
+          </View>
+        </View>
       </Animated.View>
     </Pressable>
   );
@@ -196,17 +210,22 @@ function buildStyles(theme: Theme) {
     expandedContainer: {
       backgroundColor: theme.palette.surface,
     },
-    layout: {
-      gap: theme.spacings.x5,
-    },
     mainRow: {
-      flex: 1,
-
-      display: 'flex',
+      flexShrink: 0,
       flexDirection: 'row',
       justifyContent: 'flex-start',
       alignItems: 'center',
       gap: theme.spacings.x2,
+    },
+    panelClip: {
+      overflow: 'hidden',
+    },
+    panelContent: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      paddingTop: theme.spacings.x5,
     },
     titleContainer: {
       flex: 1,
