@@ -38,6 +38,7 @@ impl<R: TaskRepository> TaskService<R> {
         let URLQueryOpts {
             page,
             limit,
+            search,
             sort_by,
             sort_order,
             start,
@@ -48,6 +49,9 @@ impl<R: TaskRepository> TaskService<R> {
         } = helpers::validate_query_opts(query)?;
 
         let mut filter = Filter::new();
+        if let Some(search) = search {
+            filter.search(search);
+        }
         if let Some(start) = start {
             filter.start(start.try_into_with_tz(user_context.tz)?);
         }

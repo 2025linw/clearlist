@@ -14,6 +14,9 @@ pub struct URLQueryOpts {
     pub page: Option<u32>,
     pub limit: Option<u32>,
 
+    #[serde(alias = "q")]
+    pub search: Option<String>,
+
     #[serde(alias = "sort")]
     pub sort_by: Option<SortBy>,
     #[serde(alias = "order")]

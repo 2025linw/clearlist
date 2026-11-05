@@ -88,6 +88,10 @@ pub fn validate_set_tags(tag_ids: Vec<TagID>) -> Result<Vec<TagID>, ValidationEr
 }
 
 fn normalize_query_opts(query: &mut URLQueryOpts) {
+    if let Some(search) = query.search.as_mut() {
+        *search = search.trim().to_owned();
+    }
+
     if let Some(tags) = query.tags.as_mut() {
         *tags = dedupe_array(tags.to_vec());
     }
