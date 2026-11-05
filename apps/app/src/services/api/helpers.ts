@@ -1,8 +1,7 @@
 import type dayjs from '@lib/datetime';
 import { getDateToday } from '@lib/datetime';
 
-import { type Category, type TaskQuery } from './types';
-import { Cmp } from './types';
+import { type Category, Cmp, type QueryParams, type TaskQuery } from './types';
 
 export function toYYYYMMDD(input_date: dayjs.Dayjs) {
   return input_date.format('YYYY-MM-DD');
@@ -47,49 +46,45 @@ export function getCategoryQueryMap(): Record<Category, TaskQuery> {
   };
 }
 
-export function buildTaskQuery(query: TaskQuery): string {
-  const params = new URLSearchParams();
-
+export function buildTaskQuery(query: TaskQuery): QueryParams {
+  const params: QueryParams = {};
   if (query.startDate !== undefined) {
     const type = query.startDate.type;
     if (type === 'ex') {
-      params.set('start', String(query.startDate.state));
+      params['start'] = String(query.startDate.state);
     } else if (type === 'eq') {
-      params.set('start', query.startDate.date.toISOString());
+      params['start'] = query.startDate.date.toISOString();
     } else {
-      params.set(
-        `start[${query.startDate.cmp}]`,
-        query.startDate.date.toISOString(),
-      );
+      params[`start[${query.startDate.cmp}]`] =
+        query.startDate.date.toISOString();
     }
   }
   if (query.deadline !== undefined) {
     const type = query.deadline.type;
     if (type === 'ex') {
-      params.set('deadline', String(query.deadline.state));
+      params['deadline'] = String(query.deadline.state);
     } else if (type === 'eq') {
-      params.set('deadline', toYYYYMMDD(query.deadline.date));
+      params['deadline'] = toYYYYMMDD(query.deadline.date);
     } else {
-      params.set(
-        `deadline[${query.deadline.cmp}]`,
-        toYYYYMMDD(query.deadline.date),
+      params[`deadline[${query.deadline.cmp}]`] = toYYYYMMDD(
+        query.deadline.date,
       );
     }
   }
 
   if (query.completed !== undefined) {
-    params.set('completed', String(query.completed));
+    params['completed'] = String(query.completed);
   }
   if (query.deleted !== undefined) {
-    params.set('deleted', String(query.deleted));
+    params['deleted'] = String(query.deleted);
   }
 
   if (query.sortBy !== undefined) {
-    params.set('sort', query.sortBy);
+    params['sort'] = query.sortBy;
   }
   if (query.sortOrder !== undefined) {
-    params.set('order', query.sortOrder);
+    params['order'] = query.sortOrder;
   }
 
-  return params.toString();
+  return params;
 }

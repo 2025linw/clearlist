@@ -1,5 +1,5 @@
 [package]
-name = "clearlist-dev-proxy"
+name = "compose-dev-proxy"
 publish = false
 edition = "2024"
 

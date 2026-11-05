@@ -1,28 +1,34 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
-  complete,
-  create,
-  list,
-  reopen,
-  restore,
-  trash,
-  update,
-} from '@services/tasks';
-import { type TaskQuery } from '@services/types';
+  type CreateRequest,
+  type Response,
+  type UpdateRequest,
+} from '@compose/types/task';
+
+import {
+  completeTask,
+  createTask,
+  getTasks,
+  reopenTask,
+  restoreTask,
+  trashTask,
+  updateTask,
+} from '@services/api/tasks';
+import { type TaskQuery } from '@services/api/types';
 
 export function useTasks(query: TaskQuery) {
   return useQuery({
     queryKey: ['tasks', query],
-    queryFn: () => list(query),
+    queryFn: () => getTasks(query),
   });
 }
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: create,
+  return useMutation<Response, Error, CreateRequest>({
+    mutationFn: (payload) => createTask(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -32,8 +38,8 @@ export function useCreateTask() {
 export function useUpdateTask() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: update,
+  return useMutation<Response, Error, { id: string; payload: UpdateRequest }>({
+    mutationFn: (request) => updateTask(request),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -44,7 +50,7 @@ export function useCompleteTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: complete,
+    mutationFn: completeTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -55,7 +61,7 @@ export function useReopenTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: reopen,
+    mutationFn: reopenTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -66,7 +72,7 @@ export function useTrashTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: trash,
+    mutationFn: trashTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
@@ -77,7 +83,7 @@ export function useRestoreTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: restore,
+    mutationFn: restoreTask,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },

@@ -12,7 +12,7 @@ use tower_http::{cors::CorsLayer, trace::TraceLayer};
 use tracing::{debug, info};
 use tracing_subscriber::EnvFilter;
 
-use clearlist_api::{
+use compose_api::{
     Config, PgAppState, create_app,
     utils::db::{connect_env, run_migration},
 };

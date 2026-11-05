@@ -1,15 +1,21 @@
-import { task } from '@clearlist/types';
-
 import { apiFetch } from '@lib/fetch';
+
+import {
+  type CreateRequest,
+  CreateRequestSchema,
+  type Response,
+  ResponseSchema,
+  type,
+} from '@compose/types/task';
+
 import { buildTaskQuery } from '@services/helpers';
 
-import { API_URL } from '../constants';
 import { type TaskQuery } from './types';
 
-export async function create(
-  create: task.CreateRequest,
-): Promise<task.Response> {
-  const body = task.CreateRequestSchema.encode(create);
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
+
+export async function create(create: CreateRequest): Promise<Response> {
+  const body = CreateRequestSchema.encode(create);
 
   const res = await apiFetch(API_URL + '/api/tasks', {
     method: 'POST',
@@ -20,17 +26,17 @@ export async function create(
   });
 
   const json: unknown = await res.json();
-  return task.ResponseSchema.parse(json);
+  return ResponseSchema.parse(json);
 }
 
 export async function get(id: string) {
   const res = await apiFetch(API_URL + `/api/tasks/${id}`);
 
   const json: unknown = await res.json();
-  return task.ResponseSchema.parse(json);
+  return ResponseSchema.parse(json);
 }
 
-export async function list(query: TaskQuery = {}): Promise<task.QueryResponse> {
+export async function list(query: TaskQuery = {}): Promise<QueryResponse> {
   const qs = buildTaskQuery(query);
 
   const res = await apiFetch(
@@ -38,7 +44,7 @@ export async function list(query: TaskQuery = {}): Promise<task.QueryResponse> {
   );
 
   const json: unknown = await res.json();
-  return task.QueryResponseSchema.parse(json);
+  return QueryResponseSchema.parse(json);
 }
 
 export async function update({
@@ -46,9 +52,9 @@ export async function update({
   update,
 }: {
   id: string;
-  update: Partial<task.UpdateRequest>;
-}): Promise<task.Response> {
-  const body = task.UpdateRequestSchema.encode(update);
+  update: Partial<UpdateRequest>;
+}): Promise<Response> {
+  const body = UpdateRequestSchema.encode(update);
 
   const res = await apiFetch(API_URL + `/api/tasks/${id}`, {
     method: 'PATCH',
@@ -59,7 +65,7 @@ export async function update({
   });
 
   const json: unknown = await res.json();
-  return task.ResponseSchema.parse(json);
+  return ResponseSchema.parse(json);
 }
 
 export async function trash(id: string) {

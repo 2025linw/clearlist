@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
 
+import dayjs from '@lib/datetime';
+
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import dayjs from '@lib/datetime';
 
 import Typography from '@components/primitive/typography';
 

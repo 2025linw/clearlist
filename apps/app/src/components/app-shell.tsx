@@ -15,7 +15,7 @@ export default function AppShell({ children }: AppShellProps) {
   return (
     <View style={styles.container}>
       <ListNavigator
-        mode={gtDesktop ? 'desktop' : 'tablet'}
+        type={gtDesktop ? 'desktop' : 'tablet'}
         width={sidebarWidth}
         onWidthChange={setSidebarWidth}
       />

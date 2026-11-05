@@ -1,9 +1,10 @@
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import DateTimePicker from 'react-native-ui-datepicker';
 
+import dayjs, { getDateToday } from '@lib/datetime';
+
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import dayjs, { getDateToday } from '@lib/datetime';
 
 import Button from '@components/primitive/button';
 import Icon from '@components/primitive/icon';

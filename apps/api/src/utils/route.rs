@@ -28,7 +28,7 @@ pub fn verify_webhook_signature(
         .get(WEBHOOK_ID)
         .and_then(|v| v.to_str().ok())
         .ok_or_else(|| {
-            error!(target: "clearlist_api", "failed to get webhook id header");
+            error!(target: "compose_api", "failed to get webhook id header");
 
             Error::Unauthenticated
         })?;

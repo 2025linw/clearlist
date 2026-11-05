@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Layout from '@components/layout';
 import LoginForm, { type State } from '@components/login-form';
 
-import { API_URL } from '../../constants';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type AuthScreenProps = {
   type: State;

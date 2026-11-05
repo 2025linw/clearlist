@@ -10,11 +10,11 @@ import {
   useState,
 } from 'react';
 
-import { useToast } from '@hooks/use-toast';
 import { authClient } from '@lib/auth-client';
-import { apiFetch } from '@lib/fetch';
 
-import { API_URL } from '../../constants';
+import { useToast } from '@hooks/use-toast';
+import { api as apiClient } from '@services/api/client';
+
 import {
   type ApiContextType,
   type AuthContextType,
@@ -55,7 +55,7 @@ export function Provider({ children }: PropsWithChildren) {
         return false;
       }
 
-      const res = await apiFetch(API_URL + '/api/me');
+      const res = await apiClient.get<Response>('/api/me');
       if (res.status !== 200) {
         toast.error('Unable to access application account');
 
@@ -83,7 +83,7 @@ export function Provider({ children }: PropsWithChildren) {
         return false;
       }
 
-      const res = await apiFetch(API_URL + '/api/me');
+      const res = await apiClient.get<Response>('/api/me');
       if (res.status !== 200) {
         toast.error('Unable to access application account');
 
@@ -155,7 +155,7 @@ export function Provider({ children }: PropsWithChildren) {
       }
 
       try {
-        await apiFetch(API_URL + '/api/me');
+        await apiClient.get<Response>('/api/me');
       } catch {
         notifySessionError('Unable to get user information');
       }

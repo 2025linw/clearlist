@@ -1,4 +1,9 @@
-import { type Href, useRouter } from 'expo-router';
+import { type Href, usePathname, useRouter } from 'expo-router';
+import { StyleSheet } from 'react-native';
+
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
+import { useBreakpoints } from '@hooks/use-breakpoint';
 
 import Button from '@components/primitive/button';
 import Icon, {
@@ -20,11 +25,17 @@ export default function NavButton({
   expanded = true,
   ...props
 }: NavButtonProps) {
+  const route = usePathname();
   const router = useRouter();
+  const theme = useTheme();
+  const { gtTablet } = useBreakpoints();
+
+  const isActive = route === href;
+  const styles = buildStyles(theme);
 
   return (
     <Button
-      scheme="tertiary"
+      scheme={gtTablet && isActive ? 'primary' : 'tertiary'}
       leftIcon={
         <Icon
           name={props.iconName || 'list-outline'}
@@ -32,8 +43,19 @@ export default function NavButton({
         />
       }
       onPress={() => router.navigate(href)}
+      style={styles.container}
     >
       {expanded ? children : undefined}
     </Button>
   );
+}
+
+function buildStyles(theme: Theme) {
+  return StyleSheet.create({
+    container: {
+      borderRadius: 0,
+      borderTopLeftRadius: theme.rounded.base,
+      borderBottomLeftRadius: theme.rounded.base,
+    },
+  });
 }

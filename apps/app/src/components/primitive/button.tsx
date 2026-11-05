@@ -169,14 +169,12 @@ function buildStyles(
       borderColor: componentScheme.borderColor,
 
       backgroundColor: componentScheme.backgroundColor,
-      ...(iconOnly
-        ? {
-            width: iconOnlySize,
-            height: iconOnlySize,
+      ...(iconOnly && {
+        width: iconOnlySize,
+        height: iconOnlySize,
 
-            justifyContent: 'center',
-          }
-        : {}),
+        justifyContent: 'center',
+      }),
     },
     textContainer: {
       flex: 1,

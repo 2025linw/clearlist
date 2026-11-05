@@ -3,15 +3,15 @@ import { createAuthClient } from 'better-auth/react';
 
 import * as SecureStore from 'expo-secure-store';
 
-import { API_URL } from '../constants';
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export const authClient = createAuthClient({
   baseURL: API_URL,
   plugins: [
     expoClient({
-      scheme: 'clearlist',
-      storagePrefix: 'clearlist',
-      cookiePrefix: 'clear_list',
+      scheme: 'compose',
+      storagePrefix: 'compose',
+      cookiePrefix: 'compose',
       storage: SecureStore,
     }),
   ],

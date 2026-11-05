@@ -1,5 +1,5 @@
 {
-  "name": "@clearlist/app",
+  "name": "@compose/app",
   "private": true,
   "version": "0.0.1",
   "main": "expo-router/entry",
@@ -54,8 +54,8 @@
     "react-native-worklets": "0.10.1"
   },
   "devDependencies": {
-    "@clearlist/tooling-config": "workspace:*",
-    "@clearlist/types": "workspace:*",
+    "@compose/tooling-config": "workspace:*",
+    "@compose/types": "workspace:*",
     "@react-native/metro-config": "0.86.3",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "29.5.14",

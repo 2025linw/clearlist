@@ -6,10 +6,11 @@ import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import Toasts from '@lib/toast';
+
 import { Provider as AuthProvider, useSession } from '@contexts/auth';
 import { Provider as ThemeProvider, useThemeContext } from '@contexts/theme';
 import { useAppFonts } from '@hooks/use-fonts';
-import Toasts from '@lib/toast';
 
 SplashScreen.preventAutoHideAsync();
 

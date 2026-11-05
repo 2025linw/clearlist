@@ -35,10 +35,10 @@ jobs:
       - name: Upload script
         run: |
           scp scripts/deploy-api.sh \
-            "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
+            "$SSH_USER@$SSH_HOST:/tmp/compose-api/"
 
       - name: Install deploy script
         run: |
           ssh "$SSH_USER@$SSH_HOST" \
-            'mkdir -p /opt/clearlist-api/scripts &&
-            install -m 755 /tmp/clearlist-api/deploy-api.sh /opt/clearlist-api/scripts/deploy.sh'
+            'mkdir -p /opt/compose-api/scripts &&
+            install -m 755 /tmp/compose-api/deploy-api.sh /opt/compose-api/scripts/deploy.sh'

@@ -1,9 +1,9 @@
 import { ExpoConfig } from 'expo/config';
 
 export default (): ExpoConfig => ({
-  name: 'Clear List',
-  slug: 'clearlist',
-  scheme: 'clearlist',
+  name: 'Compose',
+  slug: 'compose',
+  scheme: 'compose',
   version: '0.0.1',
   owner: '2025linw',
 
@@ -11,14 +11,14 @@ export default (): ExpoConfig => ({
   orientation: 'portrait',
   icon: './assets/images/icon.png',
   ios: {
-    bundleIdentifier: 'com.saphydev.clearlist',
+    bundleIdentifier: 'com.saphydev.compose',
     supportsTablet: true,
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
-    package: 'com.saphydev.clearlist',
+    package: 'com.saphydev.compose',
     adaptiveIcon: {
       backgroundColor: '#E6F4FE',
       foregroundImage: './assets/images/android-icon-foreground.png',

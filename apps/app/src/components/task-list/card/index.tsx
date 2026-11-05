@@ -7,12 +7,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { type task } from '@clearlist/types';
+import dayjs from '@lib/datetime';
+
+import { type Task, type UpdateRequest } from '@compose/types/task';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
-import dayjs from '@lib/datetime';
 
 import Checkbox from '@components/primitive/checkbox';
 import EditableTypography from '@components/primitive/editable-typography';
@@ -23,17 +24,17 @@ import DeadlineButtonLabel from './deadline-button-label';
 import StartBadge from './start-badge';
 import StartButtonLabel from './start-button-label';
 
-type Draft = Pick<task.UpdateRequest, 'title' | 'notes'>;
+type Draft = Pick<UpdateRequest, 'title' | 'notes'>;
 
 type TaskCardProps = {
-  task: task.Task;
+  task: Task;
   expanded?: boolean;
   onPress?: () => void;
   disabled?: boolean;
 
   onTaskComplete?: () => void;
   onTaskReopen?: () => void;
-  onTaskUpdate?: (patch: Partial<task.UpdateRequest>) => void;
+  onTaskUpdate?: (patch: Partial<UpdateRequest>) => void;
 
   onPressStartDate?: (initialDate?: dayjs.Dayjs) => void;
   onPressDeadline?: (initialDate?: dayjs.Dayjs) => void;
@@ -54,9 +55,7 @@ export default function TaskCard({
     title: task.title,
     notes: task.notes,
   });
-  const [draft, setDraft] = useState<
-    Pick<task.UpdateRequest, 'title' | 'notes'>
-  >({
+  const [draft, setDraft] = useState<Pick<UpdateRequest, 'title' | 'notes'>>({
     title: task.title,
     notes: task.notes,
   });

@@ -1,9 +1,10 @@
 import { StyleSheet } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import dayjs from '@lib/datetime';
+
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import dayjs from '@lib/datetime';
 
 import Button from '@components/primitive/button';
 import Icon from '@components/primitive/icon';

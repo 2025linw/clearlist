@@ -1,5 +1,5 @@
 {
-  "name": "@clearlist/tooling-config",
+  "name": "@compose/tooling-config",
   "private": true,
   "type": "module",
   "exports": {

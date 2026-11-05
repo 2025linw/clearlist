@@ -1,29 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { type ListRenderItemInfo, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  FadeIn,
-  FadeOut,
-  useSharedValue,
-} from 'react-native-reanimated';
+import Animated, { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import { type task } from '@clearlist/types';
+import type dayjs from '@lib/datetime';
+
+import { type Task, type UpdateRequest } from '@compose/types/task';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import type dayjs from '@lib/datetime';
 
 import DateSelectModal from '@components/modals/date-select-modal';
 
 import Card from './card';
-import { CARD_TRANSITION_SPEED } from './constants';
 import MenuButton from './menu-button';
 
 type TaskListProp = {
-  data?: task.Task[];
+  data?: Task[];
   onAddTask?: (onCreateCallback: (id: string) => void) => void;
-  onTaskUpdate?: (id: string, update: Partial<task.UpdateRequest>) => void;
+  onTaskUpdate?: (id: string, update: Partial<UpdateRequest>) => void;
   onTaskComplete?: (id: string) => void;
   onTaskReopen?: (id: string) => void;
   onTaskTrash?: (id: string) => void;
@@ -42,7 +38,7 @@ export default function TaskList({
   const theme = useTheme();
 
   const taskAdded = useRef<string | null>(null);
-  const [expandedTask, setExpandedTask] = useState<task.Task | null>(null);
+  const [expandedTask, setExpandedTask] = useState<Task | null>(null);
   const [dateModal, setDateModal] = useState<{
     taskId: string;
     state: 'start' | 'deadline';
@@ -89,13 +85,11 @@ export default function TaskList({
   }, [taskAdded, data]);
 
   const renderTask = useCallback(
-    ({ item }: ListRenderItemInfo<task.Task>) => {
+    ({ item }: ListRenderItemInfo<Task>) => {
       const expanded = item.id === activeExpandedTask?.id;
 
       return (
-        <Animated.View
-          entering={FadeIn.duration(CARD_TRANSITION_SPEED)}
-          exiting={FadeOut.duration(CARD_TRANSITION_SPEED)}
+        <View
           onStartShouldSetResponderCapture={() => {
             touchedCard.set(true);
 
@@ -127,7 +121,7 @@ export default function TaskList({
               });
             }}
           />
-        </Animated.View>
+        </View>
       );
     },
     [
@@ -141,22 +135,24 @@ export default function TaskList({
   );
 
   return (
-    <View
-      style={styles.container}
-      onStartShouldSetResponderCapture={() => {
-        touchedCard.set(false);
+    <>
+      <View
+        style={styles.container}
+        onStartShouldSetResponderCapture={() => {
+          touchedCard.set(false);
 
-        return false;
-      }}
-    >
-      <GestureDetector gesture={tapGesture}>
-        <Animated.FlatList
-          data={data}
-          keyExtractor={(item) => item.id}
-          renderItem={renderTask}
-          showsVerticalScrollIndicator={false}
-        />
-      </GestureDetector>
+          return false;
+        }}
+      >
+        <GestureDetector gesture={tapGesture}>
+          <Animated.FlatList
+            data={data}
+            keyExtractor={(item) => item.id}
+            renderItem={renderTask}
+            showsVerticalScrollIndicator={false}
+          />
+        </GestureDetector>
+      </View>
 
       <MenuButton
         state={activeExpandedTask ? 'card' : 'list'}
@@ -200,7 +196,7 @@ export default function TaskList({
           }}
         />
       )}
-    </View>
+    </>
   );
 }
 

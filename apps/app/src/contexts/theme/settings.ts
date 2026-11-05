@@ -25,7 +25,6 @@ export function buildTheme(variant: ColorVariantName, theme: ThemeMode) {
     zHeight,
 
     components: {
-      // TODO: all primitives to this theme, also add toast
       Typography: {
         palette: {
           text: { color: palette.text },
