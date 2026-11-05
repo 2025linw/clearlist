@@ -5,6 +5,7 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
+import { COLLAPSED_WIDTH } from '@components/navigation/list-navigator/constants';
 import Button from '@components/primitive/button';
 import Icon, {
   type IconColor,
@@ -13,17 +14,21 @@ import Icon, {
 
 type NavButtonProps = {
   children: string;
-  href: Href;
-  iconName?: IconName;
-  iconColor?: IconColor;
+  href?: Href;
+  icon?: {
+    name: IconName;
+    color?: IconColor;
+  };
   expanded?: boolean;
 };
 
 export default function NavButton({
   children,
   href,
+  icon = {
+    name: 'list-outline',
+  },
   expanded = true,
-  ...props
 }: NavButtonProps) {
   const route = usePathname();
   const router = useRouter();
@@ -31,31 +36,38 @@ export default function NavButton({
   const { gtTablet } = useBreakpoints();
 
   const isActive = route === href;
-  const styles = buildStyles(theme);
+  const styles = buildStyles(theme, expanded);
 
   return (
     <Button
       scheme={gtTablet && isActive ? 'primary' : 'tertiary'}
       leftIcon={
-        <Icon
-          name={props.iconName || 'list-outline'}
-          color={props.iconColor || 'gray'}
-        />
+        icon && (
+          <Icon
+            name={icon.name}
+            color={icon.color || 'gray'}
+          />
+        )
       }
-      onPress={() => router.navigate(href)}
+      onPress={() => {
+        if (href) router.navigate(href);
+      }}
       style={styles.container}
     >
-      {expanded ? children : undefined}
+      {children}
     </Button>
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, expanded: boolean) {
   return StyleSheet.create({
     container: {
       borderRadius: 0,
       borderTopLeftRadius: theme.rounded.base,
       borderBottomLeftRadius: theme.rounded.base,
+
+      maxWidth: expanded ? 'auto' : COLLAPSED_WIDTH,
+      overflow: 'hidden',
     },
   });
 }

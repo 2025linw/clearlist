@@ -1,8 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import Button from '@components/primitive/button';
 import HorizontalDivider from '@components/primitive/horizontal-divider';
-import Icon from '@components/primitive/icon';
 
 import { COLLAPSED_WIDTH } from './constants';
 import NavButton from './nav-button';
@@ -19,8 +17,7 @@ export default function List({ expanded = true }: ListProps) {
       <View>
         <NavButton
           href="/lists/inbox"
-          iconName="file-tray"
-          iconColor="skyblue"
+          icon={{ name: 'file-tray', color: 'skyblue' }}
           expanded={expanded}
         >
           Inbox
@@ -30,24 +27,21 @@ export default function List({ expanded = true }: ListProps) {
 
         <NavButton
           href="/lists/today"
-          iconName="today"
-          iconColor="#EAB308"
+          icon={{ name: 'today', color: '#EAB308' }}
           expanded={expanded}
         >
           Today
         </NavButton>
         <NavButton
           href="/lists/upcoming"
-          iconName="calendar"
-          iconColor="red"
+          icon={{ name: 'calendar', color: 'red' }}
           expanded={expanded}
         >
           Upcoming
         </NavButton>
         <NavButton
           href="/lists/deadline"
-          iconName="flag"
-          iconColor="red"
+          icon={{ name: 'flag', color: 'red' }}
           expanded={expanded}
         >
           Deadline
@@ -57,16 +51,14 @@ export default function List({ expanded = true }: ListProps) {
 
         <NavButton
           href="/lists/logbook"
-          iconName="checkmark-circle"
-          iconColor="green"
+          icon={{ name: 'checkmark-circle', color: 'green' }}
           expanded={expanded}
         >
           Logbook
         </NavButton>
         <NavButton
           href="/lists/trash"
-          iconName="trash-bin"
-          iconColor="gray"
+          icon={{ name: 'trash-bin', color: 'gray' }}
           expanded={expanded}
         >
           Trash
@@ -74,17 +66,12 @@ export default function List({ expanded = true }: ListProps) {
 
         <HorizontalDivider />
 
-        <Button
-          scheme="tertiary"
-          leftIcon={
-            <Icon
-              name="search"
-              color="white"
-            />
-          }
+        <NavButton
+          icon={{ name: 'search', color: 'white' }}
+          expanded={expanded}
         >
-          {expanded && 'Search'}
-        </Button>
+          Search
+        </NavButton>
 
         <HorizontalDivider />
       </View>
@@ -92,8 +79,7 @@ export default function List({ expanded = true }: ListProps) {
       <View>
         <NavButton
           href="/settings"
-          iconName="settings"
-          iconColor="gray"
+          icon={{ name: 'settings', color: 'gray' }}
           expanded={expanded}
         >
           Settings

@@ -1,8 +1,4 @@
-export { TagSchema, type Tag } from './tag';
+export * from './tag';
 
-export {
-  CreateRequestSchema,
-  UpdateRequestSchema,
-  type CreateRequest,
-  type UpdateRequest,
-} from './request';
+export * from './request';
+export * from './response';

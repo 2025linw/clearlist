@@ -7,9 +7,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import dayjs from '@lib/datetime';
-
 import { type Task, type UpdateRequest } from '@compose/types/task';
+
+import dayjs from '@lib/datetime';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';

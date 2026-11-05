@@ -1,9 +1,10 @@
 import {
   type CreateRequest,
   CreateRequestSchema,
-  type QueryResponse,
-  type Response,
-  ResponseSchema,
+  type TaskQueryResponse,
+  TaskQueryResponseSchema,
+  type TaskResponse,
+  TaskResponseSchema,
   type UpdateRequest,
   UpdateRequestSchema,
 } from '@compose/types/task';
@@ -15,18 +16,20 @@ import { type TaskQuery } from './types';
 export async function getTasks(query: TaskQuery, signal?: AbortSignal) {
   const params = buildTaskQuery(query);
 
-  return api.get<QueryResponse>('/api/tasks', {
+  const res = await api.get<TaskQueryResponse>('/api/tasks', {
     query: params,
     signal,
   });
+
+  return TaskQueryResponseSchema.parse(res);
 }
 
 export async function createTask(payload: CreateRequest, signal?: AbortSignal) {
   const body = CreateRequestSchema.encode(payload);
 
-  const res = await api.post<Response>('/api/tasks', body, { signal });
+  const res = await api.post<TaskResponse>('/api/tasks', body, { signal });
 
-  return ResponseSchema.parse(res);
+  return TaskResponseSchema.parse(res);
 }
 
 export async function updateTask(
@@ -35,17 +38,33 @@ export async function updateTask(
 ) {
   const body = UpdateRequestSchema.encode(request.payload);
 
-  const res = await api.patch<Response>(`/api/tasks/${request.id}`, body, {
+  const res = await api.patch<TaskResponse>(`/api/tasks/${request.id}`, body, {
     signal,
   });
 
-  return ResponseSchema.parse(res);
+  return TaskResponseSchema.parse(res);
 }
 
-export async function trashTask(id: string) {}
+export async function trashTask(id: string, signal?: AbortSignal) {
+  return await api.delete<Response>(`/api/tasks/${id}`, {
+    signal,
+  });
+}
 
-export async function restoreTask(id: string) {}
+export async function restoreTask(id: string, signal?: AbortSignal) {
+  return await api.post<Response>(`/api/tasks/${id}/restore`, {
+    signal,
+  });
+}
 
-export async function completeTask(id: string) {}
+export async function completeTask(id: string, signal?: AbortSignal) {
+  return await api.post<Response>(`/api/tasks/${id}/complete`, {
+    signal,
+  });
+}
 
-export async function reopenTask(id: string) {}
+export async function reopenTask(id: string, signal?: AbortSignal) {
+  return await api.post<Response>(`/api/tasks/${id}/reopen`, {
+    signal,
+  });
+}
