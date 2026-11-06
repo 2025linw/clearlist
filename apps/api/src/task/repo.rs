@@ -156,6 +156,8 @@ impl PgTaskRepository {
         builder.push_bind(user_id);
         builder.push(" RETURNING *");
 
+        println!("{}", builder.sql());
+
         builder
             .build_query_as::<TaskModel>()
             .fetch_one(conn.as_mut())

@@ -7,7 +7,7 @@ use crate::{
         repo::{ConstraintViolation, Error as RepoError},
         service::{Error, Result},
     },
-    types::repo::Pagination,
+    types::{repo::Pagination, route::UpdateField},
     utils::extract::UserContext,
 };
 
@@ -150,11 +150,13 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
         } = helpers::validate_update_request(update_request)?;
 
         // Get id for category name, if exists
-        let category_id = if let Some(category_opt) = category {
-            Some(if let Some(category) = category_opt {
+        let category_id = match category {
+            UpdateField::Unchanged => None,
+            UpdateField::Clear => Some(None),
+            UpdateField::Set(category) => Some(
                 match self
                     .category_repo
-                    .get_id_by_name(user_context.id, category.clone())
+                    .get_id_by_name(user_context.id, category)
                     .await
                 {
                     Ok(id) => Some(id),
@@ -170,12 +172,8 @@ impl<R: TagRepository, C: CategoryRepository> TagService<R, C> {
 
                         return Err(err.into());
                     }
-                }
-            } else {
-                None
-            })
-        } else {
-            None
+                },
+            ),
         };
 
         let update_model = UpdateModel {

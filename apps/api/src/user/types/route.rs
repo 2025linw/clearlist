@@ -1,7 +1,7 @@
 use chrono_tz::Tz;
 use serde::Deserialize;
 
-use crate::types::field::CompletedTaskRetention;
+use crate::types::{field::CompletedTaskRetention, route::UpdateField};
 
 use super::UserID;
 
@@ -16,8 +16,8 @@ pub struct ProvisionRequest {
 #[derive(Debug, Default, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRequest {
-    pub preferred_timezone: Option<Option<Tz>>,
-    pub completed_task_retention: Option<Option<CompletedTaskRetention>>,
+    pub preferred_timezone: UpdateField<Tz>,
+    pub completed_task_retention: UpdateField<CompletedTaskRetention>,
 }
 
 impl UpdateRequest {

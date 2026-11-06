@@ -200,37 +200,33 @@ impl<R: TaskRepository> TaskService<R> {
 
         // Convert and normalize start date
         let mut has_time = None;
-        let start = if let Some(start) = start {
-            start.map(|start| match start {
+        let start = start
+            .map(|start| match start {
                 Start::Date(naive_date) => {
                     has_time = Some(false);
 
-                    Some(
-                        naive_date
-                            .and_hms_opt(0, 0, 0)
-                            .expect("midnight should be valid")
-                            .and_local_timezone(user_context.tz)
-                            .single()
-                            .expect("midnight should be unambiguous")
-                            .to_utc(),
-                    )
+                    naive_date
+                        .and_hms_opt(0, 0, 0)
+                        .expect("midnight should be valid")
+                        .and_local_timezone(user_context.tz)
+                        .single()
+                        .expect("midnight should be unambiguous")
+                        .to_utc()
                 }
                 Start::DateTime(date_time) => {
                     has_time = Some(true);
 
-                    Some(date_time)
+                    date_time
                 }
             })
-        } else {
-            None
-        };
+            .into();
 
         let update_model = UpdateModel {
             title,
-            notes,
+            notes: notes.into(),
             start,
             has_time,
-            deadline,
+            deadline: deadline.into(),
             completed: None,
             deleted: None,
             position_key,

@@ -1,8 +1,7 @@
 use serde::Deserialize;
 
 use crate::{
-    tag::types::TagID,
-    types::{order::SortOrder, query::DateFilter, start::Start},
+    tag::types::TagID, types::{order::SortOrder, query::DateFilter, route::UpdateField, start::Start},
 };
 
 use super::SortBy;
@@ -47,9 +46,9 @@ pub struct CreateRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRequest {
     pub title: Option<String>,
-    pub notes: Option<Option<String>>,
-    pub start: Option<Option<Start>>,
-    pub deadline: Option<Option<chrono::NaiveDate>>,
+    pub notes: UpdateField<String>,
+    pub start: UpdateField<Start>,
+    pub deadline: UpdateField<chrono::NaiveDate>,
     pub tags: Option<Vec<TagID>>,
 
     pub position_key: Option<String>,
