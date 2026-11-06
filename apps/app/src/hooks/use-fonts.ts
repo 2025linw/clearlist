@@ -14,7 +14,7 @@ export function useAppFonts() {
   const [loaded, error] = useFonts(Platform.OS === 'web' ? webFonts : {});
 
   return {
-    fontsLoaded: Platform.OS !== 'web' || loaded,
-    fontError: error,
+    loaded: Platform.OS !== 'web' || loaded,
+    error,
   };
 }
