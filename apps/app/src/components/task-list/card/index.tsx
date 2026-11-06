@@ -63,7 +63,7 @@ export default function TaskCard({
   const animatedHeight = useSharedValue(0);
   const animatedOpacity = useSharedValue(0);
 
-  const styles = buildStyles(theme);
+  const styles = buildStyles(theme, expanded);
 
   const { run: scheduleUpdate, flush: flushUpdate } = useDebouncedCallback(
     (patch: Draft) => {
@@ -112,7 +112,7 @@ export default function TaskCard({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.container, expanded ? styles.expandedContainer : null]}
+      style={styles.container}
     >
       <View style={styles.mainRow}>
         <Checkbox
@@ -147,7 +147,7 @@ export default function TaskCard({
       </View>
 
       <Animated.View
-        style={[styles.panelClip, panelAnimation]}
+        style={panelAnimation}
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <View
@@ -200,14 +200,14 @@ export default function TaskCard({
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, expanded: boolean) {
   return StyleSheet.create({
     container: {
       borderRadius: theme.rounded.lg,
       padding: theme.spacings.x3,
-    },
-    expandedContainer: {
-      backgroundColor: theme.palette.surface,
+
+      backgroundColor: expanded ? theme.palette.surface : 'transparent',
+      overflow: 'hidden',
     },
     mainRow: {
       flexShrink: 0,
@@ -216,15 +216,14 @@ function buildStyles(theme: Theme) {
       alignItems: 'center',
       gap: theme.spacings.x2,
     },
-    panelClip: {
-      overflow: 'hidden',
-    },
     panelContent: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       paddingTop: theme.spacings.x5,
+
+      gap: theme.spacings.x2,
     },
     titleContainer: {
       flex: 1,

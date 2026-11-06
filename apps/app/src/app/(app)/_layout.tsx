@@ -1,25 +1,12 @@
-import { Slot, Stack } from 'expo-router';
-
-import { useBreakpoints } from '@hooks/use-breakpoint';
-
 import AppShell from '@components/app-shell';
+import SearchModal from '@components/modals/search-modal';
 
 export default function RootLayout() {
-  const { gtTablet } = useBreakpoints();
+  return (
+    <>
+      <AppShell />
 
-  if (gtTablet) {
-    return (
-      <AppShell>
-        <Slot />
-      </AppShell>
-    );
-  } else {
-    return (
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      />
-    );
-  }
+      <SearchModal />
+    </>
+  );
 }

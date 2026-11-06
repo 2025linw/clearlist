@@ -12,19 +12,22 @@ import Icon, {
   type IconName,
 } from '@components/primitive/icon';
 
+type ButtonActionType =
+  { href: Href; onPress?: never } | { href?: never; onPress: () => void };
+
 type NavButtonProps = {
   children: string;
-  href?: Href;
   icon?: {
     name: IconName;
     color?: IconColor;
   };
   expanded?: boolean;
-};
+} & ButtonActionType;
 
 export default function NavButton({
   children,
   href,
+  onPress,
   icon = {
     name: 'list-outline',
   },
@@ -51,6 +54,7 @@ export default function NavButton({
       }
       onPress={() => {
         if (href) router.navigate(href);
+        if (onPress) onPress?.();
       }}
       style={styles.container}
     >

@@ -24,6 +24,14 @@ export async function getTasks(query: TaskQuery, signal?: AbortSignal) {
   return TaskQueryResponseSchema.parse(res);
 }
 
+export async function searchTasks(search: string, signal?: AbortSignal) {
+  const res = await api.get<TaskResponse>(`/api/tasks?q=${search}`, {
+    signal,
+  });
+
+  return TaskResponseSchema.parse(res);
+}
+
 export async function createTask(payload: CreateRequest, signal?: AbortSignal) {
   const body = CreateRequestSchema.encode(payload);
 
