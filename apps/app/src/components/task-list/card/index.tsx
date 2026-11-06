@@ -7,12 +7,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { type task } from '@clearlist/types';
+import { type Task, type UpdateRequest } from '@compose/types/task';
+
+import dayjs from '@lib/datetime';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useDebouncedCallback } from '@hooks/use-debounced-callback';
-import dayjs from '@lib/datetime';
 
 import Checkbox from '@components/primitive/checkbox';
 import EditableTypography from '@components/primitive/editable-typography';
@@ -23,17 +24,17 @@ import DeadlineButtonLabel from './deadline-button-label';
 import StartBadge from './start-badge';
 import StartButtonLabel from './start-button-label';
 
-type Draft = Pick<task.UpdateRequest, 'title' | 'notes'>;
+type Draft = Pick<UpdateRequest, 'title' | 'notes'>;
 
 type TaskCardProps = {
-  task: task.Task;
+  task: Task;
   expanded?: boolean;
   onPress?: () => void;
   disabled?: boolean;
 
   onTaskComplete?: () => void;
   onTaskReopen?: () => void;
-  onTaskUpdate?: (patch: Partial<task.UpdateRequest>) => void;
+  onTaskUpdate?: (patch: Partial<UpdateRequest>) => void;
 
   onPressStartDate?: (initialDate?: dayjs.Dayjs) => void;
   onPressDeadline?: (initialDate?: dayjs.Dayjs) => void;
@@ -54,9 +55,7 @@ export default function TaskCard({
     title: task.title,
     notes: task.notes,
   });
-  const [draft, setDraft] = useState<
-    Pick<task.UpdateRequest, 'title' | 'notes'>
-  >({
+  const [draft, setDraft] = useState<Pick<UpdateRequest, 'title' | 'notes'>>({
     title: task.title,
     notes: task.notes,
   });
@@ -64,7 +63,7 @@ export default function TaskCard({
   const animatedHeight = useSharedValue(0);
   const animatedOpacity = useSharedValue(0);
 
-  const styles = buildStyles(theme);
+  const styles = buildStyles(theme, expanded);
 
   const { run: scheduleUpdate, flush: flushUpdate } = useDebouncedCallback(
     (patch: Draft) => {
@@ -113,7 +112,7 @@ export default function TaskCard({
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      style={[styles.container, expanded ? styles.expandedContainer : null]}
+      style={styles.container}
     >
       <View style={styles.mainRow}>
         <Checkbox
@@ -148,7 +147,7 @@ export default function TaskCard({
       </View>
 
       <Animated.View
-        style={[styles.panelClip, panelAnimation]}
+        style={panelAnimation}
         pointerEvents={expanded ? 'auto' : 'none'}
       >
         <View
@@ -201,14 +200,14 @@ export default function TaskCard({
   );
 }
 
-function buildStyles(theme: Theme) {
+function buildStyles(theme: Theme, expanded: boolean) {
   return StyleSheet.create({
     container: {
       borderRadius: theme.rounded.lg,
       padding: theme.spacings.x3,
-    },
-    expandedContainer: {
-      backgroundColor: theme.palette.surface,
+
+      backgroundColor: expanded ? theme.palette.surface : 'transparent',
+      overflow: 'hidden',
     },
     mainRow: {
       flexShrink: 0,
@@ -217,15 +216,14 @@ function buildStyles(theme: Theme) {
       alignItems: 'center',
       gap: theme.spacings.x2,
     },
-    panelClip: {
-      overflow: 'hidden',
-    },
     panelContent: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       paddingTop: theme.spacings.x5,
+
+      gap: theme.spacings.x2,
     },
     titleContainer: {
       flex: 1,

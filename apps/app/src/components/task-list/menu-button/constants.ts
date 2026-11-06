@@ -1,5 +1,5 @@
 export const BUTTON_SIZE = 70;
-export const ICON_SIZE = 45;
+export const ICON_SIZE = 40;
 
 export const ACTION_BUTTON_SIZE = 55;
 export const ACTION_ICON_SIZE = 25;

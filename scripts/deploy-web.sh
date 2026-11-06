@@ -2,11 +2,11 @@
 set -eu
 
 
-readonly SERVICE_NAME="clearlist-web.service"
-readonly ARCHIVE="/tmp/clearlist-web/clearlist-web.tar.gz"
-readonly ARTIFACTS="/tmp/clearlist-web/artifacts"
+readonly SERVICE_NAME="compose-web.service"
+readonly ARCHIVE="/tmp/compose-web/compose-web.tar.gz"
+readonly ARTIFACTS="/tmp/compose-web/artifacts"
 
-readonly DEPLOY_PATH="/opt/clearlist-web"
+readonly DEPLOY_PATH="/opt/compose-web"
 readonly RELEASE_DIRPATH="$DEPLOY_PATH/releases"
 readonly CURRENT_LINK="$DEPLOY_PATH/current"
 
@@ -32,7 +32,7 @@ rm -rf "$ARTIFACTS"
 mkdir -p "$ARTIFACTS"
 tar -xzf "$ARCHIVE" -C "$ARTIFACTS"
 
-new_release="$RELEASE_DIRPATH/clearlist-web-$version-$timestamp-$sha"
+new_release="$RELEASE_DIRPATH/compose-web-$version-$timestamp-$sha"
 if [ -d "$new_release" ]; then
 	echo "Release already exists: $new_release" >&2
 	exit 1

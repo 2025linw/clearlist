@@ -65,9 +65,8 @@ impl<R: UserRepository> UserService<R> {
         } = helpers::validate_update_request(update_request)?;
 
         let update_model = UpdateModel {
-            preferred_timezone: preferred_timezone.map(|inner| inner.map(|tz| tz.to_string())),
-            completed_task_retention: completed_task_retention
-                .map(|inner| inner.map(PgInterval::from)),
+            preferred_timezone: preferred_timezone.map(|tz| tz.to_string()).into(),
+            completed_task_retention: completed_task_retention.map(PgInterval::from).into(),
         };
 
         self.repo

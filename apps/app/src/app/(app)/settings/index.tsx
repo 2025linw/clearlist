@@ -3,16 +3,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 
-import {
-  useColorTheme,
-  useTheme,
-  useThemeContext,
-  useThemeMode,
-} from '@contexts/theme';
+import { authClient } from '@lib/auth-client';
+
+import { useSessionApi } from '@contexts/auth';
+import { useTheme, useThemeContext } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 import { useToast } from '@hooks/use-toast';
-import { authClient } from '@lib/auth-client';
 
 import Layout from '@components/layout';
 import Button from '@components/primitive/button';
@@ -22,18 +19,19 @@ import TextInput from '@components/primitive/text-input';
 import Typography from '@components/primitive/typography';
 import TimezoneSelect from '@components/time-zone-select';
 
-type SettingsScreenProps = {
-  user?: typeof authClient.$Infer.Session.user;
-  logout?: () => void;
-};
-
-export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
+export default function SettingsPage() {
   const router = useRouter();
   const theme = useTheme();
   const toast = useToast();
-  const { getAllColorThemes } = useThemeContext();
-  const [colorTheme, setColorTheme] = useColorTheme();
-  const [themeMode, setThemeMode] = useThemeMode();
+  const { logout: logoutApi } = useSessionApi();
+  const session = authClient.useSession();
+  const {
+    getAllColorThemes,
+    colorTheme,
+    setColorTheme,
+    themeMode,
+    setThemeMode,
+  } = useThemeContext();
   const { gtTablet } = useBreakpoints();
   const calendars = useCalendars();
 
@@ -43,6 +41,7 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
 
   const styles = buildStyles(theme, !gtTablet);
   const colorThemes = getAllColorThemes();
+  const user = session.data?.user;
 
   function changePassword() {
     if (newPassword.length < 8) {
@@ -70,6 +69,12 @@ export default function SettingsScreen({ user, logout }: SettingsScreenProps) {
         setCurrentPassword('');
         setNewPassword('');
       });
+  }
+
+  function logout() {
+    logoutApi().finally(() => {
+      router.replace('/login');
+    });
   }
 
   return (

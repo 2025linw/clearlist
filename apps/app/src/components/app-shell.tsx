@@ -1,33 +1,64 @@
-import { type PropsWithChildren, useState } from 'react';
+import { Slot, Stack } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import Toasts from '@lib/toast';
+
+import { useSession } from '@contexts/auth';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
+import SearchModal from '@components/modals/search-modal';
 import ListNavigator from '@components/navigation/list-navigator';
 
-type AppShellProps = PropsWithChildren;
-
-export default function AppShell({ children }: AppShellProps) {
-  const { gtDesktop } = useBreakpoints();
+export default function AppShell() {
+  const { hasSession } = useSession();
+  const { gtDesktop, gtTablet } = useBreakpoints();
 
   const [sidebarWidth, setSidebarWidth] = useState(240);
 
   return (
-    <View style={styles.container}>
-      <ListNavigator
-        mode={gtDesktop ? 'desktop' : 'tablet'}
-        width={sidebarWidth}
-        onWidthChange={setSidebarWidth}
-      />
+    <>
+      {hasSession ? (
+        <>
+          {gtTablet ? (
+            <View style={styles.container}>
+              <ListNavigator
+                type={gtDesktop ? 'desktop' : 'tablet'}
+                width={sidebarWidth}
+                onWidthChange={setSidebarWidth}
+              />
 
-      <View style={styles.content}>{children}</View>
-    </View>
+              <View style={styles.content}>
+                <Slot />
+              </View>
+            </View>
+          ) : (
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'default',
+              }}
+            />
+          )}
+
+          <SearchModal />
+        </>
+      ) : (
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'none',
+          }}
+        />
+      )}
+
+      <Toasts />
+    </>
   );
 }
 const styles = StyleSheet.create({
   container: {
-    height: '100%',
-
+    flex: 1,
     flexDirection: 'row',
   },
   content: {

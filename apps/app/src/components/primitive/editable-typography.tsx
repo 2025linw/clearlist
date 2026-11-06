@@ -99,7 +99,7 @@ function buildStyles(theme: Theme, editing: boolean, disabled?: boolean) {
     input: {
       ...componentStyle.container,
       ...componentStyle.text,
-      ...(state ? componentStyle.state[state] : {}),
+      ...(state && componentStyle.state[state]),
     },
   });
 }

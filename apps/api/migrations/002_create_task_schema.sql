@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
 -- Task Schema
 CREATE TABLE app.tasks (
     id uuid PRIMARY KEY,
@@ -32,3 +34,8 @@ WHERE deleted_at IS NOT NULL;
 -- Create index for position key
 CREATE INDEX idx_tasks_position
 ON app.tasks(position_key);
+
+-- Create index for partial string searching for titles
+CREATE INDEX idx_tasks_title_search
+ON app.tasks USING GIN (title gin_trgm_ops)
+WHERE deleted_at IS NULL;

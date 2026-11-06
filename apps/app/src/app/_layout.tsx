@@ -1,19 +1,48 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-import { SplashScreen, Stack } from 'expo-router';
+import { SplashScreen } from 'expo-router';
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { Provider as AuthProvider, useSession } from '@contexts/auth';
-import { Provider as ThemeProvider, useThemeContext } from '@contexts/theme';
+import AuthProvider, { useSession } from '@contexts/auth';
+import SearchProvider from '@contexts/search';
+import ThemeProvider, { useThemeContext } from '@contexts/theme';
 import { useAppFonts } from '@hooks/use-fonts';
-import Toasts from '@lib/toast';
+
+import AppShell from '@components/app-shell';
 
 SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
+
+function AppInner() {
+  const { loaded: authLoaded } = useSession();
+  const { loaded: themeLoaded } = useThemeContext();
+  const { loaded: fontsLoaded, error: fontError } = useAppFonts();
+
+  // Check when
+  useEffect(() => {
+    if (themeLoaded && authLoaded && fontsLoaded) {
+      SplashScreen.hide();
+    }
+  }, [themeLoaded, authLoaded, fontsLoaded]);
+
+  if (!(themeLoaded && authLoaded && fontsLoaded)) return null;
+
+  if (fontError) {
+    console.error('unable to load fonts');
+
+    return null;
+  }
+
+  return (
+    <SearchProvider>
+      <AppShell />
+    </SearchProvider>
+  );
+}
 
 export default function App() {
   return (
@@ -28,55 +57,6 @@ export default function App() {
         </QueryClientProvider>
       </GestureHandlerRootView>
     </SafeAreaProvider>
-  );
-}
-
-function AppInner() {
-  const { loaded: authLoaded } = useSession();
-  const { theme, loaded: themeLoaded } = useThemeContext();
-  const { fontsLoaded, fontError } = useAppFonts();
-
-  // Check when
-  useEffect(() => {
-    if (themeLoaded && authLoaded && fontsLoaded) {
-      SplashScreen.hide();
-    }
-  }, [themeLoaded, authLoaded, fontsLoaded]);
-
-  if (!(themeLoaded && authLoaded && fontsLoaded)) return null;
-  if (fontError) {
-    console.error('unable to load fonts');
-
-    return null;
-  }
-
-  return (
-    <>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: theme.palette.background,
-          },
-        }}
-      >
-        <Stack.Screen
-          name="(public)/login"
-          options={{ animation: 'none' }}
-        />
-        <Stack.Screen
-          name="(public)/register"
-          options={{ animation: 'none' }}
-        />
-
-        <Stack.Screen
-          name="(app)"
-          options={{ title: 'Home' }}
-        />
-      </Stack>
-
-      <Toasts />
-    </>
   );
 }
 

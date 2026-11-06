@@ -1,4 +1,4 @@
-import { type ReactElement, type ReactNode } from 'react';
+import { type PropsWithChildren, type ReactElement } from 'react';
 import { cloneElement } from 'react';
 import {
   type ColorValue,
@@ -23,12 +23,11 @@ type ButtonSchemes = keyof Omit<
 >;
 
 type ButtonContent =
-  | {
+  | PropsWithChildren<{
       // Button with text (optional left and right icons)
-      children: ReactNode;
       leftIcon?: ReactElement<IconProps>;
       rightIcon?: ReactElement<IconProps>;
-    }
+    }>
   | {
       // Icon only
       children?: never;
@@ -169,14 +168,12 @@ function buildStyles(
       borderColor: componentScheme.borderColor,
 
       backgroundColor: componentScheme.backgroundColor,
-      ...(iconOnly
-        ? {
-            width: iconOnlySize,
-            height: iconOnlySize,
+      ...(iconOnly && {
+        width: iconOnlySize,
+        height: iconOnlySize,
 
-            justifyContent: 'center',
-          }
-        : {}),
+        justifyContent: 'center',
+      }),
     },
     textContainer: {
       flex: 1,

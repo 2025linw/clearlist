@@ -16,7 +16,7 @@ use crate::{
         mocks::MockTaskRepository,
         test_data::{MULTILINE_TEST_INPUT, NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
-    types::start::Start,
+    types::{route::UpdateField, start::Start},
     user::types::UserID,
     utils::extract::UserContext,
 };
@@ -247,7 +247,7 @@ mod notes {
 
         for (name, input, expected) in NORMALIZATION_TEST_INPUT {
             let update_request = UpdateRequest {
-                notes: Some(Some(input.to_string())),
+                notes: UpdateField::Set(input.to_string()),
                 ..Default::default()
             };
             let task = task_service
@@ -268,7 +268,7 @@ mod notes {
 
         for (name, input) in MULTILINE_TEST_INPUT {
             let update_request = UpdateRequest {
-                notes: Some(Some(input.to_string())),
+                notes: UpdateField::Set(input.to_string()),
                 ..Default::default()
             };
             let res = task_service
@@ -305,7 +305,7 @@ mod start {
                 task_id,
                 user_context,
                 UpdateRequest {
-                    start: Some(Some(Start::Date(date))),
+                    start: UpdateField::Set(Start::Date(date)),
                     ..Default::default()
                 },
             )
@@ -326,7 +326,7 @@ mod start {
                 task_id,
                 user_context,
                 UpdateRequest {
-                    start: Some(Some(Start::DateTime(utc_dt))),
+                    start: UpdateField::Set(Start::DateTime(utc_dt)),
                     ..Default::default()
                 },
             )

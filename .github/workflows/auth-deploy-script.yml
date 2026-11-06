@@ -2,6 +2,8 @@ name: Deploy auth server deploy script
 
 on:
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/auth-deploy-script.yml"
       - "scripts/deploy-auth.sh"
@@ -35,10 +37,10 @@ jobs:
       - name: Upload script
         run: |
           scp scripts/deploy-auth.sh \
-            "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
+            "$SSH_USER@$SSH_HOST:/tmp/compose-auth/"
 
       - name: Install deploy script
         run: |
           ssh "$SSH_USER@$SSH_HOST" \
-            'mkdir -p /opt/clearlist-auth/scripts &&
-            install -m 755 /tmp/clearlist-auth/deploy-auth.sh /opt/clearlist-auth/scripts/deploy.sh'
+            'mkdir -p /opt/compose-auth/scripts &&
+            install -m 755 /tmp/compose-auth/deploy-auth.sh /opt/compose-auth/scripts/deploy.sh'

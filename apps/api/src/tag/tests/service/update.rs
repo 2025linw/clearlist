@@ -16,6 +16,7 @@ use crate::{
         mocks::{MockTagRepository, category::MockCategoryRepository},
         test_data::{NORMALIZATION_TEST_INPUT, SINGLE_LINE_TEST_INPUT},
     },
+    types::route::UpdateField,
     utils::extract::UserContext,
 };
 
@@ -277,7 +278,7 @@ mod category {
             .await;
 
         let update_request = UpdateRequest {
-            category: Some(Some(category.name)),
+            category: UpdateField::Set(category.name),
             ..Default::default()
         };
         let res = tag_service
@@ -294,7 +295,7 @@ mod category {
         let (user_context, tag_id, tag_service) = init().await;
 
         let update_request = UpdateRequest {
-            category: Some(Some("Not Exists".to_string())),
+            category: UpdateField::Set("Not Exists".to_string()),
             ..Default::default()
         };
         let res = tag_service

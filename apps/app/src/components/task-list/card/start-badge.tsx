@@ -1,8 +1,9 @@
 import { StyleSheet } from 'react-native';
 
+import dayjs, { getDayOfWeek } from '@lib/datetime';
+
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
-import dayjs, { getDayOfWeek } from '@lib/datetime';
 
 import Icon from '@components/primitive/icon';
 import Typography from '@components/primitive/typography';

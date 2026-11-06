@@ -12,13 +12,17 @@ import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 
-import HorizontalDivider from '@components/primitive/horizontal-divider';
+import {
+  COLLAPSED_WIDTH,
+  SIDEBAR_MAX_WIDTH,
+  SIDEBAR_MIN_WIDTH,
+} from './constants';
+import List from './list';
 
-import Button from './nav-button';
+type ListNavigatorDevice = 'mobile' | 'tablet' | 'desktop';
 
-type ListNavigatorMode = 'mobile' | 'tablet' | 'desktop';
 type ListNavigatorProps = {
-  mode?: ListNavigatorMode;
+  type?: ListNavigatorDevice;
   width?: number;
   onWidthChange?: (width: number) => void;
 };
@@ -27,12 +31,8 @@ const HANDLE_WIDTH = 25;
 const HANDLE_HEIGHT = 80;
 const HANDLE_DISTANCE = 10;
 
-const MIN_WIDTH = 180;
-const MAX_WIDTH = 400;
-const COLLAPSED_WIDTH = 40;
-
 export default function ListNavigator({
-  mode = 'mobile',
+  type = 'mobile',
   width = 240,
   onWidthChange,
 }: ListNavigatorProps) {
@@ -44,7 +44,7 @@ export default function ListNavigator({
   const sidebarWidth = useSharedValue(width);
   const startWidth = useSharedValue(width);
 
-  const styles = buildStyles(theme, mode);
+  const styles = buildStyles(theme, type);
 
   const tapGesture = Gesture.Tap()
     .runOnJS(true)
@@ -58,8 +58,8 @@ export default function ListNavigator({
     })
     .onUpdate((e) => {
       sidebarWidth.value = Math.min(
-        MAX_WIDTH,
-        Math.max(MIN_WIDTH, startWidth.value + e.translationX),
+        SIDEBAR_MAX_WIDTH,
+        Math.max(SIDEBAR_MIN_WIDTH, startWidth.value + e.translationX),
       );
     })
     .onEnd(() => {
@@ -94,13 +94,13 @@ export default function ListNavigator({
       <View
         style={[styles.container, { paddingTop: top, paddingBottom: bottom }]}
       >
-        <List />
+        <List expanded={expanded} />
       </View>
     );
   }
 }
 
-function buildStyles(theme: Theme, mode: ListNavigatorMode) {
+function buildStyles(theme: Theme, mode: ListNavigatorDevice) {
   return StyleSheet.create({
     container: {
       position: 'relative',
@@ -110,7 +110,7 @@ function buildStyles(theme: Theme, mode: ListNavigatorMode) {
 
       backgroundColor: theme.palette.surface,
 
-      ...(mode !== 'mobile' ? theme.shadows.high : {}),
+      ...(mode !== 'mobile' && theme.shadows.high),
     },
     collapsed: {
       maxWidth: COLLAPSED_WIDTH,
@@ -132,95 +132,3 @@ function buildStyles(theme: Theme, mode: ListNavigatorMode) {
     },
   });
 }
-
-type ListProps = {
-  expanded?: boolean;
-};
-
-function List({ expanded = true }: ListProps) {
-  return (
-    <View style={[styles.list, !expanded && styles.collapsedList]}>
-      <View>
-        <Button
-          href="/lists/inbox"
-          iconName="file-tray"
-          iconColor="skyblue"
-          expanded={expanded}
-        >
-          Inbox
-        </Button>
-
-        <HorizontalDivider />
-
-        <Button
-          href="/lists/today"
-          iconName="today"
-          iconColor="#EAB308"
-          expanded={expanded}
-        >
-          Today
-        </Button>
-        <Button
-          href="/lists/upcoming"
-          iconName="calendar"
-          iconColor="red"
-          expanded={expanded}
-        >
-          Upcoming
-        </Button>
-        <Button
-          href="/lists/deadline"
-          iconName="flag"
-          iconColor="red"
-          expanded={expanded}
-        >
-          Deadline
-        </Button>
-
-        <HorizontalDivider />
-
-        <Button
-          href="/lists/logbook"
-          iconName="checkmark-circle"
-          iconColor="green"
-          expanded={expanded}
-        >
-          Logbook
-        </Button>
-        <Button
-          href="/lists/trash"
-          iconName="trash-bin"
-          iconColor="gray"
-          expanded={expanded}
-        >
-          Trash
-        </Button>
-
-        <HorizontalDivider />
-      </View>
-
-      <View>
-        <Button
-          href="/settings"
-          iconName="settings"
-          iconColor="gray"
-          expanded={expanded}
-        >
-          Settings
-        </Button>
-      </View>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  list: {
-    flex: 1,
-
-    justifyContent: 'space-between',
-  },
-
-  collapsedList: {
-    alignSelf: 'flex-start',
-  },
-});

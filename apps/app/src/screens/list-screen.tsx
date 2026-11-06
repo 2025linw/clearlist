@@ -1,21 +1,22 @@
 import { type ReactElement } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { type task } from '@clearlist/types';
+import { type CreateRequest } from '@compose/types/task';
+
+import dayjs from '@lib/datetime';
+import { getCategoryQueryMap } from '@services/api/helpers';
+import { type Category } from '@services/api/types';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
 import { useBreakpoints } from '@hooks/use-breakpoint';
 import * as TaskHook from '@hooks/use-tasks';
-import dayjs from '@lib/datetime';
-import { getCategoryQueryMap } from '@services/helpers';
-import { type Category } from '@services/types';
 
 import Layout from '@components/layout';
 import { type IconProps } from '@components/primitive/icon';
 import TaskList from '@components/task-list';
 
-const requiredTask: task.CreateRequest = {
+const requiredTask: CreateRequest = {
   title: '',
   tags: [],
   positionKey: 'm',
@@ -49,7 +50,7 @@ export default function ListScreen(props: ListScreenProps) {
   const trashTask = TaskHook.useTrashTask();
   const restoreTask = TaskHook.useRestoreTask();
 
-  const defaultTask: Record<CreatableCategory, () => task.CreateRequest> = {
+  const defaultTask: Record<CreatableCategory, () => CreateRequest> = {
     inbox: () => requiredTask,
     today: () => ({
       ...requiredTask,
@@ -90,7 +91,9 @@ export default function ListScreen(props: ListScreenProps) {
               },
             });
         }}
-        onTaskUpdate={(id, update) => updateTask.mutate({ id, update })}
+        onTaskUpdate={(id, update) =>
+          updateTask.mutate({ id, payload: update })
+        }
         onTaskComplete={(id) => completeTask.mutate(id)}
         onTaskReopen={(id) => reopenTask.mutate(id)}
         onTaskTrash={(id) => trashTask.mutate(id)}

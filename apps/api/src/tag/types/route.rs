@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::types::route::UpdateField;
+
 #[derive(Debug, Default, Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
 #[serde(rename_all = "camelCase")]
@@ -23,7 +25,7 @@ pub struct CreateRequest {
 #[serde(rename_all = "camelCase")]
 pub struct UpdateRequest {
     pub label: Option<String>,
-    pub category: Option<Option<String>>,
+    pub category: UpdateField<String>,
 
     pub position_key: Option<String>,
 }

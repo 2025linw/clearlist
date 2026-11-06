@@ -1,22 +1,21 @@
 {
-  "name": "clearlist",
+  "name": "compose",
   "private": true,
   "engines": {
     "node": "^24.16.0"
   },
   "packageManager": "pnpm@12.15.0",
   "scripts": {
-    "auth:export": "pnpm --filter @clearlist/auth run export",
-    "auth:migrate": "pnpm --filter @clearlist/auth run migrate",
-    "auth:check": "pnpm --filter @clearlist/auth run check",
-    "auth:lint": "pnpm --filter @clearlist/auth run lint",
-    "auth:format": "pnpm --filter @clearlist/auth run format",
-    "auth:test": "pnpm --filter @clearlist/auth run test",
-    "app:export:web": "pnpm --filter @clearlist/app run export:web",
-    "app:check": "pnpm --filter @clearlist/app run check",
-    "app:lint": "pnpm --filter @clearlist/app run lint",
-    "app:format": "pnpm --filter @clearlist/app run format",
-    "app:test": "pnpm --filter @clearlist/app run test"
+    "auth:export": "pnpm --filter @compose/auth run export",
+    "auth:migrate": "pnpm --filter @compose/auth run migrate",
+    "auth:check": "pnpm --filter @compose/auth run check",
+    "auth:lint": "pnpm --filter @compose/auth run lint",
+    "auth:test": "pnpm --filter @compose/auth run test",
+
+    "app:export-web": "pnpm --filter @compose/app run export:web",
+    "app:check": "pnpm --filter @compose/app run check",
+    "app:lint": "pnpm --filter @compose/app run lint",
+    "app:test": "pnpm --filter @compose/app run test"
   },
   "devDependencies": {
     "eslint": "catalog:",

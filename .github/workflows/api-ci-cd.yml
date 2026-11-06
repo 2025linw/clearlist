@@ -68,15 +68,15 @@ jobs:
           components: clippy
 
       - name: 🧪 Run check
-        run: cargo check --locked -p clearlist-api
+        run: cargo check --locked -p compose-api
 
       - name: 🧹 Run clippy
         if: github.event_name != 'pull_request' || github.base_ref != 'main'
-        run: cargo clippy -p clearlist-api -- -D warnings
+        run: cargo clippy -p compose-api -- -D warnings
 
       - name: 🧹 Run clippy (strict)
         if: github.event_name == 'pull_request' && github.base_ref == 'main'
-        run: cargo clippy -p clearlist-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::print_stdout -D clippy::print_stderr
+        run: cargo clippy -p compose-api -- -D warnings -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::print_stdout -D clippy::print_stderr
 
       - name: 📦 Bootstrap database
         env:
@@ -90,7 +90,7 @@ jobs:
       - name: 🧪 Run test
         env:
           DATABASE_URL: postgresql://test:test@localhost/testdb
-        run: cargo test --locked -p clearlist-api
+        run: cargo test --locked -p compose-api
 
       - name: 📢 Notify test results via Discord
         if: always()
@@ -118,13 +118,13 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
 
       - name: 📦 Build release
-        run: cargo build --release --locked -p clearlist-api
+        run: cargo build --release --locked -p compose-api
 
       - name: 📦 Generate metadata
         id: meta
         run: |
           version=$(cargo metadata --no-deps --format-version 1 \
-            | jq -r '.packages[] | select(.name == "clearlist-api") | .version')
+            | jq -r '.packages[] | select(.name == "compose-api") | .version')
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
@@ -133,16 +133,16 @@ jobs:
       - name: 📦 Create artifact folder
         run: |
           mkdir artifact
-          cp -rt artifact/ target/release/clearlist-api
+          cp -rt artifact/ target/release/compose-api
 
       - name: 📦 Archive artifacts
-        run: tar -czf clearlist-api.tar.gz -C artifact/ .
+        run: tar -czf compose-api.tar.gz -C artifact/ .
 
       - name: 🚀 Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: clearlist-api
-          path: clearlist-api.tar.gz
+          name: compose-api
+          path: compose-api.tar.gz
           retention-days: 7
 
       - name: 📢 Notify test results via Discord
@@ -176,17 +176,17 @@ jobs:
       - name: 📦 Download artifact
         uses: actions/download-artifact@v8
         with:
-          name: clearlist-api
+          name: compose-api
           path: artifact/
 
       - name: 🚀 Upload archive
         run: |
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
-            "mkdir -p /tmp/clearlist-api"
+            "mkdir -p /tmp/compose-api"
           scp $SSH_OPTIONS \
-            artifact/clearlist-api.tar.gz \
-            "$SSH_USER@$SSH_HOST:/tmp/clearlist-api/"
+            artifact/compose-api.tar.gz \
+            "$SSH_USER@$SSH_HOST:/tmp/compose-api/"
 
       - name: 🚀 Deploy server
         env:

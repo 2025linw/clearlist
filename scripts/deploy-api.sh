@@ -2,11 +2,11 @@
 set -eu
 
 
-readonly SERVICE_NAME="clearlist-api.service"
-readonly ARCHIVE="/tmp/clearlist-api/clearlist-api.tar.gz"
-readonly ARTIFACTS="/tmp/clearlist-api/artifacts"
+readonly SERVICE_NAME="compose-api.service"
+readonly ARCHIVE="/tmp/compose-api/compose-api.tar.gz"
+readonly ARTIFACTS="/tmp/compose-api/artifacts"
 
-readonly DEPLOY_PATH="/opt/clearlist-api"
+readonly DEPLOY_PATH="/opt/compose-api"
 readonly RELEASE_DIRPATH="$DEPLOY_PATH/releases"
 readonly CURRENT_LINK="$DEPLOY_PATH/current"
 
@@ -32,7 +32,7 @@ rm -rf "$ARTIFACTS"
 mkdir -p "$ARTIFACTS"
 tar -xzf "$ARCHIVE" -C "$ARTIFACTS"
 
-new_release="$RELEASE_DIRPATH/clearlist-api-$version-$timestamp-$sha"
+new_release="$RELEASE_DIRPATH/compose-api-$version-$timestamp-$sha"
 if [ -f "$new_release" ]; then
 	echo "Release already exists: $new_release" >&2
 	exit 1
@@ -61,7 +61,7 @@ rollback() {
 # Deploy new release
 mkdir -p "$RELEASE_DIRPATH"
 
-mv "$ARTIFACTS/clearlist-api" "$new_release"
+mv "$ARTIFACTS/compose-api" "$new_release"
 chmod +x "$new_release"
 ln -sfn "$new_release" "$CURRENT_LINK"
 

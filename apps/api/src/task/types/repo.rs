@@ -22,6 +22,20 @@ pub struct QueryOpts {
 impl QueryOpts {
     pub fn add_to_builder(self, builder: &mut QueryBuilder<'_, sqlx::Postgres>) {
         // Filter
+        if let Some(query) = self.filter.search {
+            let query = query.trim();
+
+            if !query.is_empty() {
+                let escaped = query
+                    .replace('!', "!!")
+                    .replace('%', "!%")
+                    .replace('_', "!_");
+
+                builder.push(" AND title ILIKE ");
+                builder.push_bind(format!("%{escaped}%"));
+                builder.push(" ESCAPE '!'");
+            }
+        }
         if let Some(filter) = self.filter.start {
             builder.push(" AND ");
             filter.add_to_builder(builder, "start");
@@ -92,6 +106,8 @@ impl QueryOpts {
 
 #[derive(Debug, Default, Clone)]
 pub struct Filter {
+    pub search: Option<String>,
+
     pub start: Option<DateFilter<DateTime<Utc>>>,
     pub deadline: Option<DateFilter<NaiveDate>>,
 
@@ -104,6 +120,10 @@ pub struct Filter {
 impl Filter {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn search(&mut self, search: String) {
+        self.search = Some(search);
     }
 
     pub fn start(&mut self, start: DateFilter<DateTime<Utc>>) {

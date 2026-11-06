@@ -161,7 +161,7 @@ jobs:
       - name: 📦 Generate metadata
         id: meta
         run: |
-          version=$(pnpm --filter @clearlist/auth exec node -p "require('./package.json').version")
+          version=$(pnpm --filter @compose/auth exec node -p "require('./package.json').version")
 
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "timestamp=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
@@ -173,13 +173,13 @@ jobs:
           cp -rt artifact/ build/auth/
 
       - name: 📦 Archive artifacts
-        run: tar -czf clearlist-auth.tar.gz -C artifact/ .
+        run: tar -czf compose-auth.tar.gz -C artifact/ .
 
       - name: 🚀 Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: clearlist-auth
-          path: clearlist-auth.tar.gz
+          name: compose-auth
+          path: compose-auth.tar.gz
           retention-days: 7
 
       - name: 📢 Notify test results via Discord
@@ -213,17 +213,17 @@ jobs:
       - name: 📦 Download artifact
         uses: actions/download-artifact@v8
         with:
-          name: clearlist-auth
+          name: compose-auth
           path: artifact/
 
       - name: 🚀 Upload archive
         run: |
           ssh $SSH_OPTIONS \
             "$SSH_USER@$SSH_HOST" \
-            "mkdir -p /tmp/clearlist-auth"
+            "mkdir -p /tmp/compose-auth"
           scp $SSH_OPTIONS \
-            artifact/clearlist-auth.tar.gz \
-            "$SSH_USER@$SSH_HOST:/tmp/clearlist-auth/"
+            artifact/compose-auth.tar.gz \
+            "$SSH_USER@$SSH_HOST:/tmp/compose-auth/"
 
       - name: 🚀 Deploy server
         env:

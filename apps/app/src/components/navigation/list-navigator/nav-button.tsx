@@ -1,39 +1,77 @@
-import { type Href, useRouter } from 'expo-router';
+import { type Href, usePathname, useRouter } from 'expo-router';
+import { StyleSheet } from 'react-native';
 
+import { useTheme } from '@contexts/theme';
+import { type Theme } from '@contexts/theme/types';
+import { useBreakpoints } from '@hooks/use-breakpoint';
+
+import { COLLAPSED_WIDTH } from '@components/navigation/list-navigator/constants';
 import Button from '@components/primitive/button';
 import Icon, {
   type IconColor,
   type IconName,
 } from '@components/primitive/icon';
 
+type ButtonActionType =
+  { href: Href; onPress?: never } | { href?: never; onPress: () => void };
+
 type NavButtonProps = {
   children: string;
-  href: Href;
-  iconName?: IconName;
-  iconColor?: IconColor;
+  icon?: {
+    name: IconName;
+    color?: IconColor;
+  };
   expanded?: boolean;
-};
+} & ButtonActionType;
 
 export default function NavButton({
   children,
   href,
+  onPress,
+  icon = {
+    name: 'list-outline',
+  },
   expanded = true,
-  ...props
 }: NavButtonProps) {
+  const route = usePathname();
   const router = useRouter();
+  const theme = useTheme();
+  const { gtTablet } = useBreakpoints();
+
+  const isActive = route === href;
+  const styles = buildStyles(theme, expanded);
 
   return (
     <Button
-      scheme="tertiary"
+      scheme={gtTablet && isActive ? 'primary' : 'tertiary'}
       leftIcon={
-        <Icon
-          name={props.iconName || 'list-outline'}
-          color={props.iconColor || 'gray'}
-        />
+        icon && (
+          <Icon
+            name={icon.name}
+            color={icon.color || 'gray'}
+          />
+        )
       }
-      onPress={() => router.navigate(href)}
+      onPress={() => {
+        if (href) router.navigate(href);
+        if (onPress) onPress?.();
+      }}
+      style={styles.container}
     >
-      {expanded ? children : undefined}
+      {children}
     </Button>
   );
+}
+
+function buildStyles(theme: Theme, expanded: boolean) {
+  return StyleSheet.create({
+    container: {
+      borderRadius: 0,
+      borderTopLeftRadius: theme.rounded.base,
+      borderBottomLeftRadius: theme.rounded.base,
+
+      maxWidth: expanded ? 'auto' : COLLAPSED_WIDTH,
+      overflow: 'hidden',
+    },
+  });
 }

@@ -5,12 +5,12 @@
     "moduleSuffixes": [".native", ".web", ""],
     "paths": {
       "@components/*": ["./src/components/*"],
-      "#/*": ["./src/screens/*"],
+      "@screens/*": ["./src/screens/*"],
+      "@lib/*": ["./src/lib/*"],
       "@utils/*": ["./src/utils/*"],
       "@services/*": ["./src/services/*"],
       "@hooks/*": ["./src/hooks/*"],
       "@contexts/*": ["./src/contexts/*"],
-      "@lib/*": ["./src/lib/*"],
       "@testUtils/*": ["./src/testUtils/*"]
     },
     "types": ["jest"]

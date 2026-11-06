@@ -1,7 +1,8 @@
 import { useSession } from '@contexts/auth';
 
-import NotFoundScreen from '#/not-found';
 import AppShell from '@components/app-shell';
+
+import NotFoundScreen from '@screens/not-found';
 
 export default function NotFoundPage() {
   const { hasSession, loaded } = useSession();

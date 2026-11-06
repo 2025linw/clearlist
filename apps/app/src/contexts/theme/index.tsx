@@ -13,12 +13,14 @@ import {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-type ProviderProps = PropsWithChildren<{
+type ThemeProviderProps = PropsWithChildren<{
   theme?: ThemeMode;
-  onThemeVariantChange?: (_v: ColorVariantName) => void; // TODO: is this needed?
 }>;
 
-export function Provider({ children, ...props }: ProviderProps) {
+export default function ThemeProvider({
+  children,
+  ...props
+}: ThemeProviderProps) {
   const {
     value: themeMode,
     setValue: _setThemeMode,
@@ -49,11 +51,9 @@ export function Provider({ children, ...props }: ProviderProps) {
 
   function setColorTheme(v: ColorVariantName) {
     _setColorTheme(v);
-    props.onThemeVariantChange?.(v);
   }
   function resetColorTheme() {
     _setColorTheme('default');
-    props.onThemeVariantChange?.('default');
   }
   function getAllColorThemes() {
     return getColorThemes(resolvedThemeMode);
@@ -83,7 +83,7 @@ export function Provider({ children, ...props }: ProviderProps) {
 export function useThemeContext() {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    throw new Error('Theme Contexts must be used inside Theme Provider');
+    throw new Error('Theme Context must be used inside Theme Provider');
   }
 
   return ctx;

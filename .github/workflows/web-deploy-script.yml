@@ -2,6 +2,8 @@ name: Deploy web app deploy script
 
 on:
   pull_request:
+    branches:
+      - main
     paths:
       - ".github/workflows/web-deploy-script.yml"
       - "scripts/deploy-web.sh"
@@ -35,10 +37,10 @@ jobs:
       - name: Upload script
         run: |
           scp scripts/deploy-web.sh \
-            "$SSH_USER@$SSH_HOST:/tmp/clearlist-web/"
+            "$SSH_USER@$SSH_HOST:/tmp/compose-web/"
 
       - name: Install deploy script
         run: |
           ssh "$SSH_USER@$SSH_HOST" \
-            'mkdir -p /opt/clearlist-web/scripts &&
-            install -m 755 /tmp/clearlist-web/deploy-web.sh /opt/clearlist-web/scripts/deploy.sh'
+            'mkdir -p /opt/compose-web/scripts &&
+            install -m 755 /tmp/compose-web/deploy-web.sh /opt/compose-web/scripts/deploy.sh'

@@ -1,5 +1,10 @@
 import type dayjs from '@lib/datetime';
 
+export type QueryParams = Record<
+  string,
+  string | number | boolean | null | undefined
+>;
+
 export enum Cmp {
   Equal = 'eq',
   NotEqual = 'ne',

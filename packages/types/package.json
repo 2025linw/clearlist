@@ -1,19 +1,15 @@
 {
-  "name": "@clearlist/types",
+  "name": "@compose/types",
   "private": true,
   "type": "module",
-  "types": "./src/index.ts",
   "exports": {
-    ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
-    }
+    "./*": "./src/*/index.ts"
   },
   "dependencies": {
     "dayjs": "^1.11.23",
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@clearlist/tooling-config": "workspace:*"
+    "@compose/tooling-config": "workspace:*"
   }
 }
