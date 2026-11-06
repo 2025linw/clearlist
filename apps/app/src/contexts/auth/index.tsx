@@ -11,9 +11,9 @@ import {
 } from 'react';
 
 import { authClient } from '@lib/auth-client';
+import { api as apiClient } from '@services/api/client';
 
 import { useToast } from '@hooks/use-toast';
-import { api as apiClient } from '@services/api/client';
 
 import {
   type ApiContextType,
@@ -32,7 +32,9 @@ const ApiContext = createContext<ApiContextType>({
   logout: async () => {},
 });
 
-export function Provider({ children }: PropsWithChildren) {
+type AuthProviderProps = PropsWithChildren;
+
+export default function AuthProvider({ children }: AuthProviderProps) {
   const router = useRouter();
   const toast = useToast();
 

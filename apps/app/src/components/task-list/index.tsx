@@ -4,9 +4,9 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
-import type dayjs from '@lib/datetime';
-
 import { type Task, type UpdateRequest } from '@compose/types/task';
+
+import type dayjs from '@lib/datetime';
 
 import { useTheme } from '@contexts/theme';
 import { type Theme } from '@contexts/theme/types';
