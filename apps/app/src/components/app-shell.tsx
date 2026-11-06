@@ -14,7 +14,7 @@ export default function AppShell({ children }: AppShellProps) {
   const [sidebarWidth, setSidebarWidth] = useState(240);
 
   return gtTablet ? (
-    <View style={styles.container}>
+      <View style={styles.container}>
         <ListNavigator
           type={gtDesktop ? 'desktop' : 'tablet'}
           width={sidebarWidth}
@@ -24,19 +24,18 @@ export default function AppShell({ children }: AppShellProps) {
         <View style={styles.content}>
           <Slot />
         </View>
-    </View>
+      </View>
   ) : (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
   );
 }
 const styles = StyleSheet.create({
   container: {
-    height: '100%',
-
+    flex: 1,
     flexDirection: 'row',
   },
   content: {

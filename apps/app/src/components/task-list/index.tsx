@@ -176,12 +176,10 @@ export default function TaskList({
             const state = dateModal.state;
             if (state === 'start') {
               onTaskUpdate?.(dateModal.taskId, {
-                start: selectedDate
-                  ? {
-                      type: 'datetime',
-                      value: selectedDate,
-                    }
-                  : null,
+                start: selectedDate && {
+                  type: 'datetime',
+                  value: selectedDate,
+                },
               });
             } else {
               onTaskUpdate?.(dateModal.taskId, {

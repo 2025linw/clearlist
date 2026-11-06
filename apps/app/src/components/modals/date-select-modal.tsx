@@ -35,14 +35,13 @@ export default function DateSelectModal({
       visible={props.visible}
       transparent
     >
-      <Pressable
-        onPress={props.dismiss}
-        style={styles.overlay}
-      >
+      <View style={styles.container}>
         <Pressable
-          onPress={(e) => e.stopPropagation()}
-          style={styles.container}
-        >
+          onPress={props.dismiss}
+          style={StyleSheet.absoluteFill}
+        />
+
+        <View style={styles.content}>
           <View style={styles.header}>
             <Button
               scheme="danger"
@@ -95,25 +94,23 @@ export default function DateSelectModal({
           />
 
           <Button>Set Time</Button>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 }
 
 function buildStyles(theme: Theme) {
   return StyleSheet.create({
-    overlay: {
+    container: {
       flex: 1,
 
       paddingHorizontal: theme.spacings.x6,
 
-      display: 'flex',
-      flexDirection: 'column',
       justifyContent: 'center',
       alignItems: 'center',
     },
-    container: {
+    content: {
       gap: theme.spacings.x2,
 
       borderWidth: 1,

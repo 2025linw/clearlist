@@ -29,11 +29,11 @@ export default function Header(props: HeaderProps) {
 
   const showBackButton = props.showBackButton && router.canGoBack();
 
-  const icon = props.icon
-    ? cloneElement(props.icon, {
-        size: theme.components.Typography.variants.h1.fontSize + 4,
-      })
-    : null;
+  const icon =
+    props.icon &&
+    cloneElement(props.icon, {
+      size: theme.components.Typography.variants.h1.fontSize + 4,
+    });
 
   return (
     <View style={[styles.container, props.style]}>
